@@ -1,0 +1,6 @@
+for backend:
+npm install express pg dotenv cors swagger-ui-express swagger-jsdoc
+npm install --save-dev nodemon
+
+run backend command:
+npm run dev

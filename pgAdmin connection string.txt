@@ -1,0 +1,14 @@
+DB connection string
+Project name: Clementine Store
+Password: **************
+
+sql queries that uses date must use this created_at TIMESTAMPTZ DEFAULT NOW()
+
+for pgAdmin parameters
+host: aws-1-ap-southeast-1.pooler.supabase.com
+port: 6543
+database: postgres
+user: postgres.dipchtqgjufgwdnnwrxb
+
+we are using session pooler as it is free for IPv4 connections
+postgresql://postgres.dipchtqgjufgwdnnwrxb:[YOUR-PASSWORD]@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres
