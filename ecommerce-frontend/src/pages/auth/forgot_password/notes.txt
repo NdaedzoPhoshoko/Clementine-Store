@@ -1,0 +1,9 @@
+Short Flow
+
+- Request OTP (frontend → backend)
+  
+  - Frontend calls POST /api/auth/forgot-password with email .
+  - Backend verifies the email exists, generates a 6‑digit OTP, stores its bcrypt hash and a 10‑minute expiry, then returns { passcode, time } to the frontend.
+  - Frontend uses EmailJS to send the email with {{email}} , {{passcode}} , and {{time}} aka expiry time .
+
+  note emails must be sent for OTP, placing orders, and order change of status

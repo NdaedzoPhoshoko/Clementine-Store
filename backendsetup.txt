@@ -1,6 +1,9 @@
-for backend:
+packages for backend:
 npm install express pg dotenv cors swagger-ui-express swagger-jsdoc
 npm install --save-dev nodemon
+npm install jwt jsonwebtoken bcryptjs 
+npm install @emailjs/browser
+npm install node-fetch
 
 run backend command:
 npm run dev

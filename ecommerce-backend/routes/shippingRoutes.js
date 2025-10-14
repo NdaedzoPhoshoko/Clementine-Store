@@ -1,0 +1,150 @@
+import express from "express";
+import { createOrUpdateShippingDetails, getShippingDetails } from "../controllers/shippingController.js";
+
+const router = express.Router();
+
+/**
+ * @swagger
+ * /api/shipping-details:
+ *   post:
+ *     summary: Create or update shipping details for an order
+ *     description: Validates the order belongs to the user, then inserts or updates shipping details.
+ *     tags: [Checkouts & Orders]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [user_id, order_id, name, address, city]
+ *             properties:
+ *               user_id: { type: integer, example: 1 }
+ *               order_id: { type: integer, example: 42 }
+ *               name: { type: string, example: "Jane Doe" }
+ *               address: { type: string, example: "123 Rose St" }
+ *               city: { type: string, example: "Cape Town" }
+ *               province: { type: string, example: "Western Cape" }
+ *               postal_code: { type: string, example: "8001" }
+ *               phone_number: { type: string, example: "+27 82 000 1111" }
+ *     responses:
+ *       201:
+ *         description: Shipping details saved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 shipping:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: integer }
+ *                     order_id: { type: integer }
+ *                     user_id: { type: integer }
+ *                     name: { type: string }
+ *                     address: { type: string }
+ *                     city: { type: string }
+ *                     province: { type: string }
+ *                     postal_code: { type: string }
+ *                     phone_number: { type: string }
+ *                     delivery_status: { type: string }
+ *       400:
+ *         description: Invalid input
+ *       403:
+ *         description: Forbidden - order belongs to another user
+ *       404:
+ *         description: Order not found
+ *       500:
+ *         description: Server error while saving shipping details
+ */
+router.post("/", createOrUpdateShippingDetails);
+
+/**
+ * @swagger
+ * /api/shipping-details:
+ *   get:
+ *     summary: Get shipping details
+ *     description: If `order_id` is provided, returns a single shipping detail for that order. If only `user_id` is provided, returns a paginated list of that user's shipping details.
+ *     tags: [Checkouts & Orders]
+ *     parameters:
+ *       - in: query
+ *         name: order_id
+ *         schema:
+ *           type: integer
+ *         description: Order ID to fetch shipping details for
+ *       - in: query
+ *         name: user_id
+ *         schema:
+ *           type: integer
+ *         description: User ID to list all shipping details for
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number when listing by user_id
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: Items per page when listing by user_id
+ *     responses:
+ *       200:
+ *         description: Shipping detail or list of shipping details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               oneOf:
+ *                 - type: object
+ *                   properties:
+ *                     shipping:
+ *                       type: object
+ *                       properties:
+ *                         id: { type: integer }
+ *                         order_id: { type: integer }
+ *                         user_id: { type: integer }
+ *                         name: { type: string }
+ *                         address: { type: string }
+ *                         city: { type: string }
+ *                         province: { type: string }
+ *                         postal_code: { type: string }
+ *                         phone_number: { type: string }
+ *                         delivery_status: { type: string }
+ *                 - type: object
+ *                   properties:
+ *                     items:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id: { type: integer }
+ *                           order_id: { type: integer }
+ *                           user_id: { type: integer }
+ *                           name: { type: string }
+ *                           address: { type: string }
+ *                           city: { type: string }
+ *                           province: { type: string }
+ *                           postal_code: { type: string }
+ *                           phone_number: { type: string }
+ *                           delivery_status: { type: string }
+ *                     meta:
+ *                       type: object
+ *                       properties:
+ *                         page: { type: integer }
+ *                         limit: { type: integer }
+ *                         total: { type: integer }
+ *                         pages: { type: integer }
+ *                         hasNext: { type: boolean }
+ *                         hasPrev: { type: boolean }
+ *       400:
+ *         description: Missing filters
+ *       403:
+ *         description: Forbidden - order belongs to another user
+ *       404:
+ *         description: Shipping details not found
+ *       500:
+ *         description: Server error while fetching shipping details
+ */
+router.get("/", getShippingDetails);
+
+export default router;

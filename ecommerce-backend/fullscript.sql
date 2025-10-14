@@ -10,6 +10,10 @@ CREATE TABLE users (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+UPDATE users SET token_version = 0 WHERE token_version IS NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_otp_hash VARCHAR(255);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_otp_expires TIMESTAMPTZ;
+
 -- CATEGORIES TABLE
 CREATE TABLE categories (
     id SERIAL PRIMARY KEY,
