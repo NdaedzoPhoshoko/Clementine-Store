@@ -1,5 +1,6 @@
 import express from "express";
 import { createOrUpdateShippingDetails, getShippingDetails } from "../controllers/shippingController.js";
+import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -10,15 +11,16 @@ const router = express.Router();
  *     summary: Create or update shipping details for an order
  *     description: Validates the order belongs to the user, then inserts or updates shipping details.
  *     tags: [Checkouts & Orders]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required: [user_id, order_id, name, address, city]
+ *             required: [order_id, name, address, city]
  *             properties:
- *               user_id: { type: integer, example: 1 }
  *               order_id: { type: integer, example: 42 }
  *               name: { type: string, example: "Jane Doe" }
  *               address: { type: string, example: "123 Rose St" }
@@ -56,7 +58,7 @@ const router = express.Router();
  *       500:
  *         description: Server error while saving shipping details
  */
-router.post("/", createOrUpdateShippingDetails);
+router.post("/", protect, createOrUpdateShippingDetails);
 
 /**
  * @swagger
@@ -145,6 +147,6 @@ router.post("/", createOrUpdateShippingDetails);
  *       500:
  *         description: Server error while fetching shipping details
  */
-router.get("/", getShippingDetails);
+router.get("/", protect, getShippingDetails);
 
 export default router;

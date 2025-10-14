@@ -2,14 +2,17 @@ import pool from "../config/db.js";
 
 export const createReview = async (req, res) => {
   try {
-    const { user_id, product_id, rating, comment } = req.body || {};
+    const { product_id, rating, comment } = req.body || {};
 
-    const uid = parseInt(user_id, 10);
+    const uid = parseInt(req.user?.id, 10);
     const pid = parseInt(product_id, 10);
     const rate = parseInt(rating, 10);
 
-    if (!uid || uid <= 0 || !pid || pid <= 0) {
-      return res.status(400).json({ message: "Invalid user_id or product_id" });
+    if (!uid || uid <= 0) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+    if (!pid || pid <= 0) {
+      return res.status(400).json({ message: "Invalid product_id" });
     }
     if (!rate || rate < 1 || rate > 5) {
       return res.status(400).json({ message: "Rating must be an integer between 1 and 5" });

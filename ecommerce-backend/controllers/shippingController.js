@@ -2,13 +2,13 @@ import pool from "../config/db.js";
 
 export const createOrUpdateShippingDetails = async (req, res) => {
   try {
-    const { user_id, order_id, name, address, city, province, postal_code, phone_number } = req.body || {};
+    const { order_id, name, address, city, province, postal_code, phone_number } = req.body || {};
 
-    const userId = parseInt(user_id, 10);
+    const userId = parseInt(req.user?.id, 10);
     const orderId = parseInt(order_id, 10);
 
     if (!userId || userId <= 0) {
-      return res.status(400).json({ message: "Invalid user_id" });
+      return res.status(401).json({ message: "Not authorized" });
     }
     if (!orderId || orderId <= 0) {
       return res.status(400).json({ message: "Invalid order_id" });
@@ -66,10 +66,11 @@ export const getShippingDetails = async (req, res) => {
   try {
     const { user_id, order_id, page = 1, limit = 20 } = req.query || {};
 
-    const userId = user_id ? parseInt(user_id, 10) : undefined;
+    const tokenUserId = parseInt(req.user?.id, 10);
+    const userIdQuery = user_id ? parseInt(user_id, 10) : undefined;
     const orderId = order_id ? parseInt(order_id, 10) : undefined;
 
-    if (!userId && !orderId) {
+    if (!tokenUserId && !orderId) {
       return res.status(400).json({ message: "Provide user_id or order_id" });
     }
 
@@ -83,7 +84,9 @@ export const getShippingDetails = async (req, res) => {
         return res.status(404).json({ message: "Shipping details not found for order" });
       }
       const shipping = shipRes.rows[0];
-      if (userId && shipping.user_id !== userId) {
+      // If caller is not admin, enforce ownership
+      const isAdmin = await isAdminUser(tokenUserId);
+      if (!isAdmin && shipping.user_id !== tokenUserId) {
         return res.status(403).json({ message: "Forbidden: order does not belong to user" });
       }
       return res.status(200).json({ shipping });
@@ -94,9 +97,13 @@ export const getShippingDetails = async (req, res) => {
     const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
     const offset = (pageNum - 1) * limitNum;
 
+    // Admin can fetch any user_id; non-admin must use token user id
+    const isAdmin = await isAdminUser(tokenUserId);
+    const effectiveUserId = isAdmin && userIdQuery ? userIdQuery : tokenUserId;
+
     const countRes = await pool.query(
       `SELECT COUNT(*) AS total FROM shipping_details WHERE user_id=$1`,
-      [userId]
+      [effectiveUserId]
     );
     const total = parseInt(countRes.rows[0]?.total || 0, 10);
 
@@ -106,7 +113,7 @@ export const getShippingDetails = async (req, res) => {
        WHERE user_id=$1
        ORDER BY id DESC
        LIMIT $2 OFFSET $3`,
-      [userId, limitNum, offset]
+      [effectiveUserId, limitNum, offset]
     );
 
     const pages = Math.max(Math.ceil(total / limitNum), 1);
@@ -121,4 +128,27 @@ export const getShippingDetails = async (req, res) => {
     console.error("Get shipping details error:", err.message);
     return res.status(500).json({ message: "Error fetching shipping details" });
   }
+};
+
+// Helper: lightweight admin check leveraging middleware settings
+const isAdminUser = async (userId) => {
+  try {
+    if (!userId) return false;
+    const ids = String(process.env.ADMIN_USER_IDS || "")
+      .split(",")
+      .map((v) => parseInt(v.trim(), 10))
+      .filter((v) => Number.isInteger(v) && v > 0);
+    if (ids.includes(Number(userId))) return true;
+
+    const emails = String(process.env.ADMIN_EMAILS || "")
+      .split(",")
+      .map((v) => v.trim())
+      .filter((v) => v);
+    if (emails.length > 0) {
+      const res = await pool.query("SELECT email FROM users WHERE id=$1", [userId]);
+      const email = res.rows[0]?.email;
+      if (email && emails.includes(email)) return true;
+    }
+  } catch (_) {}
+  return false;
 };

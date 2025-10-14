@@ -1,5 +1,6 @@
 import express from "express";
 import { createPayment, getPaymentByTransactionId } from "../controllers/paymentController.js";
+import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -10,15 +11,16 @@ const router = express.Router();
  *     summary: Create a payment record for an order (stubbed)
  *     description: Validates the order belongs to the user and that the amount equals the order total, then creates a PENDING payment. Integrate a payment gateway later to mark it PAID via webhook.
  *     tags: [Checkouts & Orders]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required: [user_id, order_id, amount, method]
+ *             required: [order_id, amount, method]
  *             properties:
- *               user_id: { type: integer, example: 1 }
  *               order_id: { type: integer, example: 42 }
  *               amount: { type: number, example: 499.99 }
  *               method: { type: string, example: "CARD" }
@@ -49,7 +51,7 @@ const router = express.Router();
  *       500:
  *         description: Server error while creating payment
  */
-router.post("/", createPayment);
+router.post("/", protect, createPayment);
 
 /**
  * @swagger
@@ -58,6 +60,8 @@ router.post("/", createPayment);
  *     summary: Get a payment by transaction_id
  *     description: Returns the payment record and related order summary for the given transaction_id.
  *     tags: [Checkouts & Orders]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: transaction_id
@@ -97,6 +101,6 @@ router.post("/", createPayment);
  *       500:
  *         description: Server error while fetching payment
  */
-router.get("/:transaction_id", getPaymentByTransactionId);
+router.get("/:transaction_id", protect, getPaymentByTransactionId);
 
 export default router;

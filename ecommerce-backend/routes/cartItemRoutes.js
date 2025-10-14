@@ -1,5 +1,6 @@
 import express from "express";
 import { addCartItem, updateCartItem, deleteCartItem } from "../controllers/cartController.js";
+import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -10,6 +11,8 @@ const router = express.Router();
  *     summary: Add an item to a user's active cart (creates cart if none)
  *     tags:
  *       - Shopping Cart
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -17,11 +20,8 @@ const router = express.Router();
  *           schema:
  *             type: object
  *             required:
- *               - user_id
  *               - product_id
  *             properties:
- *               user_id:
- *                 type: integer
  *               product_id:
  *                 type: integer
  *               quantity:
@@ -83,7 +83,7 @@ const router = express.Router();
  *       400:
  *         description: Invalid input or insufficient stock
  */
-router.post("/", addCartItem);
+router.post("/", protect, addCartItem);
 
 /**
  * @swagger
@@ -92,6 +92,8 @@ router.post("/", addCartItem);
  *     summary: Update quantity for a cart item (user-owned, ACTIVE cart only)
  *     tags:
  *       - Shopping Cart
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -106,11 +108,8 @@ router.post("/", addCartItem);
  *           schema:
  *             type: object
  *             required:
- *               - user_id
  *               - quantity
  *             properties:
- *               user_id:
- *                 type: integer
  *               quantity:
  *                 type: integer
  *     responses:
@@ -134,7 +133,7 @@ router.post("/", addCartItem);
  *       404:
  *         description: Cart item not found
  */
-router.put("/:id", updateCartItem);
+router.put("/:id", protect, updateCartItem);
 
 /**
  * @swagger
@@ -143,6 +142,8 @@ router.put("/:id", updateCartItem);
  *     summary: Remove a cart item (user-owned, ACTIVE cart only)
  *     tags:
  *       - Shopping Cart
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -150,17 +151,6 @@ router.put("/:id", updateCartItem);
  *         schema:
  *           type: integer
  *         description: Cart item ID
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - user_id
- *             properties:
- *               user_id:
- *                 type: integer
  *     responses:
  *       200:
  *         description: Updated cart with items and totals after deletion
@@ -169,6 +159,6 @@ router.put("/:id", updateCartItem);
  *       404:
  *         description: Cart item not found
  */
-router.delete("/:id", deleteCartItem);
+router.delete("/:id", protect, deleteCartItem);
 
 export default router;

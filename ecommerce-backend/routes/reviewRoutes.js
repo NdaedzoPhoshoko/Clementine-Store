@@ -1,5 +1,6 @@
 import express from "express";
 import { createReview } from "../controllers/reviewController.js";
+import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -11,6 +12,8 @@ const router = express.Router();
  *     description: Creates a review with rating (1-5) and optional comment for a product. Enforces one review per user per product.
  *     tags:
  *       - Reviews
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -18,13 +21,9 @@ const router = express.Router();
  *           schema:
  *             type: object
  *             required:
- *               - user_id
  *               - product_id
  *               - rating
  *             properties:
- *               user_id:
- *                 type: integer
- *                 example: 1
  *               product_id:
  *                 type: integer
  *                 example: 100
@@ -58,7 +57,7 @@ const router = express.Router();
  *                     averageRating: { type: number }
  *                     reviewCount: { type: integer }
  *       400:
- *         description: Invalid input (user_id, product_id, or rating)
+ *         description: Invalid input (product_id or rating)
  *       404:
  *         description: User or product not found
  *       409:
@@ -66,6 +65,6 @@ const router = express.Router();
  *       500:
  *         description: Server error while creating review
  */
-router.post("/", createReview);
+router.post("/", protect, createReview);
 
 export default router;

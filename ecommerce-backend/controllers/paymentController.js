@@ -2,13 +2,13 @@ import pool from "../config/db.js";
 
 export const createPayment = async (req, res) => {
   try {
-    const { user_id, order_id, amount, method } = req.body || {};
-    const userId = parseInt(user_id, 10);
+    const { order_id, amount, method } = req.body || {};
+    const userId = parseInt(req.user?.id, 10);
     const orderId = parseInt(order_id, 10);
     const amt = Number(amount);
 
     if (!userId || userId <= 0) {
-      return res.status(400).json({ message: "Invalid user_id" });
+      return res.status(401).json({ message: "Not authorized" });
     }
     if (!orderId || orderId <= 0) {
       return res.status(400).json({ message: "Invalid order_id" });
@@ -64,6 +64,7 @@ export const createPayment = async (req, res) => {
 export const getPaymentByTransactionId = async (req, res) => {
   try {
     const { transaction_id } = req.params || {};
+    const tokenUserId = parseInt(req.user?.id, 10);
     const txId = String(transaction_id || '').trim();
     if (!txId) {
       return res.status(400).json({ message: "Invalid transaction_id" });
@@ -81,6 +82,16 @@ export const getPaymentByTransactionId = async (req, res) => {
       return res.status(404).json({ message: "Payment not found" });
     }
     const row = paymentRes.rows[0];
+
+    // Enforce ownership (admin may bypass if configured)
+    if (!Number.isInteger(tokenUserId) || tokenUserId <= 0) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+    const isAdmin = await isAdminUser(tokenUserId);
+    if (!isAdmin && row.user_id !== tokenUserId) {
+      return res.status(403).json({ message: "Forbidden: payment belongs to another user" });
+    }
+
     const payment = {
       id: row.id,
       order_id: row.order_id,
@@ -102,4 +113,27 @@ export const getPaymentByTransactionId = async (req, res) => {
     console.error("Get payment error:", err.message);
     return res.status(500).json({ message: "Error fetching payment" });
   }
+};
+
+// Helper: check admin using env-configured IDs or emails
+const isAdminUser = async (userId) => {
+  try {
+    if (!userId) return false;
+    const ids = String(process.env.ADMIN_USER_IDS || "")
+      .split(",")
+      .map((v) => parseInt(v.trim(), 10))
+      .filter((v) => Number.isInteger(v) && v > 0);
+    if (ids.includes(Number(userId))) return true;
+
+    const emails = String(process.env.ADMIN_EMAILS || "")
+      .split(",")
+      .map((v) => v.trim())
+      .filter((v) => v);
+    if (emails.length > 0) {
+      const res = await pool.query("SELECT email FROM users WHERE id=$1", [userId]);
+      const email = res.rows[0]?.email;
+      if (email && emails.includes(email)) return true;
+    }
+  } catch (_) {}
+  return false;
 };

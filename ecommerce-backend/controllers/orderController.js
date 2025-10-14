@@ -3,10 +3,10 @@ import pool from "../config/db.js";
 export const createOrder = async (req, res) => {
   const client = await pool.connect();
   try {
-    const { user_id, shipping } = req.body || {};
-    const userId = parseInt(user_id, 10);
+    const { shipping } = req.body || {};
+    const userId = parseInt(req.user?.id, 10);
     if (!userId || userId <= 0) {
-      return res.status(400).json({ message: "Invalid user_id" });
+      return res.status(401).json({ message: "Not authorized" });
     }
 
     // Find ACTIVE cart

@@ -1,6 +1,6 @@
 import express from "express";
 import { getUsers, registerUser, loginUser, getMe, getUserById, updateUserById } from "../controllers/userController.js";
-import { protect } from "../middleware/auth.js";
+import { protect, requireSelfOrAdmin } from "../middleware/auth.js";
 const router = express.Router();
 
 /**
@@ -138,7 +138,7 @@ router.get("/me", protect, getMe);
  *                 message:
  *                   type: string
  */
-router.get("/:id", getUserById);
+router.get("/:id", protect, requireSelfOrAdmin, getUserById);
 
 /**
  * @swagger
@@ -221,6 +221,6 @@ router.get("/:id", getUserById);
  *                 message:
  *                   type: string
  */
-router.put("/:id", updateUserById);
+router.put("/:id", protect, requireSelfOrAdmin, updateUserById);
 
 export default router;

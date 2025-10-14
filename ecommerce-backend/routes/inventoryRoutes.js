@@ -1,5 +1,6 @@
 import express from "express";
 import { getInventoryLogs } from "../controllers/inventoryController.js";
+import { protect, requireAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -11,6 +12,8 @@ const router = express.Router();
  *     description: Returns inventory change logs with optional filters and pagination.
  *     tags:
  *       - Admin
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: page
@@ -77,6 +80,6 @@ const router = express.Router();
  *       500:
  *         description: Server error while fetching inventory logs
  */
-router.get("/", getInventoryLogs);
+router.get("/", protect, requireAdmin, getInventoryLogs);
 
 export default router;

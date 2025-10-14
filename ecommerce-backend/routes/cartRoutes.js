@@ -1,5 +1,6 @@
 import express from "express";
 import { getUserCart } from "../controllers/cartController.js";
+import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -10,13 +11,8 @@ const router = express.Router();
  *     summary: Get the active cart for a user
  *     tags:
  *       - Shopping Cart
- *     parameters:
- *       - in: query
- *         name: user_id
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID of the user whose active cart to retrieve
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Active cart with items and totals
@@ -72,6 +68,6 @@ const router = express.Router();
  *                     subtotal:
  *                       type: number
  */
-router.get("/", getUserCart);
+router.get("/", protect, getUserCart);
 
 export default router;

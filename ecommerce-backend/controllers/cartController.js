@@ -2,9 +2,9 @@ import pool from "../config/db.js";
 
 export const getUserCart = async (req, res) => {
   try {
-    const userId = parseInt(req.query.user_id, 10);
+    const userId = parseInt(req.user?.id, 10);
     if (!userId || userId <= 0) {
-      return res.status(400).json({ message: "Invalid user_id" });
+      return res.status(401).json({ message: "Not authorized" });
     }
 
     const cartResult = await pool.query(
@@ -47,13 +47,13 @@ export const getUserCart = async (req, res) => {
 
 export const addCartItem = async (req, res) => {
   try {
-    const { user_id, product_id, quantity = 1 } = req.body || {};
-    const userId = parseInt(user_id, 10);
+    const { product_id, quantity = 1 } = req.body || {};
+    const userId = parseInt(req.user?.id, 10);
     const productId = parseInt(product_id, 10);
     const qty = Math.max(parseInt(quantity, 10) || 1, 1);
 
     if (!userId || userId <= 0) {
-      return res.status(400).json({ message: "Invalid user_id" });
+      return res.status(401).json({ message: "Not authorized" });
     }
     if (!productId || productId <= 0) {
       return res.status(400).json({ message: "Invalid product_id" });
@@ -135,15 +135,15 @@ export const addCartItem = async (req, res) => {
 export const updateCartItem = async (req, res) => {
   try {
     const cartItemId = parseInt(req.params.id, 10);
-    const { user_id, quantity } = req.body || {};
-    const userId = parseInt(user_id, 10);
+    const { quantity } = req.body || {};
+    const userId = parseInt(req.user?.id, 10);
     const qty = Math.max(parseInt(quantity, 10) || 0, 0);
 
     if (!cartItemId || cartItemId <= 0) {
       return res.status(400).json({ message: "Invalid cart item id" });
     }
     if (!userId || userId <= 0) {
-      return res.status(400).json({ message: "Invalid user_id" });
+      return res.status(401).json({ message: "Not authorized" });
     }
     if (qty < 1) {
       return res.status(400).json({ message: "Quantity must be at least 1" });
@@ -221,14 +221,13 @@ export const updateCartItem = async (req, res) => {
 export const deleteCartItem = async (req, res) => {
   try {
     const cartItemId = parseInt(req.params.id, 10);
-    const { user_id } = req.body || {};
-    const userId = parseInt(user_id, 10);
+    const userId = parseInt(req.user?.id, 10);
 
     if (!cartItemId || cartItemId <= 0) {
       return res.status(400).json({ message: "Invalid cart item id" });
     }
     if (!userId || userId <= 0) {
-      return res.status(400).json({ message: "Invalid user_id" });
+      return res.status(401).json({ message: "Not authorized" });
     }
 
     const itemRes = await pool.query(

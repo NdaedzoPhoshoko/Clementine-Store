@@ -1,5 +1,6 @@
 import express from "express";
 import { createOrder } from "../controllers/orderController.js";
+import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -17,17 +18,15 @@ const router = express.Router();
  *     summary: Create a new order from the user's ACTIVE cart
  *     description: Copies items from the user's ACTIVE cart into an order with PENDING payment status, optionally captures shipping details, and marks the cart as CHECKOUT_IN_PROGRESS.
  *     tags: [Checkouts & Orders]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required: [user_id]
  *             properties:
- *               user_id:
- *                 type: integer
- *                 example: 1
  *               shipping:
  *                 type: object
  *                 properties:
@@ -85,7 +84,7 @@ const router = express.Router();
  *         description: Invalid input or empty cart
  *       500:
  *         description: Server error while creating order
- */
-router.post("/", createOrder);
+*/
+router.post("/", protect, createOrder);
 
 export default router;

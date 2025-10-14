@@ -1,5 +1,6 @@
 import express from "express";
 import { listProducts, getProductById, getProductReviews, createProduct, updateProduct, deleteProduct } from "../controllers/productController.js";
+import { protect, requireAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -100,6 +101,8 @@ router.get("/", listProducts);
  *     summary: Create a new product
  *     tags:
  *       - Products & Categories
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -153,7 +156,7 @@ router.get("/", listProducts);
  *       500:
  *         description: Server error while creating product
  */
-router.post("/", createProduct);
+router.post("/", protect, requireAdmin, createProduct);
 
 /**
  * @swagger
@@ -162,6 +165,8 @@ router.post("/", createProduct);
  *     summary: Update an existing product
  *     tags:
  *       - Products & Categories
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -207,7 +212,7 @@ router.post("/", createProduct);
  *       500:
  *         description: Server error while updating product
  */
-router.put("/:id", updateProduct);
+router.put("/:id", protect, requireAdmin, updateProduct);
 
 /**
  * @swagger
@@ -216,6 +221,8 @@ router.put("/:id", updateProduct);
  *     summary: Delete a product
  *     tags:
  *       - Products & Categories
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -249,7 +256,7 @@ router.put("/:id", updateProduct);
  *       500:
  *         description: Server error while deleting product
  */
-router.delete("/:id", deleteProduct);
+router.delete("/:id", protect, requireAdmin, deleteProduct);
 
 /**
  * @swagger
