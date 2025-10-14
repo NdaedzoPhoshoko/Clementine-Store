@@ -1,2 +1,4 @@
 /nc clemly
 /.env
+/env.local
+/env.*.local
