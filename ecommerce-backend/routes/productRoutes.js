@@ -1,8 +1,10 @@
 import express from "express";
-import { listProducts, getProductById, getProductReviews, createProduct, updateProduct, deleteProduct } from "../controllers/productController.js";
+import multer from "multer";
+import { listProducts, getProductById, getProductReviews, createProduct, updateProduct, deleteProduct, uploadProductImage, deleteProductImage, deleteAllProductImages } from "../controllers/productController.js";
 import { protect, requireAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 /**
  * @swagger
@@ -257,6 +259,157 @@ router.put("/:id", protect, requireAdmin, updateProduct);
  *         description: Server error while deleting product
  */
 router.delete("/:id", protect, requireAdmin, deleteProduct);
+
+/**
+ * @swagger
+ * /api/products/{id}/images:
+ *   post:
+ *     summary: Upload product image to Cloudinary (admin only)
+ *     tags:
+ *       - Products & Categories
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Product ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+  *             type: object
+  *             properties:
+  *               image:
+  *                 type: string
+  *                 format: binary
+  *                 description: Upload a single file (you can also use 'images')
+  *               images:
+  *                 type: array
+  *                 items:
+  *                   type: string
+  *                   format: binary
+  *                 description: Upload multiple files under 'images'
+ *     responses:
+ *       201:
+ *         description: Image uploaded and linked to product
+ *         content:
+ *           application/json:
+ *             schema:
+  *               type: object
+  *               properties:
+  *                 images:
+  *                   type: array
+  *                   items:
+  *                     type: object
+  *                     properties:
+  *                       url: { type: string }
+  *                       public_id: { type: string }
+  *                 productId: { type: integer }
+  *                 updatedPrimary: { type: boolean }
+ *       400:
+ *         description: Invalid product id or no image file
+ *       404:
+ *         description: Product not found
+ *       500:
+ *         description: Server error while uploading image
+ */
+router.post(
+  "/:id/images",
+  protect,
+  requireAdmin,
+  upload.fields([
+    { name: "image", maxCount: 1 },
+    { name: "images", maxCount: 10 },
+  ]),
+  uploadProductImage
+);
+
+/**
+ * @swagger
+ * /api/products/{id}/images/{imageId}:
+ *   delete:
+ *     summary: Delete a product image (admin only)
+ *     tags:
+ *       - Products & Categories
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Product ID
+ *       - in: path
+ *         name: imageId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Product image ID (from product_images table)
+ *     responses:
+ *       200:
+ *         description: Image deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message: { type: string, example: "Image deleted" }
+ *                 deletedImageId: { type: integer }
+ *                 productId: { type: integer }
+ *                 updatedPrimary: { type: boolean }
+ *                 newPrimaryUrl: { type: string, nullable: true }
+ *       400:
+ *         description: Invalid product or image id
+ *       404:
+ *         description: Product or image not found
+ *       500:
+ *         description: Server error while deleting image
+ */
+router.delete("/:id/images/:imageId", protect, requireAdmin, deleteProductImage);
+
+/**
+ * @swagger
+ * /api/products/{id}/images:
+ *   delete:
+ *     summary: Delete all images for a product (admin only)
+ *     tags:
+ *       - Products & Categories
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Product ID
+ *     responses:
+ *       200:
+ *         description: All images deleted and primary cleared
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message: { type: string, example: "All product images deleted" }
+ *                 productId: { type: integer }
+ *                 deletedCount: { type: integer }
+ *                 cloudinaryDeleteAttempted: { type: integer }
+ *                 cloudinaryDeleted: { type: integer }
+ *                 updatedPrimary: { type: boolean }
+ *       400:
+ *         description: Invalid product id
+ *       404:
+ *         description: Product not found
+ *       500:
+ *         description: Server error while deleting images
+ */
+router.delete("/:id/images", protect, requireAdmin, deleteAllProductImages);
 
 /**
  * @swagger

@@ -1,4 +1,12 @@
 /nc clemly
-/.env
-/env.local
-/env.*.local
+# Ignore environment files everywhere (prevent committing secrets)
+.env
+.env.*
+!.env.example
+
+# Common local env variants
+.env.local
+.env.*.local
+
+# Ignore credential notes
+pgAdmin connection string.txt

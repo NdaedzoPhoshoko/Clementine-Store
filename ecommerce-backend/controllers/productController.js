@@ -1,4 +1,5 @@
 import pool from "../config/db.js";
+import cloudinary from "../config/cloudinary.js";
 
 export const listProducts = async (req, res) => {
   try {
@@ -354,5 +355,272 @@ export const deleteProduct = async (req, res) => {
   } catch (err) {
     console.error("Delete product error:", err.message);
     return res.status(500).json({ message: "Error deleting product" });
+  }
+};
+
+export const uploadProductImage = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!id || id <= 0) {
+      return res.status(400).json({ message: "Invalid product id" });
+    }
+
+    const existingRes = await pool.query(
+      "SELECT id, image_url FROM products WHERE id=$1",
+      [id]
+    );
+    if (existingRes.rows.length === 0) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    // Collect files from either 'images' (array) or 'image' (single), remaining backward-compatible
+    let files = [];
+    if (req.files && req.files.images && Array.isArray(req.files.images)) {
+      files = files.concat(req.files.images);
+    }
+    if (req.files && req.files.image && Array.isArray(req.files.image)) {
+      files = files.concat(req.files.image);
+    }
+    // Fallback if older middleware put single file into req.file
+    if ((!files || files.length === 0) && req.file && req.file.buffer) {
+      files = [req.file];
+    }
+
+    if (!files || files.length === 0) {
+      return res.status(400).json({ message: "No image file uploaded" });
+    }
+
+    const uploaded = [];
+    for (const f of files) {
+      const result = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: "products", resource_type: "image" },
+          (err, res) => (err ? reject(err) : resolve(res))
+        );
+        stream.end(f.buffer);
+      });
+
+      const secureUrl = result?.secure_url;
+      const publicId = result?.public_id;
+      if (!secureUrl) {
+        return res.status(500).json({ message: "Upload failed: no URL returned" });
+      }
+
+      await pool.query(
+        "INSERT INTO product_images (product_id, image_url, public_id) VALUES ($1, $2, $3)",
+        [id, secureUrl, publicId || null]
+      );
+      uploaded.push({ url: secureUrl, public_id: publicId });
+    }
+
+    // Set primary image if none exists yet using the first uploaded image
+    let updatedPrimary = false;
+    const currentPrimary = existingRes.rows[0].image_url;
+    if (!currentPrimary && uploaded.length > 0) {
+      await pool.query("UPDATE products SET image_url=$1 WHERE id=$2", [uploaded[0].url, id]);
+      updatedPrimary = true;
+    }
+
+    return res.status(201).json({
+      images: uploaded,
+      productId: id,
+      updatedPrimary,
+    });
+  } catch (err) {
+    console.error("Upload product image error:", err.message);
+    return res.status(500).json({ message: "Error uploading product image" });
+  }
+};
+
+export const deleteProductImage = async (req, res) => {
+  try {
+    const productId = parseInt(req.params.id, 10);
+    const imageId = parseInt(req.params.imageId, 10);
+    if (!productId || productId <= 0 || !imageId || imageId <= 0) {
+      return res.status(400).json({ message: "Invalid product or image id" });
+    }
+
+    const productRes = await pool.query(
+      "SELECT id, image_url FROM products WHERE id=$1",
+      [productId]
+    );
+    if (productRes.rows.length === 0) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+    const product = productRes.rows[0];
+
+    const imageRes = await pool.query(
+      "SELECT id, image_url, public_id FROM product_images WHERE id=$1 AND product_id=$2",
+      [imageId, productId]
+    );
+    if (imageRes.rows.length === 0) {
+      return res.status(404).json({ message: "Product image not found" });
+    }
+    const imageRow = imageRes.rows[0];
+    const imageUrl = imageRow.image_url;
+    let publicId = imageRow.public_id;
+
+    // Attempt to delete from Cloudinary based on URL-derived public_id (best-effort)
+    const derivePublicIdFromUrl = (url) => {
+      try {
+        const u = new URL(url);
+        const parts = u.pathname.split("/");
+        const uploadIdx = parts.indexOf("upload");
+        if (uploadIdx === -1) return null;
+        let idx = uploadIdx + 1;
+        // skip version segment if present (e.g., v1691234567)
+        if (parts[idx] && parts[idx].startsWith("v")) idx++;
+        // remaining path includes folder and filename
+        const remainder = parts.slice(idx);
+        if (!remainder.length) return null;
+        const last = remainder.pop();
+        const base = last.split(".")[0]; // drop extension
+        remainder.push(base);
+        return remainder.join("/");
+      } catch (e) {
+        return null;
+      }
+    };
+
+    if (!publicId) publicId = derivePublicIdFromUrl(imageUrl);
+    if (publicId) {
+      try {
+        await cloudinary.uploader.destroy(publicId, { invalidate: true });
+      } catch (cloudErr) {
+        console.warn("Cloudinary destroy failed:", cloudErr?.message || cloudErr);
+      }
+    }
+
+    // Delete DB record
+    await pool.query("DELETE FROM product_images WHERE id=$1", [imageId]);
+
+    // If it was the primary image, set a new one or clear
+    let updatedPrimary = false;
+    let newPrimaryUrl = null;
+    if (product.image_url === imageUrl) {
+      const nextRes = await pool.query(
+        "SELECT image_url FROM product_images WHERE product_id=$1 ORDER BY id ASC LIMIT 1",
+        [productId]
+      );
+      if (nextRes.rows.length > 0) {
+        newPrimaryUrl = nextRes.rows[0].image_url;
+        await pool.query("UPDATE products SET image_url=$1 WHERE id=$2", [newPrimaryUrl, productId]);
+      } else {
+        await pool.query("UPDATE products SET image_url=NULL WHERE id=$1", [productId]);
+      }
+      updatedPrimary = true;
+    }
+
+    return res.status(200).json({
+      message: "Image deleted",
+      deletedImageId: imageId,
+      productId,
+      updatedPrimary,
+      newPrimaryUrl,
+    });
+  } catch (err) {
+    console.error("Delete product image error:", err.message);
+    return res.status(500).json({ message: "Error deleting product image" });
+  }
+};
+
+export const deleteAllProductImages = async (req, res) => {
+  try {
+    const productId = parseInt(req.params.id, 10);
+    if (!productId || productId <= 0) {
+      return res.status(400).json({ message: "Invalid product id" });
+    }
+
+    const productRes = await pool.query(
+      "SELECT id, image_url FROM products WHERE id=$1",
+      [productId]
+    );
+    if (productRes.rows.length === 0) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+    const product = productRes.rows[0];
+
+    const imagesRes = await pool.query(
+      "SELECT id, image_url, public_id FROM product_images WHERE product_id=$1 ORDER BY id ASC",
+      [productId]
+    );
+    const images = imagesRes.rows;
+
+    // Collect unique URLs including primary image
+    const urlSet = new Set(images.map(i => i.image_url));
+    if (product.image_url) urlSet.add(product.image_url);
+
+    const derivePublicIdFromUrl = (url) => {
+      try {
+        const u = new URL(url);
+        const parts = u.pathname.split("/");
+        const uploadIdx = parts.indexOf("upload");
+        if (uploadIdx === -1) return null;
+        let idx = uploadIdx + 1;
+        if (parts[idx] && parts[idx].startsWith("v")) idx++;
+        const remainder = parts.slice(idx);
+        if (!remainder.length) return null;
+        const last = remainder.pop();
+        const base = last.split(".")[0];
+        remainder.push(base);
+        return remainder.join("/");
+      } catch {
+        return null;
+      }
+    };
+
+    let attempted = 0;
+    let cloudDeleted = 0;
+    // Prefer stored public_id; fall back to URL derivation when missing
+    for (const row of images) {
+      let pid = row.public_id;
+      if (!pid) pid = derivePublicIdFromUrl(row.image_url);
+      if (pid) {
+        attempted++;
+        try {
+          const resDestroy = await cloudinary.uploader.destroy(pid, { invalidate: true });
+          if (resDestroy && (resDestroy.result === "ok" || resDestroy.result === "not found")) {
+            cloudDeleted++;
+          }
+        } catch (e) {
+          // best-effort: continue
+        }
+      }
+    }
+    // Also attempt to delete primary image if it’s not present in product_images rows (edge case)
+    if (product.image_url && !images.some(r => r.image_url === product.image_url)) {
+      const pid = derivePublicIdFromUrl(product.image_url);
+      if (pid) {
+        attempted++;
+        try {
+          const resDestroy = await cloudinary.uploader.destroy(pid, { invalidate: true });
+          if (resDestroy && (resDestroy.result === "ok" || resDestroy.result === "not found")) {
+            cloudDeleted++;
+          }
+        } catch {}
+      }
+    }
+
+    // Delete all DB image rows
+    await pool.query("DELETE FROM product_images WHERE product_id=$1", [productId]);
+
+    // Clear primary image
+    let updatedPrimary = false;
+    if (product.image_url) {
+      await pool.query("UPDATE products SET image_url=NULL WHERE id=$1", [productId]);
+      updatedPrimary = true;
+    }
+
+    return res.status(200).json({
+      message: "All product images deleted",
+      productId,
+      deletedCount: images.length,
+      cloudinaryDeleteAttempted: attempted,
+      cloudinaryDeleted: cloudDeleted,
+      updatedPrimary,
+    });
+  } catch (err) {
+    console.error("Delete all product images error:", err.message);
+    return res.status(500).json({ message: "Error deleting all product images" });
   }
 };

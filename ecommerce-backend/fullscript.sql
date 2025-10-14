@@ -100,6 +100,18 @@ CREATE TABLE product_images (
     image_url VARCHAR(255) NOT NULL
 );
 
+-- Add public_id column to product_images to store Cloudinary asset identifier
+ALTER TABLE product_images
+    ADD COLUMN IF NOT EXISTS public_id VARCHAR(255);
+
+-- Optional index to speed up lookups by public_id (useful for deletes/management)
+CREATE INDEX IF NOT EXISTS idx_product_images_public_id ON product_images(public_id);
+
+-- Note: Existing rows will have NULL public_id. New uploads should populate this field.
+
+UPDATE product_images SET public_id = regexp_replace(   regexp_replace(     regexp_replace(image_url, '^.*\\/upload\\/', ''),     '^([^\\/]+\\/)*v[0-9]+\\/',     ''   ),   '\\.[^\\/.]+$',   '' ) WHERE public_id IS NULL AND image_url LIKE '%/upload/%';
+
+
 -- REVIEWS
 CREATE TABLE reviews (
     id SERIAL PRIMARY KEY,
