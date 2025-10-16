@@ -1,0 +1,2 @@
+Add the endpoint to return the trneding products (include products who sales are abobve the mean total sales)
+add the trneding products on the homepage
