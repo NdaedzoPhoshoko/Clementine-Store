@@ -12,7 +12,7 @@
 .app-content {
   background: var(--color-bg);
   color: var(--color-text);
-  padding: 24px;
-  padding-top: 88px; /* offset for fixed navbar */
+  padding: 0;
+  padding-top: 0; /* start directly under navbar, no extra gap */
   flex: 1; /* fills remaining space so footer sits at bottom */
 }

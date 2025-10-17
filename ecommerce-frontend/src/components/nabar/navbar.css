@@ -7,7 +7,7 @@
   left: 0;
   right: 0;
   z-index: 1000;
-  background: transparent;
+  background: var(--color-bg);
   border-radius: 0;
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
 }
@@ -155,7 +155,7 @@
 }
 
 .nav-search__input:focus {
-  color: var(--palette-muted);
+  color: var(--color-primary);
 }
 
 .nav-search__btn {
@@ -169,7 +169,7 @@
   align-items: center;
   justify-content: center;
   background: linear-gradient(180deg, var(--color-accent), var(--palette-deep));
-  box-shadow: 0 6px 12px rgba(255, 58, 149, 0.25);
+  box-shadow: 0 6px 12px var(--shadow-primary-color);
   transition: filter 160ms ease, box-shadow 160ms ease, background 160ms ease;
 }
 

@@ -1,0 +1,169 @@
+.sponsored-banner {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 0;
+  background: #0f0f10;
+}
+
+.sponsored-banner__slides {
+  position: relative;
+  height: 618px;
+}
+
+.sponsored-banner__slide {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center 20%;
+  opacity: 0;
+  transform: translateX(10px) scale(1.02);
+  transition: opacity 600ms ease, transform 600ms ease;
+}
+
+.sponsored-banner__slide.is-active {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+  z-index: 1;
+}
+
+.sponsored-banner__slide::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.45));
+  pointer-events: none;
+  z-index: 1;
+}
+
+.sponsored-banner__content {
+  position: absolute;
+  left: 28px;
+  right: 28px;
+  bottom: 28px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+  z-index: 2;
+  opacity: 0;
+  transform: translate3d(0, 18px, 0);
+  transition: opacity 520ms ease, transform 560ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.sponsored-banner__kicker {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.sponsored-banner__title {
+  margin: 6px 0 2px;
+  font-size: 40px;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.sponsored-banner__subtitle {
+  margin: 8px 0 16px;
+  font-size: 16px;
+  line-height: 1.5;
+  opacity: 0.95;
+}
+
+.sponsored-banner__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: none;
+  color: #fff;
+  background: var(--palette-primary, #ff7b38);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  cursor: pointer;
+  transition: filter 200ms ease, transform 200ms ease, box-shadow 200ms ease;
+}
+
+.sponsored-banner__cta:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.3);
+}
+
+.sponsored-banner__dots {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 14px;
+  display: flex;
+  gap: 8px;
+  z-index: 3;
+  pointer-events: auto;
+}
+
+.sponsored-banner__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.45);
+  border: none;
+  cursor: pointer;
+}
+
+.sponsored-banner__dot.is-active {
+  background: #fff;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sponsored-banner__slides { height: 330px; }
+  .sponsored-banner__title { font-size: 30px; }
+  .sponsored-banner__subtitle { font-size: 14px; }
+}
+
+/* Active state: fade/slide in content with stagger */
+.sponsored-banner__slide.is-active .sponsored-banner__content {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 120ms;
+}
+
+/* Stagger child elements for a more refined entrance */
+.sponsored-banner__kicker,
+.sponsored-banner__title,
+.sponsored-banner__subtitle,
+.sponsored-banner__cta {
+  opacity: 0;
+  transform: translate3d(0, 10px, 0);
+  transition: opacity 480ms ease, transform 540ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.sponsored-banner__slide.is-active .sponsored-banner__kicker {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 160ms;
+}
+.sponsored-banner__slide.is-active .sponsored-banner__title {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 220ms;
+}
+.sponsored-banner__slide.is-active .sponsored-banner__subtitle {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 280ms;
+}
+.sponsored-banner__slide.is-active .sponsored-banner__cta {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 340ms;
+}
+
+/* Accessibility: reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  .sponsored-banner__slide { transition: none; }
+}
