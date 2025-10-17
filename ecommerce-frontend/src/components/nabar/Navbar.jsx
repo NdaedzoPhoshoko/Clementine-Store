@@ -1,12 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import "./navbar.css";
 
 const Navbar = () => {
+  const [activeMenu, setActiveMenu] = useState(null);
   return (
     <nav className="nav-bar" role="navigation" aria-label="Main navigation">
       <div className="nav-bar__inner">
         <div className="nav-left">
-          <a href="#" className="nav-brand" aria-label="Home">
+          <a href="/" className="nav-brand" aria-label="Home">
             <span className="nav-brand__text">Clementine</span>
           </a>
         </div>
@@ -39,135 +40,147 @@ const Navbar = () => {
           </div>
           <nav className="nav-links" aria-label="Secondary navigation">
             <div className="nav-item">
-              <a href="#home">
+              <button
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={activeMenu === "home"}
+                aria-controls="menu-home"
+                onMouseEnter={() => setActiveMenu("home")}
+                onFocus={() => setActiveMenu("home")}
+                onClick={() => {
+                  setActiveMenu((prev) => (prev === "home" ? null : "home"));
+                }}
+              >
                 Home
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-              </a>
-              <div className="nav-mega" role="menu" aria-label="Home menu">
+              </button>
+              {activeMenu === "home" && (
+              <div className="nav-mega open" role="menu" aria-label="Home menu" id="menu-home" onMouseLeave={() => setActiveMenu(null)}>
                 <div className="mega-left">
                   <h4>Start Here</h4>
                   <p>Explore highlights from across the store: seasonal picks, editor‑curated collections, and what shoppers are loving right now. This is the quickest way to discover themes, styles, and best‑selling products without needing to search.</p>
                 </div>
                 <div className="mega-right">
                   <a href="#trending" className="mega-tag">Trending Now
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="Trending Now" className="mega-tag__img" />
+                    <img src="/images/imageNoVnXXmDNi0.png" alt="Trending Now" className="mega-tag__img" loading="lazy" decoding="async" width="160" height="100" />
                   </a>
                   <a href="#new-arrivals" className="mega-tag">New Arrivals
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="New Arrivals" className="mega-tag__img" />
+                    <img src="/images/imageNoVnXXmDNi0.png" alt="New Arrivals" className="mega-tag__img" loading="lazy" decoding="async" width="160" height="100" />
                   </a>
                   <a href="#featured" className="mega-tag">Featured Collections
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="Featured Collections" className="mega-tag__img" />
+                    <img src="/images/imageNoVnXXmDNi0.png" alt="Featured Collections" className="mega-tag__img" loading="lazy" decoding="async" width="160" height="100" />
                   </a>
                   <a href="#top-rated" className="mega-tag">Top Rated
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="Top Rated" className="mega-tag__img" />
+                    <img src="/images/imageNoVnXXmDNi0.png" alt="Top Rated" className="mega-tag__img" loading="lazy" decoding="async" width="160" height="100" />
                   </a>
                   <a href="#weekly-deals" className="mega-tag">Weekly Deals
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="Weekly Deals" className="mega-tag__img" />
+                    <img src="/images/imageNoVnXXmDNi0.png" alt="Weekly Deals" className="mega-tag__img" loading="lazy" decoding="async" width="160" height="100" />
                   </a>
                   <a href="#gift-ideas" className="mega-tag">Gift Ideas
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="Gift Ideas" className="mega-tag__img" />
+                    <img src="/images/imageNoVnXXmDNi0.png" alt="Gift Ideas" className="mega-tag__img" loading="lazy" decoding="async" width="160" height="100" />
                   </a>
                 </div>
               </div>
+              )}
             </div>
 
             <div className="nav-item">
-              <a href="#all">
+              <button
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={activeMenu === "all"}
+                aria-controls="menu-all"
+                onMouseEnter={() => setActiveMenu("all")}
+                onFocus={() => setActiveMenu("all")}
+                onClick={() => {
+                  setActiveMenu((prev) => (prev === "all" ? null : "all"));
+                }}
+              >
                 Shop All
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-              </a>
-              <div className="nav-mega" role="menu" aria-label="Shop All menu">
+              </button>
+              {activeMenu === "all" && (
+              <div className="nav-mega open" role="menu" aria-label="Shop All menu" id="menu-all" onMouseLeave={() => setActiveMenu(null)}>
                 <div className="mega-left">
                   <h4>All Categories</h4>
                   <p>Browse our complete catalog across departments and collections. Use categories to narrow your search and jump straight to the products and styles that match your taste, budget, and occasion.</p>
                 </div>
                 <div className="mega-right">
-                  <a href="#women" className="mega-tag">Women
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="Women" className="mega-tag__img" />
-                  </a>
-                  <a href="#men" className="mega-tag">Men
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="Men" className="mega-tag__img" />
-                  </a>
-                  <a href="#kids" className="mega-tag">Kids
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="Kids" className="mega-tag__img" />
-                  </a>
-                  <a href="#accessories" className="mega-tag">Accessories
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="Accessories" className="mega-tag__img" />
-                  </a>
-                  <a href="#beauty" className="mega-tag">Beauty
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="Beauty" className="mega-tag__img" />
-                  </a>
-                  <a href="#home-living" className="mega-tag">Home & Living
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="Home & Living" className="mega-tag__img" />
-                  </a>
+                  <a href="#women" className="mega-tag">Women</a>
+                  <a href="#men" className="mega-tag">Men</a>
+                  <a href="#kids" className="mega-tag">Kids</a>
+                  <a href="#accessories" className="mega-tag">Accessories</a>
+                  <a href="#beauty" className="mega-tag">Beauty</a>
+                  <a href="#home-living" className="mega-tag">Home & Living</a>
                 </div>
               </div>
+              )}
             </div>
 
             <div className="nav-item">
-              <a href="#us">
+              <button
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={activeMenu === "us"}
+                aria-controls="menu-us"
+                onMouseEnter={() => setActiveMenu("us")}
+                onFocus={() => setActiveMenu("us")}
+                onClick={() => {
+                  setActiveMenu((prev) => (prev === "us" ? null : "us"));
+                }}
+              >
                 About Us
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-              </a>
-              <div className="nav-mega" role="menu" aria-label="About Us menu">
+              </button>
+              {activeMenu === "us" && (
+              <div className="nav-mega open" role="menu" aria-label="About Us menu" id="menu-us" onMouseLeave={() => setActiveMenu(null)}>
                 <div className="mega-left">
                   <h4>Our Story</h4>
                   <p>We craft quality products with care and purpose. Learn about our mission, the team behind Clementine, and the practices that guide our design, sourcing, and sustainability commitments.</p>
                 </div>
                 <div className="mega-right">
-                  <a href="#mission" className="mega-tag">Mission
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="Mission" className="mega-tag__img" />
-                  </a>
-                  <a href="#team" className="mega-tag">Team
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="Team" className="mega-tag__img" />
-                  </a>
-                  <a href="#sustainability" className="mega-tag">Sustainability
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="Sustainability" className="mega-tag__img" />
-                  </a>
-                  <a href="#careers" className="mega-tag">Careers
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="Careers" className="mega-tag__img" />
-                  </a>
-                  <a href="#press" className="mega-tag">Press
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="Press" className="mega-tag__img" />
-                  </a>
-                  <a href="#contact" className="mega-tag">Contact
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="Contact" className="mega-tag__img" />
-                  </a>
+                  <a href="#mission" className="mega-tag">Mission</a>
+                  <a href="#team" className="mega-tag">Team</a>
+                  <a href="#sustainability" className="mega-tag">Sustainability</a>
+                  <a href="#careers" className="mega-tag">Careers</a>
+                  <a href="#press" className="mega-tag">Press</a>
+                  <a href="#contact" className="mega-tag">Contact</a>
                 </div>
               </div>
+              )}
             </div>
 
             <div className="nav-item">
-              <a href="#support">
+              <button
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={activeMenu === "support"}
+                aria-controls="menu-support"
+                onMouseEnter={() => setActiveMenu("support")}
+                onFocus={() => setActiveMenu("support")}
+                onClick={() => {
+                  setActiveMenu((prev) => (prev === "support" ? null : "support"));
+                }}
+              >
                 Support
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-              </a>
-              <div className="nav-mega" role="menu" aria-label="Support menu">
+              </button>
+              {activeMenu === "support" && (
+              <div className="nav-mega open" role="menu" aria-label="Support menu" id="menu-support" onMouseLeave={() => setActiveMenu(null)}>
                 <div className="mega-left">
                   <h4>Help Center</h4>
                   <p>Get help with orders, shipping, returns, and account questions. Find quick answers, track your order status, or reach our support team for personalized assistance when you need it.</p>
                 </div>
                 <div className="mega-right">
-                  <a href="#faq" className="mega-tag">FAQ
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="FAQ" className="mega-tag__img" />
-                  </a>
-                  <a href="#shipping" className="mega-tag">Shipping
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="Shipping" className="mega-tag__img" />
-                  </a>
-                  <a href="#returns" className="mega-tag">Returns
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="Returns" className="mega-tag__img" />
-                  </a>
-                  <a href="#order-status" className="mega-tag">Order Status
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="Order Status" className="mega-tag__img" />
-                  </a>
-                  <a href="#contact-support" className="mega-tag">Contact Support
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="Contact Support" className="mega-tag__img" />
-                  </a>
-                  <a href="#live-chat" className="mega-tag">Live Chat
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="Live Chat" className="mega-tag__img" />
-                  </a>
+                  <a href="#faq" className="mega-tag">FAQ</a>
+                  <a href="#shipping" className="mega-tag">Shipping</a>
+                  <a href="#returns" className="mega-tag">Returns</a>
+                  <a href="#order-status" className="mega-tag">Order Status</a>
+                  <a href="#contact-support" className="mega-tag">Contact Support</a>
+                  <a href="#live-chat" className="mega-tag">Live Chat</a>
                 </div>
               </div>
+              )}
             </div>
           </nav>
         </div>

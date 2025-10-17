@@ -1,0 +1,2 @@
+for fetching trending products on the navbar use this technique on the endpoint 
+  Pre-fetch trending data, Fetch the data after the main UI loads (asynchronously). Cache the results on the backend (so you don’t hit the DB every time).
