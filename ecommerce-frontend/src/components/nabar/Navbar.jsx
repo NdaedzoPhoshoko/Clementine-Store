@@ -38,6 +38,14 @@ const Navbar = () => {
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
+  useEffect(() => {
+    const onScroll = () => {
+      setShowSearchDropdown(false);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   const commitSearch = () => {
     const q = searchQuery.trim();
     if (!q) return;
