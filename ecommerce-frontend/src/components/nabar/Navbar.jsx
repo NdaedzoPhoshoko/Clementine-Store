@@ -1,8 +1,53 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./navbar.css";
 
 const Navbar = () => {
   const [activeMenu, setActiveMenu] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [recentSearches, setRecentSearches] = useState(["Orange hoodie", "Leather wallet", "Sneakers"]);
+  const mockResults = [
+    "Orange hoodie",
+    "Summer dress",
+    "Running sneakers",
+    "Leather wallet",
+    "Smart watch",
+    "Wireless earbuds",
+    "Denim jacket",
+    "Formal shirts",
+    "Sneakers",
+    "Sneaks"
+  ];
+  const navCenterRef = useRef(null);
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setShowSearchDropdown(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  useEffect(() => {
+    const onClick = (e) => {
+      if (navCenterRef.current && !navCenterRef.current.contains(e.target)) {
+        setShowSearchDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  const commitSearch = () => {
+    const q = searchQuery.trim();
+    if (!q) return;
+    setRecentSearches((prev) => {
+      const next = [q, ...prev.filter((s) => s.toLowerCase() !== q.toLowerCase())];
+      return next.slice(0, 3);
+    });
+    setShowSearchDropdown(false);
+  };
+
   return (
     <nav className="nav-bar" role="navigation" aria-label="Main navigation">
       <div className="nav-bar__inner">
@@ -12,15 +57,24 @@ const Navbar = () => {
           </a>
         </div>
 
-        <div className="nav-center">
+        <div className="nav-center" ref={navCenterRef}>
           <div className="nav-search">
             <input
               type="text"
               className="nav-search__input"
               placeholder="What are you looking for?"
               aria-label="Search"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowSearchDropdown(true);
+              }}
+              onFocus={() => setShowSearchDropdown(true)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commitSearch();
+              }}
             />
-            <button className="nav-search__btn" aria-label="Search">
+            <button className="nav-search__btn" aria-label="Search" onMouseDown={commitSearch}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
@@ -37,6 +91,54 @@ const Navbar = () => {
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
             </button>
+            {showSearchDropdown && (
+              <div className="search-dropdown" role="listbox" aria-label="Search suggestions">
+                <div className="search-section" aria-label="Recent searches">
+                  <div className="search-section-title">Recent searches</div>
+                  <ul className="search-list">
+                    {recentSearches.length ? (
+                      recentSearches.slice(0, 2).map((s) => (
+                        <li
+                          key={`recent-${s}`}
+                          className="search-item"
+                          onMouseDown={() => {
+                            setSearchQuery(s);
+                            setShowSearchDropdown(false);
+                          }}
+                        >
+                          {s}
+                        </li>
+                      ))
+                    ) : (
+                      <li className="search-item muted">No recent searches</li>
+                    )}
+                  </ul>
+                </div>
+                <div className="search-section" aria-label="Search results">
+                  <div className="search-section-title">Search results</div>
+                  <ul className="search-list search-list--results">
+                    {searchQuery.trim() ? (
+                      mockResults
+                        .filter((t) => t.toLowerCase().includes(searchQuery.toLowerCase()))
+                        .map((t) => (
+                          <li
+                            key={`result-${t}`}
+                            className="search-item"
+                            onMouseDown={() => {
+                              setSearchQuery(t);
+                              setShowSearchDropdown(false);
+                            }}
+                          >
+                            {t}
+                          </li>
+                        ))
+                    ) : (
+                      <li className="search-item muted">Start typing to see results</li>
+                    )}
+                  </ul>
+                </div>
+              </div>
+            )}
           </div>
           <nav className="nav-links" aria-label="Secondary navigation">
             <div className="nav-item">
