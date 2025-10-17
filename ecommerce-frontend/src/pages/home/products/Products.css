@@ -1,0 +1,46 @@
+.home-products {
+  width: 100%;
+  box-sizing: border-box;
+  padding-inline: 20px;
+  margin: 24px 0;
+}
+
+.home-products__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.home-products__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
+.home-products__more {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.home-products__more-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  font-weight: 600;
+  color: var(--palette-primary, #ff7b38);
+}
+
+.home-products__more-link:focus {
+  outline: 2px solid var(--palette-primary, #ff7b38);
+  outline-offset: 3px;
+}
+
+@media (max-width: 640px) {
+  .home-products { padding: 12px; margin: 16px 0; }
+  .home-products__title { font-size: 18px; }
+}

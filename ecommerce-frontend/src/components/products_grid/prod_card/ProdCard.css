@@ -1,0 +1,107 @@
+.prod-card {
+  --prod-card-media-h: 240px;
+  --prod-card-height: 380px;
+  display: grid;
+  grid-template-rows: var(--prod-card-media-h) 1fr; /* fixed media, flexible body */
+  width: 100%;
+  height: var(--prod-card-height); /* uniform card height across grid */
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  overflow: hidden; /* prevent any child from overlapping */
+  box-shadow: var(--shadow-soft);
+  transition: none;
+}
+
+.prod-card:hover { 
+  transform: none;
+  box-shadow: var(--shadow-soft);
+}
+
+/* Media (image) area */
+.prod-card__media {
+  position: relative;
+  height: var(--prod-card-media-h);
+  background: var(--color-bg);
+  overflow: hidden; /* ensure image always stays inside fixed area */
+}
+
+.prod-card__img {
+  display: block;
+  width: 100%;
+  height: 100%; /* fill the fixed media height */
+  object-fit: cover; /* fill width+height uniformly; crop overflow */
+  object-position: center; 
+  background: var(--color-bg);
+}
+
+/* Add to cart button in top-right over image */
+.prod-card__add {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+  transition: none;
+  z-index: 2;
+}
+
+.prod-card__add:hover { 
+  transform: none;
+  filter: none;
+}
+
+/* Content area */
+.prod-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px 10px;
+  min-height: 0; /* allow content clamping inside fixed card height */
+}
+
+.prod-card__name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* clamp to 2 lines for uniform cards */
+  -webkit-box-orient: vertical;
+  line-height: 1.25;
+}
+
+.prod-card__desc {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-muted);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* clamp to 2 lines for uniform cards */
+  -webkit-box-orient: vertical;
+  line-height: 1.25;
+}
+
+.prod-card__price {
+  margin-top: 4px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--palette-primary, #ff7b38);
+}
+
+@media (max-width: 640px) {
+  .prod-card { 
+    --prod-card-media-h: 200px; 
+    --prod-card-height: 330px; /* keep a consistent height on small screens */
+  }
+}
