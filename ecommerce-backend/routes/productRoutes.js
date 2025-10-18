@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { listProducts, getProductById, getProductReviews, createProduct, updateProduct, deleteProduct, uploadProductImage, deleteProductImage, deleteAllProductImages } from "../controllers/productController.js";
+import { listProducts, getProductById, getProductReviews, createProduct, updateProduct, deleteProduct, uploadProductImage, deleteProductImage, deleteAllProductImages, getLatestProducts } from "../controllers/productController.js";
 import { protect, requireAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -108,31 +108,29 @@ router.get("/", listProducts);
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required:
  *               - name
  *               - price
+ *               - stock
+ *               - image
  *             properties:
  *               name:
  *                 type: string
- *                 example: "Handcrafted Lamp"
  *               description:
  *                 type: string
- *                 example: "A beautiful handcrafted lamp made of wood."
  *               price:
  *                 type: number
- *                 example: 299.99
- *               image_url:
+ *               image:
  *                 type: string
- *                 example: "https://example.com/images/lamp.jpg"
+ *                 format: binary
  *               stock:
  *                 type: integer
- *                 example: 10
  *               category_id:
  *                 type: integer
- *                 example: 3
+ *                 nullable: true
  *     responses:
  *       201:
  *         description: Product created
@@ -152,13 +150,13 @@ router.get("/", listProducts);
  *                     stock: { type: integer }
  *                     category_id: { type: integer }
  *       400:
- *         description: Invalid input (name, price, or stock)
+ *         description: Invalid input (name, price, stock) or missing image
  *       404:
  *         description: Category not found
  *       500:
  *         description: Server error while creating product
  */
-router.post("/", protect, requireAdmin, createProduct);
+router.post("/", protect, requireAdmin, upload.single("image"), createProduct);
 
 /**
  * @swagger
@@ -486,6 +484,7 @@ router.delete("/:id/images", protect, requireAdmin, deleteAllProductImages);
  *                     reviewCount:
  *                       type: integer
  */
+router.get("/new", getLatestProducts);
 router.get("/:id", getProductById);
 
 /**
@@ -544,4 +543,27 @@ router.get("/:id", getProductById);
  */
 router.get("/:id/reviews", getProductReviews);
 
+/**
+ * @swagger
+ * /api/products/new:
+ *   get:
+ *     summary: Get the latest 20 products
+ *     tags:
+ *       - Products & Categories
+ *     responses:
+ *       200:
+ *         description: Latest products
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id: { type: integer }
+ *                   image_url: { type: string }
+ *                   name: { type: string }
+ *                   description: { type: string }
+ *                   price: { type: number }
+ */
 export default router;

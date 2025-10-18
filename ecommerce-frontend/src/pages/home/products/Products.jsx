@@ -2,7 +2,7 @@ import React from "react";
 import "./Products.css";
 import ProdGrid from "../../../components/products_grid/ProdGrid";
 
-export default function Products({ title = "Featured Products", products = [], onAddToCart = () => {} }) {
+export default function Products({ title = "Find Products", products = [], onAddToCart = () => {} }) {
   return (
     <section className="home-products" aria-label={title}>
       <div className="home-products__header">

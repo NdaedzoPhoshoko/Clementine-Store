@@ -193,7 +193,7 @@ export const getProductReviews = async (req, res) => {
 
 export const createProduct = async (req, res) => {
   try {
-    const { name, description, price, image_url, stock, category_id } = req.body || {};
+    const { name, description, price, stock, category_id } = req.body || {};
 
     const trimmedName = typeof name === "string" ? name.trim() : "";
     const priceNum = parseFloat(price);
@@ -217,6 +217,26 @@ export const createProduct = async (req, res) => {
       }
     }
 
+    // Require an image file and upload it to Cloudinary
+    let primaryImageUrl = null;
+    let publicId = null;
+    if (req.file && req.file.buffer) {
+      const result = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: "products", resource_type: "image" },
+          (err, res) => (err ? reject(err) : resolve(res))
+        );
+        stream.end(req.file.buffer);
+      });
+      primaryImageUrl = result?.secure_url || null;
+      publicId = result?.public_id || null;
+      if (!primaryImageUrl) {
+        return res.status(500).json({ message: "Upload failed: no URL returned" });
+      }
+    } else {
+      return res.status(400).json({ message: "Image file is required under 'image' field" });
+    }
+
     const insertQuery = `
       INSERT INTO products (name, description, price, image_url, stock, category_id)
       VALUES ($1, $2, $3, $4, $5, $6)
@@ -226,12 +246,18 @@ export const createProduct = async (req, res) => {
       trimmedName,
       description || null,
       priceNum,
-      image_url || null,
+      primaryImageUrl,
       stockNum,
       categoryIdNum,
     ];
     const result = await pool.query(insertQuery, insertParams);
     const product = result.rows[0];
+
+    // Track uploaded image in product_images table
+    await pool.query(
+      "INSERT INTO product_images (product_id, image_url, public_id) VALUES ($1, $2, $3)",
+      [product.id, primaryImageUrl, publicId]
+    );
 
     return res.status(201).json({ product });
   } catch (err) {
@@ -622,5 +648,17 @@ export const deleteAllProductImages = async (req, res) => {
   } catch (err) {
     console.error("Delete all product images error:", err.message);
     return res.status(500).json({ message: "Error deleting all product images" });
+  }
+};
+
+export const getLatestProducts = async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT id, image_url, name, description, price FROM products ORDER BY id DESC LIMIT 20"
+    );
+    return res.status(200).json(result.rows);
+  } catch (err) {
+    console.error("Get latest products error:", err.message);
+    return res.status(500).json({ message: "Error fetching latest products" });
   }
 };
