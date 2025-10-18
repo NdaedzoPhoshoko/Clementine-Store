@@ -3,13 +3,17 @@
   box-sizing: border-box;
   padding-inline: 34px;
   margin: 24px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
 }
 
 .home-products__header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   margin-bottom: 16px;
+  gap: 24px;
 }
 
 .home-products__title {
@@ -33,11 +37,20 @@
   text-decoration: none;
   font-weight: 600;
   color: var(--palette-primary, #ff7b38);
+  border: none;
 }
 
-.home-products__more-link:focus {
-  outline: 2px solid var(--palette-primary, #ff7b38);
-  outline-offset: 3px;
+.home-products__more-link:hover,
+.home-products__more-link:focus,
+.home-products__more-link:active {
+  border: none;
+  outline: none;
+}
+
+.home-products .prod-grid__list {
+  /* Two rows of fixed-height cards (350px) plus one row gap (16px) */
+  max-height: calc(350px * 2 + 16px);
+  overflow: hidden;
 }
 
 @media (max-width: 640px) {

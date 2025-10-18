@@ -20,6 +20,9 @@ export default function ProdCard({
     return val || "";
   };
 
+  const displayName = typeof name === "string"
+    ? (name.length > 20 ? name.slice(0, 23) + '...' : name)
+    : "";
   const priceDisplay = `${currency} ${formatPrice(price)}`;
 
   const to = id ? `/product/${id}` : `/product/${encodeURIComponent((name || "view").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""))}`;
@@ -34,7 +37,7 @@ export default function ProdCard({
   return (
     <article
       className="prod-card"
-      aria-label={`${name} — ${priceDisplay}`}
+      aria-label={`${displayName} — ${priceDisplay}`}
       onClick={handleView}
       tabIndex={0}
       onKeyDown={handleKeyDown}
@@ -42,7 +45,7 @@ export default function ProdCard({
     >
       <div className="prod-card__media">
         {/* Using img so product is not cropped; object-fit: contain preserves full product */}
-        <img className="prod-card__img" src={imageUrl} alt={name} loading="lazy" />
+        <img className="prod-card__img" src={imageUrl} alt={displayName} loading="lazy" />
         <button
           className="prod-card__add"
           type="button"
@@ -58,7 +61,7 @@ export default function ProdCard({
       </div>
 
       <div className="prod-card__body">
-        <h3 className="prod-card__name">{name}</h3>
+        <h3 className="prod-card__name">{displayName}</h3>
         <p className="prod-card__desc">{description}</p>
         <div className="prod-card__price" aria-label={`Price ${priceDisplay}`}>{priceDisplay}</div>
       </div>

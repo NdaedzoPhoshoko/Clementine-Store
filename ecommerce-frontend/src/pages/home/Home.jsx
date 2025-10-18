@@ -1,120 +1,40 @@
 
+import { useEffect } from 'react';
 import './Home.css';
 import SponsoredBanner from './sponsored_banner/SponsoredBanner.jsx';
 import Products from './products/Products.jsx';
+import useFetchNewProducts from '../../hooks/useFetchNewProducts.js';
 
 export default function Home() {
-  // Temporary demo data; replace with real data when API is wired
-  const demoProducts = [
-    {
-      id: 1,
-      image_url: '/images/sponsored/keagan-henman-xPJYL0l5Ii8-unsplash.jpg',
-      name: 'Ru Sandal - Choc',
-      description: 'Leather sandal with dual buckle straps.',
-      price: 1495,
-    },
-    {
-      id: 2,
-      image_url: '/images/sponsored/no-revisions-kWVImL5QxJI-unsplash.jpg',
-      name: 'Canvas Tote — Natural',
-      description: 'Everyday carry-all with reinforced seams.',
-      price: 399,
-    },
-    {
-      id: 3,
-      image_url: '/images/sponsored/kaboompics_sporty-fashion-photography-blue-sneakers-and-tennis-vibes-40270.jpg',
-      name: 'Court Sneaker — Blue',
-      description: 'Sporty silhouette with cushioned insole.',
-      price: 1199,
-    },
-    {
-      id: 4,
-      image_url: '/images/sponsored/xuan-thu-le-2OXNxfTt3kQ-unsplash.jpg',
-      name: 'Glow Serum 30ml',
-      description: 'Vitamin-rich serum for daily radiance.',
-      price: 249,
-    },
-    {
-      id: 5,
-      image_url: '/images/sponsored/keagan-henman-xPJYL0l5Ii8-unsplash.jpg',
-      name: 'Ru Sandal - Choc',
-      description: 'Leather sandal with dual buckle straps.',
-      price: 1495,
-    },
-    {
-      id: 6,
-      image_url: '/images/sponsored/no-revisions-kWVImL5QxJI-unsplash.jpg',
-      name: 'Canvas Tote — Natural',
-      description: 'Everyday carry-all with reinforced seams.',
-      price: 399,
-    },
-    {
-      id: 7,
-      image_url: '/images/sponsored/kaboompics_sporty-fashion-photography-blue-sneakers-and-tennis-vibes-40270.jpg',
-      name: 'Court Sneaker — Blue',
-      description: 'Sporty silhouette with cushioned insole.',
-      price: 1199,
-    },
-    {
-      id: 8,
-      image_url: '/images/sponsored/xuan-thu-le-2OXNxfTt3kQ-unsplash.jpg',
-      name: 'Glow Serum 30ml',
-      description: 'Vitamin-rich serum for daily radiance.',
-      price: 249,
-    },
-    {
-      id: 9,
-      image_url: '/images/sponsored/keagan-henman-xPJYL0l5Ii8-unsplash.jpg',
-      name: 'Ru Sandal - Choc',
-      description: 'Leather sandal with dual buckle straps.',
-      price: 1495,
-    },
-    {
-      id: 10,
-      image_url: '/images/sponsored/no-revisions-kWVImL5QxJI-unsplash.jpg',
-      name: 'Canvas Tote — Natural',
-      description: 'Everyday carry-all with reinforced seams.',
-      price: 399,
-    },
-    {
-      id: 11,
-      image_url: '/images/sponsored/kaboompics_sporty-fashion-photography-blue-sneakers-and-tennis-vibes-40270.jpg',
-      name: 'Court Sneaker — Blue',
-      description: 'Sporty silhouette with cushioned insole.',
-      price: 1199,
-    },
-    {
-      id: 12,
-      image_url: '/images/sponsored/xuan-thu-le-2OXNxfTt3kQ-unsplash.jpg',
-      name: 'Glow Serum 30ml',
-      description: 'Vitamin-rich serum for daily radiance.',
-      price: 249,
-    },
-    {
-      id: 13,
-      image_url: '/images/sponsored/keagan-henman-xPJYL0l5Ii8-unsplash.jpg',
-      name: 'Ru Sandal - Choc',
-      description: 'Leather sandal with dual buckle straps.',
-      price: 1495,
-    },
-    {
-      id: 14,
-      image_url: '/images/sponsored/no-revisions-kWVImL5QxJI-unsplash.jpg',
-      name: 'Canvas Tote — Natural',
-      description: 'Everyday carry-all with reinforced seams.',
-      price: 399,
-    },
-  ];
+  const { products: latestProducts, loading: latestLoading, error: latestError } = useFetchNewProducts();
+  // Log only errors (do not show errors in the UI)
+  useEffect(() => {
+    if (latestError) {
+      console.error('[Home] Failed to load new products:', latestError);
+    }
+  }, [latestError]);
 
   const handleAddToCart = (product) => {
     // TODO: wire into cart state/API; currently just logs for demo
     console.log('Add to cart:', product);
   };
-
+  // Build grid products from live data when available; fall back to demo
+  const coerceProduct = (p) => ({
+    id: p.id,
+    image_url: typeof p.image_url === 'string' ? p.image_url : '',
+    name: typeof p.name === 'string' ? p.name : String(p.name ?? ''),
+    description: typeof p.description === 'string' ? p.description : String(p.description ?? ''),
+    price:
+      typeof p.price === 'number'
+        ? p.price
+        : parseFloat(String(p.price).replace(/[^0-9.]/g, '')) || 0,
+  });
+  const sourceProducts = Array.isArray(latestProducts) ? latestProducts : [];
+  const gridProducts = sourceProducts.map(coerceProduct);
   return (
     <div className="home__container">
       <SponsoredBanner />
-      <Products title="New Products" products={demoProducts} onAddToCart={handleAddToCart} />
+      <Products title="New Products" products={gridProducts} onAddToCart={handleAddToCart} />
       <section className="home__company" aria-label="Company information" /*style={{display:'none'}*/>
         <div className="home__company-inner">
           <h2 className="home__company-title">About Clementine</h2>

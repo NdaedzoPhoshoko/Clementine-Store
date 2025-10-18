@@ -20,7 +20,14 @@ import inventoryRoutes from "./routes/inventoryRoutes.js";
 dotenv.config();
 const app = express();
 
-app.use(cors({ origin: process.env.CORS_ORIGIN || "http://localhost:3000", credentials: true }));
+const allowedOrigins = [
+  process.env.CORS_ORIGIN || "http://localhost:5173",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:3000",
+];
+
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
