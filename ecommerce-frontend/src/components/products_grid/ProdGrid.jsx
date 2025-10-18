@@ -20,6 +20,7 @@ export default function ProdGrid({
           {products.map((p, i) => (
             <div role="listitem" key={p.id ?? `${p.name}-${i}`} className="prod-grid__item">
               <ProdCard
+                id={p.id}
                 imageUrl={p.image_url}
                 name={p.name}
                 description={p.description}

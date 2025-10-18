@@ -3,20 +3,26 @@ import './App.css'
 import Navbar from './components/nabar/Navbar'
 import Footer from './components/footer/Footer'
 import Home from './pages/home/Home'
-
-
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 
 function App() {
-
   return (
-    <div className="app-shell">
-      <Navbar />
-      <main className="app-content">
-        {/* Page content will render here */}
-        <Home />
-      </main>
-      <Footer />
-    </div>
+    <BrowserRouter>
+      <div className="app-shell">
+        <Navbar />
+        <main className="app-content">
+          {/* Routing scaffold; add real pages later */}
+          <Routes>
+            <Route path="/" element={<Home />} />
+            {/* Placeholder route for product pages until you add the page */}
+            <Route path="/product/:id" element={<Home />} />
+            {/* Fallback to home */}
+            <Route path="*" element={<Home />} />
+          </Routes>
+        </main>
+        <Footer />
+      </div>
+    </BrowserRouter>
   )
 }
 

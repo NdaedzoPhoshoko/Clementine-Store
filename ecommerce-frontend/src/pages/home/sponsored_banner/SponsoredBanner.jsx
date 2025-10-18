@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "./SponsoredBanner.css";
 
 export default function SponsoredBanner() {
@@ -9,6 +9,7 @@ export default function SponsoredBanner() {
       subtitle: "Discover exclusive drops curated for your cart.",
       image: "/images/sponsored/eye-speak-CGyur4w8qKo-unsplash.jpg",
       cta: "Shop New Arrivals",
+      kicker: "Sponsored",
     },
     {
       id: 2,
@@ -16,6 +17,7 @@ export default function SponsoredBanner() {
       subtitle: "Up to 60% off top categories. Limited time.",
       image: "/images/sponsored/force-majeure-00tlC0Clfrs-unsplash.jpg",
       cta: "Browse Deals",
+      kicker: "Sponsored",
     },
     {
       id: 3,
@@ -23,6 +25,7 @@ export default function SponsoredBanner() {
       subtitle: "Fresh colorways and iconic silhouettes. Limited pairs.",
       image: "/images/sponsored/kaboompics_sporty-fashion-photography-blue-sneakers-and-tennis-vibes-40270.jpg",
       cta: "Shop Sneaker Picks",
+      kicker: "Sponsored",
     },
     {
       id: 4,
@@ -30,6 +33,7 @@ export default function SponsoredBanner() {
       subtitle: "Everyday fits from top brands. Your style, your way.",
       image: "/images/sponsored/keagan-henman-xPJYL0l5Ii8-unsplash.jpg",
       cta: "Explore Streetwear",
+      kicker: "Sponsored",
     },
     {
       id: 5,
@@ -37,6 +41,7 @@ export default function SponsoredBanner() {
       subtitle: "Elevate your everyday with curated lifestyle picks.",
       image: "/images/sponsored/xuan-thu-le-2OXNxfTt3kQ-unsplash.jpg",
       cta: "Discover Lifestyle",
+      kicker: "Sponsored",
     },
     {
       id: 6,
@@ -44,11 +49,20 @@ export default function SponsoredBanner() {
       subtitle: "Zero hassle on every order. Shop with confidence.",
       image: "/images/sponsored/no-revisions-kWVImL5QxJI-unsplash.jpg",
       cta: "Start Shopping",
+      kicker: "Sponsored",
     },
   ];
-
-  const [index, setIndex] = useState(-1);
+  const [index, setIndex] = useState(0);
   const timerRef = useRef(null);
+
+  // Preload images to avoid flicker on Edge
+  useEffect(() => {
+    slides.forEach((s) => {
+      const img = new Image();
+      img.src = s.image;
+    });
+    // no cleanup needed
+  }, []);
 
   useEffect(() => {
     // kick off first slide after mount to allow CSS transitions
@@ -66,49 +80,58 @@ export default function SponsoredBanner() {
   const restartAutoplay = () => {
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
-      setIndex((i) => (i + 1) % slides.length);
+      setIndex((prev) => (prev + 1) % slides.length);
     }, 5000);
+  };
+  const pauseAutoplay = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
   };
 
   const goto = (i) => {
+    if (i === index) return;
     setIndex(i);
     restartAutoplay();
   };
 
   return (
-    <section className="sponsored-banner" aria-label="Sponsored banners">
+    <section
+      className="sponsored-banner"
+      aria-label="Sponsored banners"
+    >
       <div className="sponsored-banner__slides">
         {slides.map((s, i) => (
           <div
             key={s.id}
             className={`sponsored-banner__slide ${i === index ? "is-active" : ""}`}
             style={{
-              backgroundImage: `linear-gradient(0deg, rgba(0,0,0,0.35), rgba(0,0,0,0.35)), url('${s.image}')`,
+              backgroundImage: `url('${s.image}')`,
             }}
             role="img"
-            aria-label={`${s.title} — ${s.subtitle}`}
+            aria-label={s.title}
           >
             <div className="sponsored-banner__content">
-              <div className="sponsored-banner__kicker">Sponsored</div>
-              <h2 className="sponsored-banner__title">{s.title}</h2>
+              <div className="sponsored-banner__kicker">{s.kicker}</div>
+              <h3 className="sponsored-banner__title">{s.title}</h3>
               <p className="sponsored-banner__subtitle">{s.subtitle}</p>
               <button className="sponsored-banner__cta" type="button">
-                {s.cta}
+                {s.cta} <span aria-hidden>›</span>
               </button>
             </div>
           </div>
         ))}
       </div>
-
-      <div className="sponsored-banner__dots" role="tablist" aria-label="Slide selector">
+      <div className="sponsored-banner__dots" role="tablist" aria-label="Slide navigation">
         {slides.map((s, i) => (
           <button
-            key={s.id}
+            key={`dot-${s.id}`}
             className={`sponsored-banner__dot ${i === index ? "is-active" : ""}`}
-            aria-selected={i === index}
             onClick={() => goto(i)}
             aria-label={`Go to slide ${i + 1}`}
-            type="button"
+            role="tab"
+            aria-selected={i === index}
           />
         ))}
       </div>

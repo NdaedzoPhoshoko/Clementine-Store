@@ -4,6 +4,8 @@
   overflow: hidden;
   border-radius: 0;
   background: #0f0f10;
+  isolation: isolate;
+  contain: paint;
 }
 
 .sponsored-banner__slides {
@@ -17,8 +19,10 @@
   background-size: cover;
   background-position: center 20%;
   opacity: 0;
-  transform: translateX(10px) scale(1.02);
-  transition: opacity 600ms ease, transform 600ms ease;
+  transform: none;
+  transition: opacity 240ms ease;
+  will-change: opacity;
+  backface-visibility: hidden;
 }
 
 .sponsored-banner__slide.is-active {
@@ -103,6 +107,8 @@
   z-index: 3;
   pointer-events: auto;
 }
+/* Flex gap fallback for older Edge: add margin between dots */
+.sponsored-banner__dot + .sponsored-banner__dot { margin-left: 8px; }
 
 .sponsored-banner__dot {
   width: 8px;
@@ -111,10 +117,21 @@
   background: rgba(255,255,255,0.45);
   border: none;
   cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0;
+  box-sizing: border-box;
+  line-height: 0;
+  display: inline-block;
+  touch-action: manipulation;
+  user-select: none;
 }
+.sponsored-banner__dot.is-active { background: #fff; }
 
-.sponsored-banner__dot.is-active {
-  background: #fff;
+/* Accessible focus ring */
+.sponsored-banner__dot:focus-visible {
+  outline: 2px solid rgba(255,255,255,0.85);
+  outline-offset: 2px;
 }
 
 /* Responsive */

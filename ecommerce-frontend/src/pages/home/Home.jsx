@@ -114,7 +114,8 @@ export default function Home() {
   return (
     <div className="home__container">
       <SponsoredBanner />
-      <section className="home__company" aria-label="Company information">
+      <Products title="Featured Products" products={demoProducts} onAddToCart={handleAddToCart} />
+      <section className="home__company" aria-label="Company information" /*style={{display:'none'}*/>
         <div className="home__company-inner">
           <h2 className="home__company-title">About Clementine</h2>
           <div className="home__company-grid">
@@ -137,8 +138,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-      
-      <Products title="Featured Products" products={demoProducts} onAddToCart={handleAddToCart} />
     </div>
   );
 }
