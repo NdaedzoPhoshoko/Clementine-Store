@@ -4,6 +4,7 @@ import './Home.css';
 import SponsoredBanner from './sponsored_banner/SponsoredBanner.jsx';
 import Products from './products/Products.jsx';
 import useFetchNewProducts from '../../hooks/useFetchNewProducts.js';
+import Categories from './categories/Categories.jsx'
 
 export default function Home() {
   const { products: latestProducts, loading: latestLoading, error: latestError } = useFetchNewProducts();
@@ -34,6 +35,7 @@ export default function Home() {
   return (
     <div className="home__container">
       <SponsoredBanner />
+      <Categories />
       <Products title="New Products" products={gridProducts} onAddToCart={handleAddToCart} />
       <section className="home__company" aria-label="Company information" /*style={{display:'none'}*/>
         <div className="home__company-inner">

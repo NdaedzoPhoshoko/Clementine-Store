@@ -16,6 +16,7 @@ import shippingRoutes from "./routes/shippingRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import inventoryRoutes from "./routes/inventoryRoutes.js";
+// Removed duplicate endpoint import
 
 dotenv.config();
 const app = express();
@@ -43,6 +44,8 @@ app.use("/api/shipping-details", shippingRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/inventory-logs", inventoryRoutes);
+
+// Removed duplicate categoriesWithImages endpoint and its Swagger block
 
 // Swagger Docs
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));

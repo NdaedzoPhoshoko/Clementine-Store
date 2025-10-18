@@ -141,21 +141,23 @@ export const listCategories = async (req, res) => {
 
     if (search) {
       params.push(`%${search}%`);
-      whereClauses.push(`(name ILIKE $${params.length} OR description ILIKE $${params.length})`);
+      const idx = params.length;
+      // alias c for categories to avoid ambiguity
+      whereClauses.push(`(c.name ILIKE $${idx} OR c.description ILIKE $${idx})`);
     }
 
     const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
 
-    const countQuery = `SELECT COUNT(*) AS total FROM categories ${whereSql}`;
+    const countQuery = `SELECT COUNT(*) AS total FROM categories c ${whereSql}`;
     const countResult = await pool.query(countQuery, params);
     const total = parseInt(countResult.rows[0]?.total || 0, 10);
 
     const itemsParams = [...params, limitNum, offset];
     const itemsQuery = `
-      SELECT id, name, description
-      FROM categories
+      SELECT c.id, c.name, c.description
+      FROM categories c
       ${whereSql}
-      ORDER BY id DESC
+      ORDER BY c.id DESC
       LIMIT $${itemsParams.length - 1} OFFSET $${itemsParams.length}
     `;
     const itemsResult = await pool.query(itemsQuery, itemsParams);
@@ -172,6 +174,72 @@ export const listCategories = async (req, res) => {
   } catch (err) {
     console.error("List categories error:", err.message);
     return res.status(500).json({ message: "Error fetching categories" });
+  }
+};
+
+export const listCategoriesWithImages = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search } = req.query;
+    const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+    const limitNum = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 100);
+    const offset = (pageNum - 1) * limitNum;
+
+    const whereClauses = [];
+    const params = [];
+
+    if (search) {
+      params.push(`%${search}%`);
+      // alias c for categories to avoid ambiguity
+      whereClauses.push(`(c.name ILIKE $${params.length} OR c.description ILIKE $${params.length})`);
+    }
+
+    const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
+
+    const countQuery = `SELECT COUNT(*) AS total FROM categories c ${whereSql}`;
+    const countResult = await pool.query(countQuery, params);
+    const total = parseInt(countResult.rows[0]?.total || 0, 10);
+
+    const itemsParams = [...params, limitNum, offset];
+    const itemsQuery = `
+      SELECT
+        c.id,
+        c.name,
+        c.description,
+        COALESCE(pi.image_url, pl.image_url, '') AS image
+      FROM categories c
+      ${whereSql}
+      LEFT JOIN LATERAL (
+        SELECT p.image_url
+        FROM products p
+        WHERE p.category_id = c.id AND p.image_url IS NOT NULL
+        ORDER BY p.id DESC
+        LIMIT 1
+      ) pl ON true
+      LEFT JOIN LATERAL (
+        SELECT pi.image_url
+        FROM product_images pi
+        JOIN products p2 ON p2.id = pi.product_id
+        WHERE p2.category_id = c.id
+        ORDER BY pi.id DESC
+        LIMIT 1
+      ) pi ON true
+      ORDER BY c.id DESC
+      LIMIT $${itemsParams.length - 1} OFFSET $${itemsParams.length}
+    `;
+    const itemsResult = await pool.query(itemsQuery, itemsParams);
+    const items = itemsResult.rows;
+
+    const pages = Math.max(Math.ceil(total / limitNum), 1);
+    const hasNext = pageNum < pages;
+    const hasPrev = pageNum > 1;
+
+    return res.status(200).json({
+      items,
+      meta: { page: pageNum, limit: limitNum, total, pages, hasNext, hasPrev },
+    });
+  } catch (err) {
+    console.error("List categories with images error:", err.message);
+    return res.status(500).json({ message: "Error fetching categories with images" });
   }
 };
 
