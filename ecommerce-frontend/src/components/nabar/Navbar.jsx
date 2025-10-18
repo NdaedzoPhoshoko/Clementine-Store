@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./navbar.css";
+import useFetchCategoryNames from "../../hooks/useFetchCategoryNames.js";
 
 const Navbar = () => {
   const [activeMenu, setActiveMenu] = useState(null);
@@ -19,6 +20,9 @@ const Navbar = () => {
     "Sneaks"
   ];
   const navCenterRef = useRef(null);
+
+  const { names, loading: namesLoading, error: namesError } = useFetchCategoryNames({ page: 1, limit: 12 });
+  const slugify = (s) => s.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
 
   useEffect(() => {
     const onKeyDown = (e) => {
@@ -216,12 +220,26 @@ const Navbar = () => {
                   <p>Browse our complete catalog across departments and collections. Use categories to narrow your search and jump straight to the products and styles that match your taste, budget, and occasion.</p>
                 </div>
                 <div className="mega-right">
-                  <a href="#women" className="mega-tag">Women</a>
-                  <a href="#men" className="mega-tag">Men</a>
-                  <a href="#kids" className="mega-tag">Kids</a>
-                  <a href="#accessories" className="mega-tag">Accessories</a>
-                  <a href="#beauty" className="mega-tag">Beauty</a>
-                  <a href="#home-living" className="mega-tag">Home & Living</a>
+                  {namesLoading && (
+                    <>
+                      <a className="mega-tag" aria-disabled="true">...</a>
+                      <a className="mega-tag" aria-disabled="true">...</a>
+                      <a className="mega-tag" aria-disabled="true">...</a>
+                      <a className="mega-tag" aria-disabled="true">...</a>
+                      <a className="mega-tag" aria-disabled="true">...</a>
+                      <a className="mega-tag" aria-disabled="true">...</a>
+                    </>
+                  )}
+                  {!namesLoading && namesError && (
+                    <span className="mega-tag muted" role="alert">Failed to load categories</span>
+                  )}
+                  {!namesLoading && !namesError && Array.isArray(names) && names.length > 0 && (
+                    <>
+                      {names.slice(0, 12).map((n) => (
+                        <a key={n} href={`#${slugify(n)}`} className="mega-tag">{n}</a>
+                      ))}
+                    </>
+                  )}
                 </div>
               </div>
               )}
