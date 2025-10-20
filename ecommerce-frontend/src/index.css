@@ -28,11 +28,21 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-html, body {
+html {
+  /* Smooth scrolling for anchor links and programmatic scrolling */
+  scroll-behavior: smooth;
+  /* Optimize scroll performance */
+  scroll-padding-top: 80px; /* Account for fixed navbar */
+}
+
+body {
   background: var(--color-bg);
   color: var(--color-text);
   margin: 0;
   padding: 0;
+  /* Optimize rendering performance */
+  -webkit-overflow-scrolling: touch; /* iOS momentum scrolling */
+  overscroll-behavior: contain; /* Prevent scroll chaining */
 }
 
 a {

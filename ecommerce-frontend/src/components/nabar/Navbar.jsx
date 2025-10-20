@@ -33,7 +33,7 @@ const Navbar = () => {
   ];
   const [homeLoaded, setHomeLoaded] = useState({});
   const markLoaded = (key) => setHomeLoaded((prev) => ({ ...prev, [key]: true }));
-  const { names, loading: namesLoading, error: namesError } = useFetchCategoryNames({ page: 1 });
+  const { names, loading: namesLoading, error: namesError } = useFetchCategoryNames({ page: 1, limit: 40 });
   const { bucket, categories, total, loading: autoLoading, error: autoError } = useFetchAutocomplete({ q: searchQuery, limit: 16, enabled: !!searchQuery.trim() });
   const slugify = (s) => s.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
 
