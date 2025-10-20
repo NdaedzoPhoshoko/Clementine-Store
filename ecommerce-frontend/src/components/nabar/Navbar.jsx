@@ -1,28 +1,55 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./navbar.css";
 import useFetchCategoryNames from "../../hooks/useFetchCategoryNames.js";
+import useFetchAutocomplete from "../../hooks/useFetchAutocomplete.js";
 
 const Navbar = () => {
   const [activeMenu, setActiveMenu] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [recentSearches, setRecentSearches] = useState(["Orange hoodie", "Leather wallet", "Sneakers"]);
-  const mockResults = [
-    "Orange hoodie",
-    "Summer dress",
-    "Running sneakers",
-    "Leather wallet",
-    "Smart watch",
-    "Wireless earbuds",
-    "Denim jacket",
-    "Formal shirts",
-    "Sneakers",
-    "Sneaks"
-  ];
+
   const navCenterRef = useRef(null);
 
-  const { names, loading: namesLoading, error: namesError } = useFetchCategoryNames({ page: 1, limit: 12 });
+  const { names, loading: namesLoading, error: namesError } = useFetchCategoryNames({ page: 1, limit: 16 });
+  const { bucket, categories, total, loading: autoLoading, error: autoError } = useFetchAutocomplete({ q: searchQuery, limit: 16, enabled: !!searchQuery.trim() });
   const slugify = (s) => s.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
+
+  // Recent cache load & persist
+  const RECENT_KEY = 'recent-searches:v1';
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const raw = localStorage.getItem(RECENT_KEY);
+        if (raw) {
+          const arr = JSON.parse(raw);
+          if (Array.isArray(arr)) {
+            setRecentSearches(arr.filter(Boolean).slice(0, 3));
+          }
+        }
+      }
+    } catch (e) {}
+  }, []);
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem(RECENT_KEY, JSON.stringify(recentSearches.slice(0, 3)));
+      }
+    } catch (e) {}
+  }, [recentSearches]);
+
+  const removeRecent = (s) => {
+    setRecentSearches((prev) => prev.filter((x) => x.toLowerCase() !== String(s).toLowerCase()));
+  };
+
+  // Combine matching recents (top 2) with suggestions; only show recents that match query
+  const queryLower = searchQuery.trim().toLowerCase();
+  const matchingRecents = queryLower
+    ? recentSearches.filter((r) => String(r).toLowerCase().includes(queryLower)).slice(0, 2)
+    : recentSearches.slice(0, 2);
+  const lowerRecents = new Set(matchingRecents.map((r) => String(r).toLowerCase()));
+  const filteredBucket = bucket.filter((b) => !lowerRecents.has(String(b).toLowerCase()));
+  const combinedSuggestions = [...matchingRecents, ...filteredBucket];
 
   useEffect(() => {
     const onKeyDown = (e) => {
@@ -105,47 +132,106 @@ const Navbar = () => {
             </button>
             {showSearchDropdown && (
               <div className="search-dropdown" role="listbox" aria-label="Search suggestions">
-                <div className="search-section" aria-label="Recent searches">
-                  <div className="search-section-title">Recent searches</div>
-                  <ul className="search-list">
-                    {recentSearches.length ? (
-                      recentSearches.slice(0, 2).map((s) => (
-                        <li
-                          key={`recent-${s}`}
-                          className="search-item"
-                          onMouseDown={() => {
-                            setSearchQuery(s);
-                            setShowSearchDropdown(false);
-                          }}
-                        >
-                          {s}
-                        </li>
-                      ))
-                    ) : (
-                      <li className="search-item muted">No recent searches</li>
-                    )}
-                  </ul>
-                </div>
-                <div className="search-section" aria-label="Search results">
-                  <div className="search-section-title">Search results</div>
+                <div className="search-section" aria-label="Suggestions">
+                  <div className="search-section-title">Suggestions</div>
+                  <div className="search-meta" role="status" aria-live="polite">
+                    {searchQuery.trim() ? (
+                      autoLoading ? <span>Searching...</span> : null
+                    ) : null}
+                    {autoError && <span className="search-error">Error loading</span>}
+                  </div>
                   <ul className="search-list search-list--results">
                     {searchQuery.trim() ? (
-                      mockResults
-                        .filter((t) => t.toLowerCase().includes(searchQuery.toLowerCase()))
-                        .map((t) => (
+                      autoLoading ? (
+                        <>
+                          <li className="search-item search-item--loading">...</li>
+                          <li className="search-item search-item--loading">...</li>
+                          <li className="search-item search-item--loading">...</li>
+                          <li className="search-item search-item--loading">...</li>
+                        </>
+                      ) : combinedSuggestions.length ? (
+                        combinedSuggestions.slice(0, 12).map((t) => {
+                          const isRecent = lowerRecents.has(String(t).toLowerCase());
+                          return (
+                            <li
+                              key={`suggest-${t}`}
+                              className="search-item"
+                              onMouseDown={() => {
+                                setSearchQuery(t);
+                                setShowSearchDropdown(false);
+                              }}
+                            >
+                              <span className="search-item__label">
+                                <span className="search-item__text">{t}</span>
+                                {categories && categories.some((c) => String(c).toLowerCase() === String(t).toLowerCase()) && (
+                                  <span className="search-item__badge" aria-label="Category">Category</span>
+                                )}
+                              </span>
+                              {isRecent && (
+                                <span className="search-item__actions">
+                                  <button
+                                    type="button"
+                                    className="search-item__delete"
+                                    aria-label="Remove recent"
+                                    title="Remove"
+                                    onMouseDown={(e) => {
+                                      e.stopPropagation();
+                                      removeRecent(t);
+                                    }}
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                      <polyline points="3 6 5 6 21 6" />
+                                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                                      <path d="M10 11v6" />
+                                      <path d="M14 11v6" />
+                                      <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+                                    </svg>
+                                  </button>
+                                </span>
+                              )}
+                            </li>
+                          );
+                        })
+                      ) : (
+                        <li className="search-item muted">No matches</li>
+                      )
+                    ) : (
+                      matchingRecents.length ? (
+                        matchingRecents.map((t) => (
                           <li
-                            key={`result-${t}`}
+                            key={`recent-${t}`}
                             className="search-item"
                             onMouseDown={() => {
                               setSearchQuery(t);
                               setShowSearchDropdown(false);
                             }}
                           >
-                            {t}
+                            <span className="search-item__label">{t}</span>
+                            <span className="search-item__actions">
+                              <button
+                                type="button"
+                                className="search-item__delete"
+                                aria-label="Remove recent"
+                                title="Remove"
+                                onMouseDown={(e) => {
+                                  e.stopPropagation();
+                                  removeRecent(t);
+                                }}
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                  <polyline points="3 6 5 6 21 6" />
+                                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                                  <path d="M10 11v6" />
+                                  <path d="M14 11v6" />
+                                  <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+                                </svg>
+                              </button>
+                            </span>
                           </li>
                         ))
-                    ) : (
-                      <li className="search-item muted">Start typing to see results</li>
+                      ) : (
+                        <li className="search-item muted">Start typing to see results</li>
+                      )
                     )}
                   </ul>
                 </div>

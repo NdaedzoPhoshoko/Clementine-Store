@@ -1,0 +1,4 @@
+take note:
+When i build the upload product pages i must use image compression technique using react library react-image-file-resizer.
+it is involved in front end so that every image must pass through this compression during file upload. 
+maybe let it compress images whose sizes is above 0.99mb
