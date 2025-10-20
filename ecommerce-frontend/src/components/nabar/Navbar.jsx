@@ -220,7 +220,7 @@ const Navbar = () => {
                   <p>Browse our complete catalog across departments and collections. Use categories to narrow your search and jump straight to the products and styles that match your taste, budget, and occasion.</p>
                 </div>
                 <div className="mega-right">
-                  {namesLoading && (
+                  {namesLoading ? (
                     <>
                       <a className="mega-tag" aria-disabled="true">...</a>
                       <a className="mega-tag" aria-disabled="true">...</a>
@@ -229,16 +229,14 @@ const Navbar = () => {
                       <a className="mega-tag" aria-disabled="true">...</a>
                       <a className="mega-tag" aria-disabled="true">...</a>
                     </>
-                  )}
-                  {!namesLoading && namesError && (
-                    <span className="mega-tag muted" role="alert">Failed to load categories</span>
-                  )}
-                  {!namesLoading && !namesError && Array.isArray(names) && names.length > 0 && (
+                  ) : Array.isArray(names) && names.length > 0 ? (
                     <>
                       {names.slice(0, 12).map((n) => (
                         <a key={n} href={`#${slugify(n)}`} className="mega-tag">{n}</a>
                       ))}
                     </>
+                  ) : (
+                    <span className="mega-tag muted">please refresh to show categories</span>
                   )}
                 </div>
               </div>

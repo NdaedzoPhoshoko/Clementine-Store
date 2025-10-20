@@ -1,42 +1,58 @@
 
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import './Home.css';
 import SponsoredBanner from './sponsored_banner/SponsoredBanner.jsx';
 import Products from './products/Products.jsx';
-import useFetchNewProducts from '../../hooks/useFetchNewProducts.js';
 import Categories from './categories/Categories.jsx'
+import ErrorModal from '../../components/modals/ErrorModal.jsx';
 
 export default function Home() {
-  const { products: latestProducts, loading: latestLoading, error: latestError } = useFetchNewProducts();
-  // Log only errors (do not show errors in the UI)
-  useEffect(() => {
-    if (latestError) {
-      console.error('[Home] Failed to load new products:', latestError);
-    }
-  }, [latestError]);
+  const [showError, setShowError] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const toFriendlyError = (err) => {
+    const raw = typeof err === 'string' ? err : err?.message || '';
+    const lower = raw.toLowerCase();
+    if (!raw) return 'We ran into a hiccup loading products.';
+    if (lower.includes('network') || lower.includes('fetch')) return 'We couldn’t connect to the store. Please check your internet and try again.';
+    if (lower.includes('timeout') || lower.includes('timed out')) return 'The request took too long. Please try again.';
+    if (lower.includes('not found') || lower.includes('404')) return 'Products are temporarily unavailable. Please try again later.';
+    if (lower.includes('unauthorized') || lower.includes('forbidden')) return 'Please sign in to continue.';
+    return 'Something went wrong while loading products. Please try again.';
+  };
 
   const handleAddToCart = (product) => {
-    // TODO: wire into cart state/API; currently just logs for demo
     console.log('Add to cart:', product);
   };
-  // Build grid products from live data when available; fall back to demo
-  const coerceProduct = (p) => ({
-    id: p.id,
-    image_url: typeof p.image_url === 'string' ? p.image_url : '',
-    name: typeof p.name === 'string' ? p.name : String(p.name ?? ''),
-    description: typeof p.description === 'string' ? p.description : String(p.description ?? ''),
-    price:
-      typeof p.price === 'number'
-        ? p.price
-        : parseFloat(String(p.price).replace(/[^0-9.]/g, '')) || 0,
-  });
-  const sourceProducts = Array.isArray(latestProducts) ? latestProducts : [];
-  const gridProducts = sourceProducts.map(coerceProduct);
+
+  const handleCategoryError = useCallback((err) => {
+    console.error('[Home] Failed to load categories:', err);
+    setErrorMsg(toFriendlyError(err));
+    setShowError(true);
+  }, []);
+
+  const handleProductsError = useCallback((err) => {
+    console.error('[Home] Failed to load new products:', err);
+    setErrorMsg(toFriendlyError(err));
+    setShowError(true);
+  }, []);
+
   return (
     <div className="home__container">
+      {showError && (
+        <ErrorModal
+          message={errorMsg}
+          onClose={() => setShowError(false)}
+          durationMs={12000}
+        />
+      )}
       <SponsoredBanner />
-      <Categories />
-      <Products title="New Products" products={gridProducts} onAddToCart={handleAddToCart} />
+      <Categories onError={handleCategoryError} />
+      <Products
+        title="New Products"
+        onAddToCart={handleAddToCart}
+        onError={handleProductsError}
+      />
       <section className="home__company" aria-label="Company information" /*style={{display:'none'}*/>
         <div className="home__company-inner">
           <h2 className="home__company-title">About Clementine</h2>

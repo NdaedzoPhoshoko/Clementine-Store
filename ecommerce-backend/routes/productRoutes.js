@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { listProducts, getProductById, getProductReviews, createProduct, updateProduct, deleteProduct, uploadProductImage, deleteProductImage, deleteAllProductImages, getLatestProducts } from "../controllers/productController.js";
+import { listProducts, getProductById, getProductReviews, createProduct, updateProduct, deleteProduct, uploadProductImage, deleteProductImage, deleteAllProductImages, getLatestProducts, autocompleteProductNames } from "../controllers/productController.js";
 import { protect, requireAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -469,6 +469,8 @@ router.delete("/:id/images", protect, requireAdmin, deleteAllProductImages);
  *                         type: integer
  *                       user_id:
  *                         type: integer
+ *                       user_name:
+ *                         type: string
  *                       rating:
  *                         type: integer
  *                       comment:
@@ -484,6 +486,7 @@ router.delete("/:id/images", protect, requireAdmin, deleteAllProductImages);
  *                     reviewCount:
  *                       type: integer
  */
+router.get("/autocomplete", autocompleteProductNames);
 router.get("/new", getLatestProducts);
 router.get("/:id", getProductById);
 
@@ -527,7 +530,7 @@ router.get("/:id", getProductById);
  *                       created_at:
  *                         type: string
  *                         format: date-time
- *                 stats:
+ *                 reviewStats:
  *                   type: object
  *                   properties:
  *                     averageRating:
@@ -565,5 +568,39 @@ router.get("/:id/reviews", getProductReviews);
  *                   name: { type: string }
  *                   description: { type: string }
  *                   price: { type: number }
+ */
+/**
+ * @swagger
+ * /api/products/autocomplete:
+ *   get:
+ *     summary: Autocomplete product names by prefix
+ *     tags:
+ *       - Products & Categories
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         schema:
+ *           type: string
+ *         description: Query prefix to match product names, descriptions, or category names
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Max suggestions to return (up to 50)
+ *     responses:
+ *       200:
+ *         description: Names suggestions; total counts distinct matching product names across name, description, and category name
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 names:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                 total:
+ *                   type: integer
  */
 export default router;

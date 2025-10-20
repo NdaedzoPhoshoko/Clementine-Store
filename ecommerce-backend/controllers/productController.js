@@ -662,3 +662,49 @@ export const getLatestProducts = async (req, res) => {
     return res.status(500).json({ message: "Error fetching latest products" });
   }
 };
+
+export const autocompleteProductNames = async (req, res) => {
+  try {
+    const { q = "", limit = 10 } = req.query;
+    const query = String(q).trim();
+    const limitNum = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 50);
+
+    if (!query) {
+      return res.status(200).json({ names: [], total: 0 });
+    }
+
+    // Count all matches across product names, product descriptions, and category names (not distinct)
+    const countSql = `
+      WITH matches AS (
+        SELECT p.name FROM products p WHERE LOWER(p.name) LIKE LOWER($1) || '%'
+        UNION
+        SELECT p.name FROM products p WHERE LOWER(p.description) LIKE LOWER($1) || '%'
+        UNION
+        SELECT p.name FROM products p JOIN categories c ON c.id = p.category_id WHERE LOWER(c.name) LIKE LOWER($1) || '%'
+      )
+      SELECT COUNT(*) AS total FROM matches
+    `;
+    const countRes = await pool.query(countSql, [query]);
+    const total = parseInt(countRes.rows[0]?.total || 0, 10);
+
+    const itemsSql = `
+      WITH matches AS (
+        SELECT p.name FROM products p WHERE LOWER(p.name) LIKE LOWER($1) || '%'
+        UNION
+        SELECT p.name FROM products p WHERE LOWER(p.description) LIKE LOWER($1) || '%'
+        UNION
+        SELECT p.name FROM products p JOIN categories c ON c.id = p.category_id WHERE LOWER(c.name) LIKE LOWER($1) || '%'
+      )
+      SELECT name FROM matches
+      ORDER BY name ASC
+      LIMIT $2
+    `;
+    const itemsRes = await pool.query(itemsSql, [query, limitNum]);
+    const names = itemsRes.rows.map((r) => r.name);
+
+    return res.status(200).json({ names, total });
+  } catch (err) {
+    console.error("Autocomplete product names error:", err.message);
+    return res.status(500).json({ message: "Error fetching product name suggestions" });
+  }
+};

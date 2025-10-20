@@ -1,14 +1,30 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import "./Products.css";
 import ProdGrid from "../../../components/products_grid/ProdGrid";
+import useFetchNewProducts from "../../../hooks/useFetchNewProducts.js";
 
-export default function Products({ title = "Find Products", products = [], onAddToCart = () => {} }) {
+export default function Products({ title = "Find Products", products = [], onAddToCart = () => {}, onError = () => {} }) {
+  const { products: fetchedProducts, loading, error } = useFetchNewProducts();
+
+  const lastErrMsgRef = useRef(null);
+  useEffect(() => {
+    if (error) {
+      const msg = typeof error === 'string' ? error : error?.message || String(error);
+      if (lastErrMsgRef.current !== msg) {
+        lastErrMsgRef.current = msg;
+        onError(error);
+      }
+    }
+  }, [error]);
+
+  const gridProducts = Array.isArray(fetchedProducts) && fetchedProducts.length > 0 ? fetchedProducts : products;
+
   return (
-    <section className="home-products" aria-label={title}>
+    <section className="home-products" aria-label={title} aria-busy={loading ? "true" : undefined}>
       <div className="home-products__header">
         <h2 className="home-products__title">{title}</h2>
       </div>
-      <ProdGrid products={products} onAddToCart={onAddToCart} />
+      <ProdGrid products={gridProducts} onAddToCart={onAddToCart} />
       <div className="home-products__more">
         <a href="/shop-all" className="home-products__more-link" aria-label="View all products">
           <span>View more</span>
