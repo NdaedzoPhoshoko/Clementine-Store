@@ -71,7 +71,7 @@ export default function Categories({ onError }) {
       const gap = parseInt(gapStr, 10) || 86;
       const unit = cardW + gap;
       setUnitX(unit);
-      const width = viewportEl.clientWidth || 0;
+      const width = trackEl.clientWidth || viewportEl.clientWidth || 0;
       const next = Math.max(3, Math.floor(width / unit));
       setItemsPerView(next);
     };
@@ -114,16 +114,16 @@ export default function Categories({ onError }) {
       </div>
 
       <div ref={viewportRef} className="home-categories__viewport" aria-busy={loading} aria-live="polite">
-        <div className="home-categories__track" ref={trackRef}>
-          <button
-            className="home-categories__btn home-categories__btn--prev"
-            onClick={handlePrev}
-            aria-label="Previous categories"
-            disabled={offset === 0}
-          >
-            ‹
-          </button>
+        <button
+          className="home-categories__btn home-categories__btn--prev"
+          onClick={handlePrev}
+          aria-label="Previous categories"
+          disabled={offset === 0}
+        >
+          ‹
+        </button>
 
+        <div className="home-categories__track" ref={trackRef}>
           <div className="home-categories__list" style={{ transform: `translateX(-${offset * unitX}px)` }}>
             {renderList.map((c, i) => {
               const isPh = String(c.id || '').startsWith('ph-');
@@ -132,16 +132,16 @@ export default function Categories({ onError }) {
               );
             })}
           </div>
-
-          <button
-            className="home-categories__btn home-categories__btn--next"
-            onClick={handleNext}
-            aria-label="Next categories"
-            disabled={loading && cats.length <= offset + itemsPerView}
-          >
-            ›
-          </button>
         </div>
+
+        <button
+          className="home-categories__btn home-categories__btn--next"
+          onClick={handleNext}
+          aria-label="Next categories"
+          disabled={loading && cats.length <= offset + itemsPerView}
+        >
+          ›
+        </button>
       </div>
     </section>
   )
