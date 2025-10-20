@@ -670,39 +670,60 @@ export const autocompleteProductNames = async (req, res) => {
     const limitNum = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 50);
 
     if (!query) {
-      return res.status(200).json({ names: [], total: 0 });
+      return res.status(200).json({ names: [], categories: [], total: 0 });
     }
 
-    // Count all matches across product names, product descriptions, and category names (not distinct)
-    const countSql = `
-      WITH matches AS (
-        SELECT p.name FROM products p WHERE LOWER(p.name) LIKE LOWER($1) || '%'
-        UNION
-        SELECT p.name FROM products p WHERE LOWER(p.description) LIKE LOWER($1) || '%'
-        UNION
-        SELECT p.name FROM products p JOIN categories c ON c.id = p.category_id WHERE LOWER(c.name) LIKE LOWER($1) || '%'
-      )
-      SELECT COUNT(*) AS total FROM matches
-    `;
-    const countRes = await pool.query(countSql, [query]);
-    const total = parseInt(countRes.rows[0]?.total || 0, 10);
-
-    const itemsSql = `
-      WITH matches AS (
-        SELECT p.name FROM products p WHERE LOWER(p.name) LIKE LOWER($1) || '%'
-        UNION
-        SELECT p.name FROM products p WHERE LOWER(p.description) LIKE LOWER($1) || '%'
-        UNION
-        SELECT p.name FROM products p JOIN categories c ON c.id = p.category_id WHERE LOWER(c.name) LIKE LOWER($1) || '%'
-      )
-      SELECT name FROM matches
-      ORDER BY name ASC
+    // Query for product names that match the search term anywhere in the name
+    const productSql = `
+      SELECT p.name,
+             CASE 
+               WHEN LOWER(p.name) LIKE LOWER($1) || '%' THEN 0
+               WHEN LOWER(p.name) LIKE '%' || LOWER($1) || '%' THEN 1
+               ELSE 2
+             END AS match_type
+      FROM products p
+      WHERE LOWER(p.name) LIKE '%' || LOWER($1) || '%'
+      ORDER BY match_type, p.name ASC
       LIMIT $2
     `;
-    const itemsRes = await pool.query(itemsSql, [query, limitNum]);
-    const names = itemsRes.rows.map((r) => r.name);
+    
+    // Query for category names that match the search term anywhere in the name
+    const categorySql = `
+      SELECT c.name,
+             CASE 
+               WHEN LOWER(c.name) LIKE LOWER($1) || '%' THEN 0
+               WHEN LOWER(c.name) LIKE '%' || LOWER($1) || '%' THEN 1
+               ELSE 2
+             END AS match_type
+      FROM categories c
+      WHERE LOWER(c.name) LIKE '%' || LOWER($1) || '%'
+      ORDER BY match_type, c.name ASC
+      LIMIT $2
+    `;
+    
+    // Get the count of matching products and categories
+    const countSql = `
+      SELECT 
+        (SELECT COUNT(*) FROM products p WHERE LOWER(p.name) LIKE '%' || LOWER($1) || '%') +
+        (SELECT COUNT(*) FROM categories c WHERE LOWER(c.name) LIKE '%' || LOWER($1) || '%') AS total
+    `;
+    
+    // Run all queries in parallel for better performance
+    const [productRes, categoryRes, countRes] = await Promise.all([
+      pool.query(productSql, [query, limitNum]),
+      pool.query(categorySql, [query, limitNum]),
+      pool.query(countSql, [query])
+    ]);
+    
+    const productNames = productRes.rows.map(r => r.name);
+    const categoryNames = categoryRes.rows.map(r => r.name);
+    const total = parseInt(countRes.rows[0]?.total || 0, 10);
 
-    return res.status(200).json({ names, total });
+    return res.status(200).json({ 
+      names: productNames, 
+      categories: categoryNames,
+      total 
+    });
   } catch (err) {
     console.error("Autocomplete product names error:", err.message);
     return res.status(500).json({ message: "Error fetching product name suggestions" });

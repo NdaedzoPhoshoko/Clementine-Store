@@ -138,3 +138,12 @@ CREATE INDEX idx_order_user ON orders(user_id);
 CREATE INDEX idx_payment_order ON payments(order_id);
 CREATE INDEX idx_review_product ON reviews(product_id);
 CREATE INDEX idx_product_category ON products(category_id);
+
+-- Full-text search indexes for products names, descriptions and categories
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX IF NOT EXISTS idx_products_lower_name_trgm
+  ON products USING gin ((lower(name)) gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_products_lower_description_trgm
+  ON products USING gin ((lower(description)) gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_categories_lower_name_trgm
+  ON categories USING gin ((lower(name)) gin_trgm_ops);
