@@ -24,7 +24,11 @@ export default function Products({ title = "Find Products", products = [], onAdd
       <div className="home-products__header">
         <h2 className="home-products__title">{title}</h2>
       </div>
-      <ProdGrid products={gridProducts} onAddToCart={onAddToCart} />
+      <ProdGrid
+        products={gridProducts}
+        loading={loading}
+        onAddToCart={onAddToCart}
+      />
       <div className="home-products__more">
         <a href="/shop-all" className="home-products__more-link" aria-label="View all products">
           <span>View more</span>

@@ -105,3 +105,48 @@
     --prod-card-media-h: 200px; /* media height adjusts on small screens */
   }
 }
+
+
+/* Skeleton styles */
+.skeleton-block {
+  background: linear-gradient(90deg, var(--color-surface), var(--color-bg), var(--color-surface));
+  background-size: 200% 100%;
+  animation: shimmer 1.2s linear infinite;
+  border-radius: 6px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.prod-card--skeleton {
+  pointer-events: none;
+}
+
+.prod-card--skeleton .prod-card__add {
+  display: none;
+}
+
+.prod-card__img-skeleton {
+  width: 100%;
+  height: var(--prod-card-media-h, 200px);
+}
+
+.prod-card__name-skeleton {
+  width: 70%;
+  height: 18px;
+  margin-top: 8px;
+}
+
+.prod-card__desc-skeleton {
+  width: 95%;
+  height: 14px;
+  margin-top: 6px;
+}
+
+.prod-card__price-skeleton {
+  width: 80px;
+  height: 16px;
+  margin-top: 10px;
+}

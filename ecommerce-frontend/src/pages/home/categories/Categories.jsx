@@ -2,17 +2,27 @@ import './Categories.css'
 import useFetchCategoriesWithImages from '../../../hooks/useFetchCategoriesWithImages.js'
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-function CategoryCard({ name, image }) {
-  const fallback = '/images/imageNoVnXXmDNi0.png'
-  const src = image && image.length > 0 ? image : fallback
+function CategoryCard({ name, image, isPlaceholder = false }) {
+  const fallback = '/images/imageNoVnXXmDNi0.png';
+  const src = image && image.length > 0 ? image : fallback;
   return (
-    <button className="cat-card" aria-label={name || 'Category'}>
+    <button className={`cat-card ${isPlaceholder ? 'cat-card--skeleton' : ''}`} aria-label={isPlaceholder ? 'Loading category' : (name || 'Category')} disabled={isPlaceholder ? true : undefined}>
       <span className="cat-card__avatar" aria-hidden>
-        <img className="cat-card__img" src={src} alt="" />
+        {isPlaceholder ? (
+          <span className="cat-card__avatar-skeleton skeleton-block" />
+        ) : (
+          <img className="cat-card__img" src={src} alt="" />
+        )}
       </span>
-      <span className="cat-card__name">{name || '...'}</span>
+      <span className="cat-card__name">
+        {isPlaceholder ? (
+          <span className="cat-card__name-skeleton skeleton-block" aria-hidden="true"></span>
+        ) : (
+          name || '...'
+        )}
+      </span>
     </button>
-  )
+  );
 }
 
 export default function Categories({ onError }) {
@@ -115,9 +125,12 @@ export default function Categories({ onError }) {
           </button>
 
           <div className="home-categories__list" style={{ transform: `translateX(-${offset * unitX}px)` }}>
-            {renderList.map((c, i) => (
-              <CategoryCard key={c.id ?? `${offset}-${i}`} name={c.name} image={c.image} />
-            ))}
+            {renderList.map((c, i) => {
+              const isPh = String(c.id || '').startsWith('ph-');
+              return (
+                <CategoryCard key={c.id ?? `${offset}-${i}`} name={c.name} image={c.image} isPlaceholder={isPh} />
+              );
+            })}
           </div>
 
           <button

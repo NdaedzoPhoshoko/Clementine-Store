@@ -315,12 +315,45 @@
 }
 .mega-tag:hover { box-shadow: var(--shadow-soft); }
 
+/* Skeleton placeholders for Home mega-tag images */
+.mega-tag__img-wrap {
+  width: 160px;
+  height: 100px;
+  position: relative;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--color-surface);
+}
+/* Skeleton placeholders for mega menu grids */
+.mega-tag--skeleton { pointer-events: none; }
+.skeleton-block {
+  background: linear-gradient(90deg, var(--color-surface), var(--color-bg), var(--color-surface));
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+  display: block;
+}
+.mega-tag__img-skeleton {
+  width: 160px;
+  height: 100px;
+  border-radius: 6px;
+}
+.mega-tag__label-skeleton {
+  width: 110px;
+  height: 12px;
+  border-radius: 6px;
+  margin-top: 8px;
+}
+.mega-tag--loading .mega-tag__img { opacity: 0; }
+.mega-tag--loaded .mega-tag__img { opacity: 1; transition: opacity 160ms ease; }
+
+/* Optional: label styling for consistency */
+.mega-tag__label { font-weight: 600; color: var(--color-text); }
 .mega-tag__img {
-  width: 160px; /* uniform width across all tag images */
-  height: auto;
+  width: 160px;
+  height: 100px;
+  object-fit: cover;
   display: block;
   border-radius: 6px;
-  /* border: 1px solid var(--color-border); */
 }
 
 /* Icon-only actions in nav-right (account, cart) */

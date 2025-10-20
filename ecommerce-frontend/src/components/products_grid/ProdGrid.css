@@ -27,3 +27,13 @@
 @media (max-width: 640px) {
   .prod-grid__list { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
 }
+
+/* Grid-level skeleton helpers */
+.prod-grid__list[aria-busy="true"] {
+  pointer-events: none;
+}
+
+.prod-grid__item--skeleton .prod-card {
+  /* Keep card footprint stable, allow card-level skeletons to show */
+  box-shadow: none;
+}

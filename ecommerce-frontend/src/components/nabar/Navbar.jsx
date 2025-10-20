@@ -9,9 +9,31 @@ const Navbar = () => {
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [recentSearches, setRecentSearches] = useState(["Orange hoodie", "Leather wallet", "Sneakers"]);
 
+  // Skeleton loading for Home mega menu images
+  const HOME_IMG_COUNT = 6;
+  const [homeLoadedCount, setHomeLoadedCount] = useState(0);
+  const [homeImagesReady, setHomeImagesReady] = useState(false);
+  const markHomeImgLoaded = () => {
+    setHomeLoadedCount((c) => {
+      const next = c + 1;
+      if (next >= HOME_IMG_COUNT) setHomeImagesReady(true);
+      return next;
+    });
+  };
   const navCenterRef = useRef(null);
 
-  const { names, loading: namesLoading, error: namesError } = useFetchCategoryNames({ page: 1, limit: 16 });
+  // Home menu tags with images; used to render grid with skeletons
+  const homeTags = [
+    { key: 'trending', label: 'Trending Now', href: '#trending', img: '/images/imageNoVnXXmDNi0.png' },
+    { key: 'new-arrivals', label: 'New Arrivals', href: '#new-arrivals', img: '/images/imageNoVnXXmDNi0.png' },
+    { key: 'featured', label: 'Featured Collections', href: '#featured', img: '/images/imageNoVnXXmDNi0.png' },
+    { key: 'top-rated', label: 'Top Rated', href: '#top-rated', img: '/images/imageNoVnXXmDNi0.png' },
+    { key: 'weekly-deals', label: 'Weekly Deals', href: '#weekly-deals', img: '/images/imageNoVnXXmDNi0.png' },
+    { key: 'gift-ideas', label: 'Gift Ideas', href: '#gift-ideas', img: '/images/imageNoVnXXmDNi0.png' },
+  ];
+  const [homeLoaded, setHomeLoaded] = useState({});
+  const markLoaded = (key) => setHomeLoaded((prev) => ({ ...prev, [key]: true }));
+  const { names, loading: namesLoading, error: namesError } = useFetchCategoryNames({ page: 1 });
   const { bucket, categories, total, loading: autoLoading, error: autoError } = useFetchAutocomplete({ q: searchQuery, limit: 16, enabled: !!searchQuery.trim() });
   const slugify = (s) => s.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
 
@@ -261,24 +283,25 @@ const Navbar = () => {
                   <p>Explore highlights from across the store: seasonal picks, editor‑curated collections, and what shoppers are loving right now. This is the quickest way to discover themes, styles, and best‑selling products without needing to search.</p>
                 </div>
                 <div className="mega-right">
-                  <a href="#trending" className="mega-tag">Trending Now
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="Trending Now" className="mega-tag__img" loading="lazy" decoding="async" width="160" height="100" />
-                  </a>
-                  <a href="#new-arrivals" className="mega-tag">New Arrivals
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="New Arrivals" className="mega-tag__img" loading="lazy" decoding="async" width="160" height="100" />
-                  </a>
-                  <a href="#featured" className="mega-tag">Featured Collections
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="Featured Collections" className="mega-tag__img" loading="lazy" decoding="async" width="160" height="100" />
-                  </a>
-                  <a href="#top-rated" className="mega-tag">Top Rated
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="Top Rated" className="mega-tag__img" loading="lazy" decoding="async" width="160" height="100" />
-                  </a>
-                  <a href="#weekly-deals" className="mega-tag">Weekly Deals
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="Weekly Deals" className="mega-tag__img" loading="lazy" decoding="async" width="160" height="100" />
-                  </a>
-                  <a href="#gift-ideas" className="mega-tag">Gift Ideas
-                    <img src="/images/imageNoVnXXmDNi0.png" alt="Gift Ideas" className="mega-tag__img" loading="lazy" decoding="async" width="160" height="100" />
-                  </a>
+                  {homeTags.map((t) => (
+                    <a key={t.key} href={t.href} className={`mega-tag ${homeLoaded[t.key] ? 'mega-tag--loaded' : 'mega-tag--loading'}`}>
+                      <span className="mega-tag__label">{t.label}</span>
+                      <div className="mega-tag__img-wrap">
+                        {!homeLoaded[t.key] && <span className="mega-tag__skeleton" aria-hidden="true" />}
+                        <img
+                          src={t.img}
+                          alt={t.label}
+                          className="mega-tag__img"
+                          loading="lazy"
+                          decoding="async"
+                          width="160"
+                          height="100"
+                          onLoad={() => markLoaded(t.key)}
+                          onError={() => markLoaded(t.key)}
+                        />
+                      </div>
+                    </a>
+                  ))}
                 </div>
               </div>
               )}
