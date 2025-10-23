@@ -8,15 +8,13 @@
   display: flex;
   flex-direction: column;
   /* Optimize scroll performance */
-  contain: layout style paint;
-  transform: translateZ(0); /* Force GPU layer for smoother scrolling */
 }
 
 .app-content {
   background: var(--color-bg);
   color: var(--color-text);
   padding: 0;
-  padding-top: 0; /* start directly under navbar, no extra gap */
+  padding-top: calc(var(--navbar-dropdown-top, 64px)); /* offset content below fixed navbar */
   flex: 1; /* fills remaining space so footer sits at bottom */
   /* Optimize scroll performance for main content */
   contain: layout style;
