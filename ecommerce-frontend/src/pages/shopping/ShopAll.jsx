@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import "./ShopAll.css";
 import ProdGrid from "../../components/products_grid/ProdGrid";
 import useFetchBrowseProducts from "../../hooks/useFetchBrowseProducts.js";
 import useFetchCategoryNames from "../../hooks/useFetchCategoryNames.js";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function ShopAll() {
   const [query, setQuery] = useState("");
@@ -11,6 +12,8 @@ export default function ShopAll() {
   const [sort, setSort] = useState("relevance");
   const [selectedCatId, setSelectedCatId] = useState(null);
   const [inStockOnly, setInStockOnly] = useState(true);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const {
     page,
@@ -31,6 +34,22 @@ export default function ShopAll() {
   });
 
   const { categories, loading: catLoading } = useFetchCategoryNames({ page: 1, limit: 40 });
+
+  // Sync filters and page to URL query so breadcrumbs can read them
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    params.set("page", String(page));
+    if (query) params.set("search", query); else params.delete("search");
+    if (selectedCatId) params.set("categoryId", String(selectedCatId)); else params.delete("categoryId");
+    if (minPrice) params.set("minPrice", String(minPrice)); else params.delete("minPrice");
+    if (maxPrice) params.set("maxPrice", String(maxPrice)); else params.delete("maxPrice");
+    if (inStockOnly) params.set("inStock", "true"); else params.delete("inStock");
+    if (sort && sort !== "relevance") params.set("sort", sort); else params.delete("sort");
+    const nextSearch = params.toString() ? `?${params.toString()}` : "";
+    if (nextSearch !== location.search) {
+      navigate({ pathname: location.pathname, search: nextSearch }, { replace: true });
+    }
+  }, [page, query, selectedCatId, minPrice, maxPrice, inStockOnly, sort]);
 
   const displayProducts = useMemo(() => {
     let list = Array.isArray(pageItems) ? [...pageItems] : [];
