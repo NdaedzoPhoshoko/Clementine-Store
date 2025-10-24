@@ -6,14 +6,32 @@ import useFetchCategoryNames from "../../hooks/useFetchCategoryNames.js";
 import { useNavigate, useLocation } from "react-router-dom";
 
 export default function ShopAll() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [query, setQuery] = useState("");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [sort, setSort] = useState("relevance");
   const [selectedCatId, setSelectedCatId] = useState(null);
   const [inStockOnly, setInStockOnly] = useState(true);
-  const navigate = useNavigate();
-  const location = useLocation();
+  // Responsive items per page based on screen width
+  const [itemsPerPage, setItemsPerPage] = useState(12);
+  useEffect(() => {
+    const compute = () => {
+      const w = typeof window !== 'undefined' ? window.innerWidth : 1200;
+      let next = 12;
+      if (w >= 1280) next = 20;       // xl: 5 cols × 4 rows
+      else if (w >= 1024) next = 16;  // lg: 4 cols × 4 rows
+      else if (w >= 768) next = 12;   // md: 3 cols × 4 rows
+      else next = 8;                  // sm/xs: 2 cols × 4 rows
+      setItemsPerPage(next);
+    };
+    compute();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', compute, { passive: true });
+      return () => window.removeEventListener('resize', compute);
+    }
+  }, []);
 
   const {
     page,
@@ -24,7 +42,7 @@ export default function ShopAll() {
     meta,
   } = useFetchBrowseProducts({
     initialPage: 1,
-    limit: 12,
+    limit: itemsPerPage,
     search: query,
     categoryId: selectedCatId,
     minPrice,
@@ -33,9 +51,24 @@ export default function ShopAll() {
     enabled: true,
   });
 
+  // Reset to first page when itemsPerPage changes to keep full rows
+  useEffect(() => {
+    setPage(1);
+  }, [itemsPerPage, setPage]);
+
   const { categories, loading: catLoading } = useFetchCategoryNames({ page: 1, limit: 40 });
 
-  // Sync filters and page to URL query so breadcrumbs can read them
+  // Read URL → state (on external navigation)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const incoming = params.get("search") || params.get("q") || "";
+    if (incoming !== query) {
+      setQuery(incoming || "");
+      setPage(1);
+    }
+  }, [location.search]);
+
+  // Sync state → URL (for breadcrumbs and sharing)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     params.set("page", String(page));
@@ -263,6 +296,12 @@ export default function ShopAll() {
                 )}
                 <span className="shop-pagination__hint">select to navigate to a page</span>
               </nav>
+
+              <section className="shop-trust" aria-label="Clementine Store Trust">
+                <p className="shop-trust__text">
+                  Shop with confidence at <strong>Clementine Store</strong>, where every purchase is protected by secure payments, trusted delivery, and real-time order tracking. We’re committed to providing <strong>high-quality products</strong>, <strong>transparent pricing</strong>, and <strong>easy, hassle-free returns</strong>—all backed by friendly customer support that’s always ready to help. Whether you’re shopping for the latest trends, everyday essentials, or unique finds, Clementine Store ensures a seamless and enjoyable experience from start to finish. Discover a place where trust meets convenience, and where your satisfaction is our top priority.
+                </p>
+              </section>
             </>
           )}
         </div>

@@ -15,9 +15,7 @@ export default function Breadcrumbs() {
   const categoryIdParam = searchParams.get("categoryId");
 
   const pathSegments = location.pathname.split("/").filter(Boolean);
-  // Do not render breadcrumbs on the home route
-  if (pathSegments.length === 0) return null;
-
+  // Always call hooks at top-level for consistent order
   const { categories } = useFetchCategoryNames({ page: 1, limit: 100 });
   const categoryLabel = useMemo(() => {
     if (!categoryIdParam || !Array.isArray(categories)) return null;
@@ -25,6 +23,9 @@ export default function Breadcrumbs() {
     const found = categories.find((c) => Number(c.id) === id);
     return found ? found.name : `Category #${id}`;
   }, [categoryIdParam, categories]);
+
+  // Do not render breadcrumbs on the home route
+  if (pathSegments.length === 0) return null;
 
   const items = [];
   // Always start with Home

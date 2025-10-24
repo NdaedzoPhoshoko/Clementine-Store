@@ -235,3 +235,20 @@
     line-height: 30px;
   }
 }
+
+.shop-trust {
+  margin-top: 12px;
+}
+
+.shop-trust__text {
+  color: var(--color-muted, #6b7280);
+  font-size: 14px;
+  line-height: 1.5;
+  /* Clamp to three lines for consistent height */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  /* Non-webkit compatibility hint */
+  line-clamp: 3; /* standard property for compatibility */
+}

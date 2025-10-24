@@ -79,7 +79,8 @@
   color: var(--color-text);
   overflow: hidden;
   display: -webkit-box;
-  -webkit-line-clamp: 2; /* clamp to 2 lines for uniform cards */
+  -webkit-line-clamp: 1; /* clamp to 1 line for uniform cards */
+  line-clamp: 1; /* standard property for compatibility */
   -webkit-box-orient: vertical;
   line-height: 1.25;
 }
@@ -91,6 +92,7 @@
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2; /* clamp to 2 lines for uniform cards */
+  line-clamp: 2; /* standard property for compatibility */
   -webkit-box-orient: vertical;
   line-height: 1.25;
 }

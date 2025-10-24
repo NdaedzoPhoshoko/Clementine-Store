@@ -2,12 +2,14 @@ import React, { useState, useEffect, useRef } from "react";
 import "./navbar.css";
 import useFetchCategoryNames from "../../hooks/useFetchCategoryNames.js";
 import useFetchAutocomplete from "../../hooks/useFetchAutocomplete.js";
+import { useNavigate } from "react-router-dom";
 
 const Navbar = () => {
   const [activeMenu, setActiveMenu] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [recentSearches, setRecentSearches] = useState(["Orange hoodie", "Leather wallet", "Sneakers"]);
+  const navigate = useNavigate();
 
   // Skeleton loading for Home mega menu images
   const HOME_IMG_COUNT = 6;
@@ -107,6 +109,7 @@ const Navbar = () => {
       return next.slice(0, 3);
     });
     setShowSearchDropdown(false);
+    navigate(`/shop-all?search=${encodeURIComponent(q)}`);
   };
 
   return (
