@@ -56,6 +56,7 @@ export default function ShopAll() {
     if (sort === "price-asc") list.sort((a, b) => (Number(a.price || 0) - Number(b.price || 0)));
     else if (sort === "price-desc") list.sort((a, b) => (Number(b.price || 0) - Number(a.price || 0)));
     else if (sort === "name-asc") list.sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+    else if (sort === "name-desc") list.sort((a, b) => String(b.name || "").localeCompare(String(a.name || "")));
     return list;
   }, [pageItems, sort]);
 
@@ -65,6 +66,11 @@ export default function ShopAll() {
   const hasPrev = !!meta?.hasPrev;
   const hasNext = !!meta?.hasNext;
   
+  // Derived values for grouped sort dropdowns
+  const sortPriceValue = sort.startsWith("price") ? sort : "";
+  const sortNameValue = sort.startsWith("name") ? sort : "";
+  const handlePriceSortChange = (val) => setSort(val || "relevance");
+  const handleNameSortChange = (val) => setSort(val || "relevance");
   const goToPage = (n) => {
     if (n < 1 || n > totalPages || n === page) return;
     setPage(n);
@@ -93,7 +99,7 @@ export default function ShopAll() {
             <div className="filter-field">
               <input
                 type="text"
-                className="filter-input"
+                className="filter-input form-control"
                 placeholder="Search products"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -107,7 +113,7 @@ export default function ShopAll() {
             <div className="filter-field filter-field--row">
               <input
                 type="number"
-                className="filter-input"
+                className="filter-input form-control"
                 placeholder="Min"
                 value={minPrice}
                 onChange={(e) => setMinPrice(e.target.value)}
@@ -115,7 +121,7 @@ export default function ShopAll() {
               />
               <input
                 type="number"
-                className="filter-input"
+                className="filter-input form-control"
                 placeholder="Max"
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(e.target.value)}
@@ -126,18 +132,35 @@ export default function ShopAll() {
 
           <div className="filter-section">
             <div className="filter-section__title">Sort</div>
-            <div className="filter-field">
-              <select
-                className="filter-select"
-                value={sort}
-                onChange={(e) => setSort(e.target.value)}
-                aria-label="Sort products"
-              >
-                <option value="relevance">Relevance</option>
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
-                <option value="name-asc">Name: A → Z</option>
-              </select>
+            <div className="sort-grid">
+              <div className="sort-group">
+                <label className="filter-label form-label" htmlFor="sort-price">By Price</label>
+                <select
+                  id="sort-price"
+                  className="filter-select form-select"
+                  value={sortPriceValue}
+                  onChange={(e) => handlePriceSortChange(e.target.value)}
+                  aria-label="Sort by price"
+                >
+                  <option value="">None</option>
+                  <option value="price-asc">Low to High</option>
+                  <option value="price-desc">High to Low</option>
+                </select>
+              </div>
+              <div className="sort-group">
+                <label className="filter-label form-label" htmlFor="sort-name">By Name</label>
+                <select
+                  id="sort-name"
+                  className="filter-select form-select"
+                  value={sortNameValue}
+                  onChange={(e) => handleNameSortChange(e.target.value)}
+                  aria-label="Sort by name"
+                >
+                  <option value="">None</option>
+                  <option value="name-asc">A → Z</option>
+                  <option value="name-desc">Z → A</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -199,7 +222,7 @@ export default function ShopAll() {
             </div>
           ) : (
             <>
-              <ProdGrid products={displayProducts} loading={loading && page === 1} ariaLabel="All products" />
+              <ProdGrid products={displayProducts} loading={loading} ariaLabel="All products" />
               <nav className="shop-pagination" aria-label="Pagination">
                 <button
                   className={`shop-pagination__btn ${!hasPrev ? "is-disabled" : ""}`}

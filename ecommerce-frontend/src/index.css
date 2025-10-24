@@ -57,3 +57,70 @@ button {
   color: var(--color-text);
   border: 1px solid var(--color-border);
 }
+
+/* Global form controls (opt-in classes for consistent styling) */
+:root {
+  --control-height: 36px;
+  --control-radius: 999px;
+}
+
+.form-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-muted);
+}
+
+.form-control {
+  width: 100%;
+  box-sizing: border-box;
+  height: var(--control-height);
+  padding: 8px 12px;
+  font-size: 14px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--control-radius);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.form-control::placeholder { color: var(--color-muted); }
+.form-control:focus {
+  outline: none;
+  border-color: var(--palette-secondary);
+  box-shadow: 0 0 0 3px rgba(255, 58, 149, 0.12);
+  background: var(--color-bg);
+}
+.form-control[disabled],
+.form-select[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.form-select {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: var(--control-height);
+  padding: 8px 12px;
+  font-size: 14px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--control-radius);
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 34px; /* space for chevron */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%236b7280' d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-position: right 10px center;
+  background-repeat: no-repeat;
+  background-size: 16px 16px;
+}
+.form-select:focus {
+  border-color: var(--palette-secondary);
+  box-shadow: 0 0 0 3px rgba(255, 58, 149, 0.12);
+  background: var(--color-bg);
+}
+
+/* Respect reduced motion for focus animations */
+@media (prefers-reduced-motion: reduce) {
+  .form-control { transition: none; }
+}
