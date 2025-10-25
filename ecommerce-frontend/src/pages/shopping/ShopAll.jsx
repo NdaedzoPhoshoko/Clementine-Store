@@ -66,14 +66,39 @@ export default function ShopAll() {
       setQuery(incoming || "");
       setPage(1);
     }
-  }, [location.search]);
+    // Map ?category=<slug> to selectedCatId
+    const catSlug = params.get("category");
+    if (!catSlug) {
+      if (selectedCatId !== null) {
+        setSelectedCatId(null);
+        setPage(1);
+      }
+    } else if (Array.isArray(categories) && categories.length) {
+      const match = categories.find((c) =>
+        String(c.name || "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") === catSlug
+      );
+      const nextId = match ? match.id : null;
+      if (nextId !== selectedCatId) {
+        setSelectedCatId(nextId);
+        setPage(1);
+      }
+    }
+  }, [location.search, categories]);
 
   // Sync state → URL (for breadcrumbs and sharing)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     params.set("page", String(page));
     if (query) params.set("search", query); else params.delete("search");
-    if (selectedCatId) params.set("categoryId", String(selectedCatId)); else params.delete("categoryId");
+    // Write category slug for readability; remove legacy numeric id
+    if (selectedCatId && Array.isArray(categories)) {
+      const selected = categories.find((c) => c.id === selectedCatId);
+      const catSlug = selected ? String(selected.name || "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") : "";
+      if (catSlug) params.set("category", catSlug); else params.delete("category");
+    } else {
+      params.delete("category");
+    }
+    params.delete("categoryId");
     if (minPrice) params.set("minPrice", String(minPrice)); else params.delete("minPrice");
     if (maxPrice) params.set("maxPrice", String(maxPrice)); else params.delete("maxPrice");
     if (inStockOnly) params.set("inStock", "true"); else params.delete("inStock");
@@ -82,7 +107,7 @@ export default function ShopAll() {
     if (nextSearch !== location.search) {
       navigate({ pathname: location.pathname, search: nextSearch }, { replace: true });
     }
-  }, [page, query, selectedCatId, minPrice, maxPrice, inStockOnly, sort]);
+  }, [page, query, selectedCatId, minPrice, maxPrice, inStockOnly, sort, categories]);
 
   const displayProducts = useMemo(() => {
     let list = Array.isArray(pageItems) ? [...pageItems] : [];

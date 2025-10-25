@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import "./navbar.css";
 import useFetchCategoryNames from "../../hooks/useFetchCategoryNames.js";
 import useFetchAutocomplete from "../../hooks/useFetchAutocomplete.js";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 const Navbar = () => {
   const [activeMenu, setActiveMenu] = useState(null);
@@ -26,12 +26,12 @@ const Navbar = () => {
 
   // Home menu tags with images; used to render grid with skeletons
   const homeTags = [
-    { key: 'trending', label: 'Trending Now', href: '#trending', img: '/images/imageNoVnXXmDNi0.png' },
-    { key: 'new-arrivals', label: 'New Arrivals', href: '#new-arrivals', img: '/images/imageNoVnXXmDNi0.png' },
-    { key: 'featured', label: 'Featured Collections', href: '#featured', img: '/images/imageNoVnXXmDNi0.png' },
-    { key: 'top-rated', label: 'Top Rated', href: '#top-rated', img: '/images/imageNoVnXXmDNi0.png' },
-    { key: 'weekly-deals', label: 'Weekly Deals', href: '#weekly-deals', img: '/images/imageNoVnXXmDNi0.png' },
-    { key: 'gift-ideas', label: 'Gift Ideas', href: '#gift-ideas', img: '/images/imageNoVnXXmDNi0.png' },
+    { key: 'trending', label: 'Trending Now', to: '/trending', img: '/images/imageNoVnXXmDNi0.png' },
+    { key: 'new-arrivals', label: 'New Arrivals', to: '/new-arrivals', img: '/images/imageNoVnXXmDNi0.png' },
+    { key: 'featured', label: 'Featured Collections', to: '/featured', img: '/images/imageNoVnXXmDNi0.png' },
+    { key: 'top-rated', label: 'Top Rated', to: '/top-rated', img: '/images/imageNoVnXXmDNi0.png' },
+    { key: 'weekly-deals', label: 'Weekly Deals', to: '/weekly-deals', img: '/images/imageNoVnXXmDNi0.png' },
+    { key: 'gift-ideas', label: 'Gift Ideas', to: '/gift-ideas', img: '/images/imageNoVnXXmDNi0.png' },
   ];
   const [homeLoaded, setHomeLoaded] = useState({});
   const markLoaded = (key) => setHomeLoaded((prev) => ({ ...prev, [key]: true }));
@@ -116,9 +116,9 @@ const Navbar = () => {
     <nav className="nav-bar" role="navigation" aria-label="Main navigation">
       <div className="nav-bar__inner">
         <div className="nav-left">
-          <a href="/" className="nav-brand" aria-label="Home">
+          <Link to="/" className="nav-brand" aria-label="Home">
             <span className="nav-brand__text">Clementine</span>
-          </a>
+          </Link>
         </div>
 
         <div className="nav-center" ref={navCenterRef}>
@@ -287,7 +287,7 @@ const Navbar = () => {
                 </div>
                 <div className="mega-right">
                   {homeTags.map((t) => (
-                    <a key={t.key} href={t.href} className={`mega-tag ${homeLoaded[t.key] ? 'mega-tag--loaded' : 'mega-tag--loading'}`}>
+                    <Link key={t.key} to={t.to} className={`mega-tag ${homeLoaded[t.key] ? 'mega-tag--loaded' : 'mega-tag--loading'}`}>
                       <span className="mega-tag__label">{t.label}</span>
                       <div className="mega-tag__img-wrap">
                         {!homeLoaded[t.key] && <span className="mega-tag__skeleton" aria-hidden="true" />}
@@ -303,7 +303,7 @@ const Navbar = () => {
                           onError={() => markLoaded(t.key)}
                         />
                       </div>
-                    </a>
+                    </Link>
                   ))}
                 </div>
               </div>
@@ -344,7 +344,7 @@ const Navbar = () => {
                   ) : Array.isArray(names) && names.length > 0 ? (
                     <>
                       {names.slice(0, 12).map((n) => (
-                        <a key={n} href={`#${slugify(n)}`} className="mega-tag">{n}</a>
+                        <Link key={n} to={`/shop-all?category=${slugify(n)}`} className="mega-tag">{n}</Link>
                       ))}
                     </>
                   ) : (
@@ -377,12 +377,12 @@ const Navbar = () => {
                   <p>We craft quality products with care and purpose. Learn about our mission, the team behind Clementine, and the practices that guide our design, sourcing, and sustainability commitments.</p>
                 </div>
                 <div className="mega-right">
-                  <a href="#mission" className="mega-tag">Mission</a>
-                  <a href="#team" className="mega-tag">Team</a>
-                  <a href="#sustainability" className="mega-tag">Sustainability</a>
-                  <a href="#careers" className="mega-tag">Careers</a>
-                  <a href="#press" className="mega-tag">Press</a>
-                  <a href="#contact" className="mega-tag">Contact</a>
+                  <Link to="/about/mission" className="mega-tag">Mission</Link>
+                  <Link to="/about/team" className="mega-tag">Team</Link>
+                  <Link to="/about/sustainability" className="mega-tag">Sustainability</Link>
+                  <Link to="/about/careers" className="mega-tag">Careers</Link>
+                  <Link to="/about/press" className="mega-tag">Press</Link>
+                  <Link to="/about/contact" className="mega-tag">Contact</Link>
                 </div>
               </div>
               )}
@@ -410,12 +410,12 @@ const Navbar = () => {
                   <p>Get help with orders, shipping, returns, and account questions. Find quick answers, track your order status, or reach our support team for personalized assistance when you need it.</p>
                 </div>
                 <div className="mega-right">
-                  <a href="#faq" className="mega-tag">FAQ</a>
-                  <a href="#shipping" className="mega-tag">Shipping</a>
-                  <a href="#returns" className="mega-tag">Returns</a>
-                  <a href="#order-status" className="mega-tag">Order Status</a>
-                  <a href="#contact-support" className="mega-tag">Contact Support</a>
-                  <a href="#live-chat" className="mega-tag">Live Chat</a>
+                  <Link to="/support/faq" className="mega-tag">FAQ</Link>
+                  <Link to="/support/shipping" className="mega-tag">Shipping</Link>
+                  <Link to="/support/returns" className="mega-tag">Returns</Link>
+                  <Link to="/support/order-status" className="mega-tag">Order Status</Link>
+                  <Link to="/support/contact" className="mega-tag">Contact Support</Link>
+                  <Link to="/support/live-chat" className="mega-tag">Live Chat</Link>
                 </div>
               </div>
               )}
@@ -424,20 +424,20 @@ const Navbar = () => {
         </div>
 
         <div className="nav-right">
-          <a href="#account" className="nav-icon" aria-label="Account">
+          <Link to="/account" className="nav-icon" aria-label="Account">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
               <circle cx="12" cy="7" r="4" />
             </svg>
-          </a>
-          <a href="#cart" className="nav-icon" aria-label="Cart">
+          </Link>
+          <Link to="/cart" className="nav-icon" aria-label="Cart">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <circle cx="9" cy="21" r="1" />
               <circle cx="20" cy="21" r="1" />
               <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
             </svg>
             <span className="cart-counter" aria-label="Cart items count">0</span>
-          </a>
+          </Link>
         </div>
       </div>
     </nav>
