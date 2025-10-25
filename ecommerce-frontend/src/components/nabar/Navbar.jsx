@@ -265,8 +265,8 @@ const Navbar = () => {
           </div>
           <nav className="nav-links" aria-label="Secondary navigation">
             <div className="nav-item">
-              <button
-                type="button"
+              <Link
+                to="/"
                 aria-haspopup="menu"
                 aria-expanded={activeMenu === "home"}
                 aria-controls="menu-home"
@@ -278,7 +278,7 @@ const Navbar = () => {
               >
                 Home
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-              </button>
+              </Link>
               {activeMenu === "home" && (
               <div className="nav-mega open" role="menu" aria-label="Home menu" id="menu-home" onMouseLeave={() => setActiveMenu(null)}>
                 <div className="mega-left">
@@ -311,8 +311,8 @@ const Navbar = () => {
             </div>
 
             <div className="nav-item">
-              <button
-                type="button"
+              <Link
+                to="/shop-all"
                 aria-haspopup="menu"
                 aria-expanded={activeMenu === "all"}
                 aria-controls="menu-all"
@@ -324,7 +324,7 @@ const Navbar = () => {
               >
                 Shop All
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-              </button>
+              </Link>
               {activeMenu === "all" && (
               <div className="nav-mega open" role="menu" aria-label="Shop All menu" id="menu-all" onMouseLeave={() => setActiveMenu(null)}>
                 <div className="mega-left">
@@ -356,8 +356,8 @@ const Navbar = () => {
             </div>
 
             <div className="nav-item">
-              <button
-                type="button"
+              <Link
+                to="/about"
                 aria-haspopup="menu"
                 aria-expanded={activeMenu === "us"}
                 aria-controls="menu-us"
@@ -369,7 +369,7 @@ const Navbar = () => {
               >
                 About Us
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-              </button>
+              </Link>
               {activeMenu === "us" && (
               <div className="nav-mega open" role="menu" aria-label="About Us menu" id="menu-us" onMouseLeave={() => setActiveMenu(null)}>
                 <div className="mega-left">
@@ -389,8 +389,8 @@ const Navbar = () => {
             </div>
 
             <div className="nav-item">
-              <button
-                type="button"
+              <Link
+                to="/support"
                 aria-haspopup="menu"
                 aria-expanded={activeMenu === "support"}
                 aria-controls="menu-support"
@@ -402,7 +402,7 @@ const Navbar = () => {
               >
                 Support
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-              </button>
+              </Link>
               {activeMenu === "support" && (
               <div className="nav-mega open" role="menu" aria-label="Support menu" id="menu-support" onMouseLeave={() => setActiveMenu(null)}>
                 <div className="mega-left">
