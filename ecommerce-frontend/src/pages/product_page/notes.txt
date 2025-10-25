@@ -31,3 +31,11 @@ When a user clicks a color:
 Change the main product image.
 Update price and stock if different.
 When implementing the admin side for uploading products- make sure that you look at UI for pruduct since dimensions needs to be added, care notes, additional details
+
+
+when implementing ui to upload products on admin account 
+for additional details put placeholder texts such as the one below because you will need to give an idea of jwat to write, to admin 
+- details: ["Textural boucle upholstery", "Solid wood frame", "Professional upholstery cleaning recommended"]
+- dimensions: ["Overall: 30\"W x 36\"D x 30\"H", "Seat height: 18\"", "Weight: 28 lb"]
+- care_notes: ["Vacuum regularly using upholstery attachment", "Blot spills immediately", "Avoid direct sunlight to prevent fading"]
+- sustainability_notes: ["Made with sustainably sourced materials", "Low-VOC finishes"]

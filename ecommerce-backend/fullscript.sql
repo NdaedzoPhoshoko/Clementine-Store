@@ -147,3 +147,65 @@ CREATE INDEX IF NOT EXISTS idx_products_lower_description_trgm
   ON products USING gin ((lower(description)) gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_categories_lower_name_trgm
   ON categories USING gin ((lower(name)) gin_trgm_ops);
+
+  -- additional details script
+
+  BEGIN;
+
+-- Add optional JSONB columns for extra product info
+ALTER TABLE products
+  ADD COLUMN IF NOT EXISTS details JSONB,
+  ADD COLUMN IF NOT EXISTS dimensions JSONB,
+  ADD COLUMN IF NOT EXISTS care_notes JSONB,
+  ADD COLUMN IF NOT EXISTS sustainability_notes JSONB;
+
+-- Optional: lightweight type checks (arrays or objects).
+-- Note: PostgreSQL doesn't support IF NOT EXISTS for constraints; use DO blocks.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'products_details_jsonb_type'
+  ) THEN
+    ALTER TABLE products
+      ADD CONSTRAINT products_details_jsonb_type
+      CHECK (details IS NULL OR jsonb_typeof(details) IN ('array','object'));
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'products_dimensions_jsonb_type'
+  ) THEN
+    ALTER TABLE products
+      ADD CONSTRAINT products_dimensions_jsonb_type
+      CHECK (dimensions IS NULL OR jsonb_typeof(dimensions) IN ('array','object'));
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'products_care_notes_jsonb_type'
+  ) THEN
+    ALTER TABLE products
+      ADD CONSTRAINT products_care_notes_jsonb_type
+      CHECK (care_notes IS NULL OR jsonb_typeof(care_notes) IN ('array','object'));
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'products_sustainability_notes_jsonb_type'
+  ) THEN
+    ALTER TABLE products
+      ADD CONSTRAINT products_sustainability_notes_jsonb_type
+      CHECK (sustainability_notes IS NULL OR jsonb_typeof(sustainability_notes) IN ('array','object'));
+  END IF;
+END
+$$;
+
+-- Optional: trigram indexes to search text within these fields.
+ CREATE EXTENSION IF NOT EXISTS pg_trgm;
+ CREATE INDEX IF NOT EXISTS idx_products_details_trgm
+ ON products USING gin ((details::text) gin_trgm_ops);
+ CREATE INDEX IF NOT EXISTS idx_products_dimensions_trgm
+ ON products USING gin ((dimensions::text) gin_trgm_ops);
+ CREATE INDEX IF NOT EXISTS idx_products_care_notes_trgm
+ ON products USING gin ((care_notes::text) gin_trgm_ops);
+ CREATE INDEX IF NOT EXISTS idx_products_sustainability_notes_trgm
+ ON products USING gin ((sustainability_notes::text) gin_trgm_ops);
+
+COMMIT;

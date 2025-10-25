@@ -78,6 +78,18 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
  *                         type: integer
  *                       category_id:
  *                         type: integer
+ *                       details:
+ *                         type: object
+ *                         nullable: true
+ *                       dimensions:
+ *                         type: object
+ *                         nullable: true
+ *                       care_notes:
+ *                         type: object
+ *                         nullable: true
+ *                       sustainability_notes:
+ *                         type: object
+ *                         nullable: true
  *                 meta:
  *                   type: object
  *                   properties:
@@ -131,6 +143,26 @@ router.get("/", listProducts);
  *               category_id:
  *                 type: integer
  *                 nullable: true
+ *               details:
+ *                 type: string
+ *                 nullable: true
+ *                 description: JSON string for additional product details (object or array)
+ *                 example: "{\"material\": \"cotton\", \"features\": [\"breathable\", \"durable\"]}"
+ *               dimensions:
+ *                 type: string
+ *                 nullable: true
+ *                 description: JSON string for product dimensions (object or array)
+ *                 example: "{\"length\": \"10cm\", \"width\": \"5cm\", \"height\": \"2cm\"}"
+ *               care_notes:
+ *                 type: string
+ *                 nullable: true
+ *                 description: JSON string for care instructions (array or object)
+ *                 example: "[\"Machine wash cold\", \"Tumble dry low\", \"Do not bleach\"]"
+ *               sustainability_notes:
+ *                 type: string
+ *                 nullable: true
+ *                 description: JSON string for sustainability information (object or array)
+ *                 example: "{\"eco_friendly\": true, \"certifications\": [\"GOTS\", \"Fair Trade\"]}"
  *     responses:
  *       201:
  *         description: Product created
@@ -142,13 +174,32 @@ router.get("/", listProducts);
  *                 product:
  *                   type: object
  *                   properties:
- *                     id: { type: integer }
- *                     name: { type: string }
- *                     description: { type: string }
- *                     price: { type: number }
- *                     image_url: { type: string }
- *                     stock: { type: integer }
- *                     category_id: { type: integer }
+ *                     id:
+ *                       type: integer
+ *                     name:
+ *                       type: string
+ *                     description:
+ *                       type: string
+ *                     price:
+ *                       type: number
+ *                     image_url:
+ *                       type: string
+ *                     stock:
+ *                       type: integer
+ *                     category_id:
+ *                       type: integer
+ *                     details:
+ *                       type: object
+ *                       nullable: true
+ *                     dimensions:
+ *                       type: object
+ *                       nullable: true
+ *                     care_notes:
+ *                       type: object
+ *                       nullable: true
+ *                     sustainability_notes:
+ *                       type: object
+ *                       nullable: true
  *       400:
  *         description: Invalid input (name, price, stock) or missing image
  *       404:
@@ -187,6 +238,10 @@ router.post("/", protect, requireAdmin, upload.single("image"), createProduct);
  *               image_url: { type: string }
  *               stock: { type: integer }
  *               category_id: { type: integer, nullable: true }
+ *               details: { type: object, nullable: true, description: "Additional product details as JSON object or array" }
+ *               dimensions: { type: object, nullable: true, description: "Product dimensions as JSON object or array" }
+ *               care_notes: { type: object, nullable: true, description: "Care instructions as JSON object or array" }
+ *               sustainability_notes: { type: object, nullable: true, description: "Sustainability information as JSON object or array" }
  *     responses:
  *       200:
  *         description: Product updated
@@ -205,6 +260,10 @@ router.post("/", protect, requireAdmin, upload.single("image"), createProduct);
  *                     image_url: { type: string }
  *                     stock: { type: integer }
  *                     category_id: { type: integer, nullable: true }
+ *                     details: { type: object, nullable: true }
+ *                     dimensions: { type: object, nullable: true }
+ *                     care_notes: { type: object, nullable: true }
+ *                     sustainability_notes: { type: object, nullable: true }
  *       400:
  *         description: Invalid input (id, name, price, or stock)
  *       404:
@@ -446,6 +505,18 @@ router.delete("/:id/images", protect, requireAdmin, deleteAllProductImages);
  *                       type: string
  *                     stock:
  *                       type: integer
+ *                     details:
+ *                       type: object
+ *                       nullable: true
+ *                     dimensions:
+ *                       type: object
+ *                       nullable: true
+ *                     care_notes:
+ *                       type: object
+ *                       nullable: true
+ *                     sustainability_notes:
+ *                       type: object
+ *                       nullable: true
  *                 category:
  *                   type: object
  *                   nullable: true

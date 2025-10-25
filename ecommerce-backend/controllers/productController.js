@@ -58,7 +58,8 @@ export const listProducts = async (req, res) => {
     // items query
     const itemsParams = [...params, limitNum, offset];
     const itemsQuery = `
-      SELECT id, name, description, price, image_url, stock, category_id
+      SELECT id, name, description, price, image_url, stock, category_id,
+             details, dimensions, care_notes, sustainability_notes
       FROM products
       ${whereSql}
       ORDER BY id DESC
@@ -90,6 +91,7 @@ export const getProductById = async (req, res) => {
 
     const productQuery = `
       SELECT p.id, p.name, p.description, p.price, p.image_url, p.stock, p.category_id,
+             p.details, p.dimensions, p.care_notes, p.sustainability_notes,
              c.name AS category_name, c.description AS category_description
       FROM products p
       LEFT JOIN categories c ON c.id = p.category_id
@@ -130,6 +132,10 @@ export const getProductById = async (req, res) => {
         price: p.price,
         image_url: p.image_url,
         stock: p.stock,
+        details: p.details,
+        dimensions: p.dimensions,
+        care_notes: p.care_notes,
+        sustainability_notes: p.sustainability_notes,
       },
       category: p.category_id
         ? { id: p.category_id, name: p.category_name, description: p.category_description }
@@ -193,12 +199,108 @@ export const getProductReviews = async (req, res) => {
 
 export const createProduct = async (req, res) => {
   try {
-    const { name, description, price, stock, category_id } = req.body || {};
+    const { name, description, price, stock, category_id, details, dimensions, care_notes, sustainability_notes } = req.body || {};
 
     const trimmedName = typeof name === "string" ? name.trim() : "";
     const priceNum = parseFloat(price);
     const stockNum = typeof stock !== "undefined" ? parseInt(stock, 10) : 0;
     const categoryIdNum = typeof category_id !== "undefined" && category_id !== null ? parseInt(category_id, 10) : null;
+
+    // Parse and validate JSONB fields
+    let detailsJson = null;
+    let dimensionsJson = null;
+    let careNotesJson = null;
+    let sustainabilityNotesJson = null;
+
+    if (details !== undefined) {
+      if (details === null) {
+        detailsJson = null;
+      } else if (typeof details === 'string') {
+        const trimmed = details.trim();
+        if (trimmed === "") {
+          detailsJson = null;
+        } else {
+          try {
+            detailsJson = JSON.parse(trimmed);
+          } catch (err) {
+            return res.status(400).json({ message: "Invalid JSON format for details" });
+          }
+        }
+      } else {
+        detailsJson = details;
+      }
+      if (detailsJson !== null && !Array.isArray(detailsJson) && typeof detailsJson !== 'object') {
+        return res.status(400).json({ message: "Details must be an array or object" });
+      }
+    }
+
+    if (dimensions !== undefined) {
+      if (dimensions === null) {
+        dimensionsJson = null;
+      } else if (typeof dimensions === 'string') {
+        const trimmed = dimensions.trim();
+        if (trimmed === "") {
+          dimensionsJson = null;
+        } else {
+          try {
+            dimensionsJson = JSON.parse(trimmed);
+          } catch (err) {
+            return res.status(400).json({ message: "Invalid JSON format for dimensions" });
+          }
+        }
+      } else {
+        dimensionsJson = dimensions;
+      }
+      if (dimensionsJson !== null && !Array.isArray(dimensionsJson) && typeof dimensionsJson !== 'object') {
+        return res.status(400).json({ message: "Dimensions must be an array or object" });
+      }
+    }
+
+    if (care_notes !== undefined) {
+      if (care_notes === null) {
+        careNotesJson = null;
+      } else if (typeof care_notes === 'string') {
+        const trimmed = care_notes.trim();
+        if (trimmed === "") {
+          careNotesJson = null;
+        } else {
+          try {
+            // First try to parse as JSON
+            careNotesJson = JSON.parse(trimmed);
+          } catch (err) {
+            // If JSON parsing fails, treat as comma-separated string and convert to array
+            careNotesJson = trimmed.split(',').map(item => item.trim()).filter(item => item.length > 0);
+          }
+        }
+      } else {
+        careNotesJson = care_notes;
+      }
+      if (careNotesJson !== null && !Array.isArray(careNotesJson) && typeof careNotesJson !== 'object') {
+        return res.status(400).json({ message: "Care notes must be an array or object" });
+      }
+    }
+
+    if (sustainability_notes !== undefined) {
+      if (sustainability_notes === null) {
+        sustainabilityNotesJson = null;
+      } else if (typeof sustainability_notes === 'string') {
+        const trimmed = sustainability_notes.trim();
+        if (trimmed === "") {
+          sustainabilityNotesJson = null;
+        } else {
+          try {
+            sustainabilityNotesJson = JSON.parse(trimmed);
+          } catch (err) {
+            return res.status(400).json({ message: "Invalid JSON format for sustainability_notes" });
+          }
+        }
+      } else {
+        sustainabilityNotesJson = sustainability_notes;
+      }
+      if (sustainabilityNotesJson !== null && !Array.isArray(sustainabilityNotesJson) && typeof sustainabilityNotesJson !== 'object') {
+        return res.status(400).json({ message: "Sustainability notes must be an array or object" });
+      }
+    }
 
     if (!trimmedName) {
       return res.status(400).json({ message: "Product name is required" });
@@ -237,10 +339,11 @@ export const createProduct = async (req, res) => {
       return res.status(400).json({ message: "Image file is required under 'image' field" });
     }
 
+
     const insertQuery = `
-      INSERT INTO products (name, description, price, image_url, stock, category_id)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING id, name, description, price, image_url, stock, category_id
+      INSERT INTO products (name, description, price, image_url, stock, category_id, details, dimensions, care_notes, sustainability_notes)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      RETURNING id, name, description, price, image_url, stock, category_id, details, dimensions, care_notes, sustainability_notes
     `;
     const insertParams = [
       trimmedName,
@@ -249,6 +352,10 @@ export const createProduct = async (req, res) => {
       primaryImageUrl,
       stockNum,
       categoryIdNum,
+      detailsJson !== null ? JSON.stringify(detailsJson) : null,
+      dimensionsJson !== null ? JSON.stringify(dimensionsJson) : null,
+      careNotesJson !== null ? JSON.stringify(careNotesJson) : null,
+      sustainabilityNotesJson !== null ? JSON.stringify(sustainabilityNotesJson) : null,
     ];
     const result = await pool.query(insertQuery, insertParams);
     const product = result.rows[0];
@@ -274,7 +381,7 @@ export const updateProduct = async (req, res) => {
     }
 
     const existingRes = await pool.query(
-      "SELECT id, name, description, price, image_url, stock, category_id FROM products WHERE id=$1",
+      "SELECT id, name, description, price, image_url, stock, category_id, details, dimensions, care_notes, sustainability_notes FROM products WHERE id=$1",
       [id]
     );
     if (existingRes.rows.length === 0) {
@@ -282,7 +389,7 @@ export const updateProduct = async (req, res) => {
     }
     const existing = existingRes.rows[0];
 
-    const { name, description, price, image_url, stock, category_id } = req.body || {};
+    const { name, description, price, image_url, stock, category_id, details, dimensions, care_notes, sustainability_notes } = req.body || {};
 
     // Validate provided fields only
     if (typeof name !== "undefined") {
@@ -334,11 +441,76 @@ export const updateProduct = async (req, res) => {
       }
     }
 
+    // Handle JSONB fields
+    if (typeof details !== "undefined") {
+      if (details === null) {
+        existing.details = null;
+      } else {
+        try {
+          const detailsJson = typeof details === 'string' ? JSON.parse(details) : details;
+          if (!Array.isArray(detailsJson) && typeof detailsJson !== 'object') {
+            return res.status(400).json({ message: "Details must be an array or object" });
+          }
+          existing.details = detailsJson;
+        } catch (err) {
+          return res.status(400).json({ message: "Invalid JSON format for details" });
+        }
+      }
+    }
+
+    if (typeof dimensions !== "undefined") {
+      if (dimensions === null) {
+        existing.dimensions = null;
+      } else {
+        try {
+          const dimensionsJson = typeof dimensions === 'string' ? JSON.parse(dimensions) : dimensions;
+          if (!Array.isArray(dimensionsJson) && typeof dimensionsJson !== 'object') {
+            return res.status(400).json({ message: "Dimensions must be an array or object" });
+          }
+          existing.dimensions = dimensionsJson;
+        } catch (err) {
+          return res.status(400).json({ message: "Invalid JSON format for dimensions" });
+        }
+      }
+    }
+
+    if (typeof care_notes !== "undefined") {
+      if (care_notes === null) {
+        existing.care_notes = null;
+      } else {
+        try {
+          const careNotesJson = typeof care_notes === 'string' ? JSON.parse(care_notes) : care_notes;
+          if (!Array.isArray(careNotesJson) && typeof careNotesJson !== 'object') {
+            return res.status(400).json({ message: "Care notes must be an array or object" });
+          }
+          existing.care_notes = careNotesJson;
+        } catch (err) {
+          return res.status(400).json({ message: "Invalid JSON format for care_notes" });
+        }
+      }
+    }
+
+    if (typeof sustainability_notes !== "undefined") {
+      if (sustainability_notes === null) {
+        existing.sustainability_notes = null;
+      } else {
+        try {
+          const sustainabilityNotesJson = typeof sustainability_notes === 'string' ? JSON.parse(sustainability_notes) : sustainability_notes;
+          if (!Array.isArray(sustainabilityNotesJson) && typeof sustainabilityNotesJson !== 'object') {
+            return res.status(400).json({ message: "Sustainability notes must be an array or object" });
+          }
+          existing.sustainability_notes = sustainabilityNotesJson;
+        } catch (err) {
+          return res.status(400).json({ message: "Invalid JSON format for sustainability_notes" });
+        }
+      }
+    }
+
     const updateQuery = `
       UPDATE products
-      SET name=$1, description=$2, price=$3, image_url=$4, stock=$5, category_id=$6
-      WHERE id=$7
-      RETURNING id, name, description, price, image_url, stock, category_id
+      SET name=$1, description=$2, price=$3, image_url=$4, stock=$5, category_id=$6, details=$7, dimensions=$8, care_notes=$9, sustainability_notes=$10
+      WHERE id=$11
+      RETURNING id, name, description, price, image_url, stock, category_id, details, dimensions, care_notes, sustainability_notes
     `;
     const updateParams = [
       existing.name,
@@ -347,6 +519,10 @@ export const updateProduct = async (req, res) => {
       existing.image_url,
       existing.stock,
       existing.category_id,
+      existing.details,
+      existing.dimensions,
+      existing.care_notes,
+      existing.sustainability_notes,
       id,
     ];
     const result = await pool.query(updateQuery, updateParams);
