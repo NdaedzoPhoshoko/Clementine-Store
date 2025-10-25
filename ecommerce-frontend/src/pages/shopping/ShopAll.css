@@ -4,6 +4,7 @@
   padding-inline: 34px;
   padding-block: 24px 32px;
   color: var(--color-text);
+  padding-bottom: 0;
 }
 
 .shop-layout {
@@ -59,6 +60,7 @@
   border-radius: 8px;
   border: 1px solid transparent;
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  cursor: pointer;
 }
 .filter-list__item:hover { 
   background: var(--primary-50, #eff6ff);
@@ -73,7 +75,7 @@
   background: var(--primary-50, #eff6ff);
   border-color: var(--primary-300, #93c5fd);
 }
-.filter-checkbox { width: 16px; height: 16px; }
+.filter-checkbox { width: 16px; height: 16px; cursor: pointer; }
 /* Color the text when the item is checked */
 .filter-checkbox:checked + .filter-list__name {
   color: var(--palette-deep);
@@ -115,6 +117,7 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--control-radius, 999px);
+  cursor: pointer;
 }
 
 /* Sort groups — two columns on wide screens, stacked on mobile */
@@ -291,4 +294,11 @@
   /* Non-webkit compatibility hint */
   line-clamp: 3; /* standard property for compatibility */
 }
+
+
+/* Availability toggle interactions */
+.shop-filters .filter-section .filter-field label { cursor: pointer; }
+.shop-filters .filter-section .filter-field input[type="checkbox"] { cursor: pointer; }
+.shop-filters .filter-section .filter-field input[type="radio"] { cursor: pointer; }
+.shop-filters .filter-section .filter-field label span { cursor: pointer; }
 

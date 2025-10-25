@@ -299,14 +299,15 @@ export default function ShopAll() {
               {catLoading ? (
                 <div className="filter-list__hint">Loading...</div>
               ) : Array.isArray(filteredCategories) && filteredCategories.length ? (
-                <div className="filter-list__items" role="listbox" aria-label="Category filters">
+                <div className="filter-list__items" role="radiogroup" aria-label="Category filters">
                   {filteredCategories.map((c) => (
                     <label key={c.id} className="filter-list__item">
                       <input
-                        type="checkbox"
-                        className="filter-checkbox"
+                        type="radio"
+                        name="category"
+                        className="filter-radio filter-checkbox"
                         checked={selectedCatId === c.id}
-                        onChange={(e) => setSelectedCatId(e.target.checked ? c.id : null)}
+                        onChange={(e) => e.target.checked && setSelectedCatId(c.id)}
                         aria-checked={selectedCatId === c.id ? "true" : "false"}
                       />
                       <span className="filter-list__name">{c.name}</span>

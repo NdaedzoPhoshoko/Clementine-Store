@@ -177,13 +177,18 @@ const Navbar = () => {
                       ) : combinedSuggestions.length ? (
                         combinedSuggestions.slice(0, 12).map((t) => {
                           const isRecent = lowerRecents.has(String(t).toLowerCase());
+                          const isCategory = categories && categories.some((c) => String(c).toLowerCase() === String(t).toLowerCase());
                           return (
                             <li
                               key={`suggest-${t}`}
                               className="search-item"
                               onMouseDown={() => {
+                                const to = isCategory
+                                  ? `/shop-all?category=${slugify(t)}`
+                                  : `/shop-all?search=${encodeURIComponent(t)}`;
                                 setSearchQuery(t);
                                 setShowSearchDropdown(false);
+                                navigate(to);
                               }}
                             >
                               <span className="search-item__label">
@@ -227,8 +232,13 @@ const Navbar = () => {
                             key={`recent-${t}`}
                             className="search-item"
                             onMouseDown={() => {
+                              const isCategory = categories && categories.some((c) => String(c).toLowerCase() === String(t).toLowerCase());
+                              const to = isCategory
+                                ? `/shop-all?category=${slugify(t)}`
+                                : `/shop-all?search=${encodeURIComponent(t)}`;
                               setSearchQuery(t);
                               setShowSearchDropdown(false);
+                              navigate(to);
                             }}
                           >
                             <span className="search-item__label">{t}</span>
