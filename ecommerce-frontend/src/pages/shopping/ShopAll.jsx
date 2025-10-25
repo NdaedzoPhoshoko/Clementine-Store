@@ -4,6 +4,7 @@ import ProdGrid from "../../components/products_grid/ProdGrid";
 import useFetchBrowseProducts from "../../hooks/useFetchBrowseProducts.js";
 import useFetchCategoryNames from "../../hooks/useFetchCategoryNames.js";
 import { useNavigate, useLocation } from "react-router-dom";
+import PriceRangeSlider from "../../components/filters/PriceRangeSlider";
 
 export default function ShopAll() {
   const navigate = useNavigate();
@@ -14,6 +15,8 @@ export default function ShopAll() {
   const [sort, setSort] = useState("relevance");
   const [selectedCatId, setSelectedCatId] = useState(null);
   const [inStockOnly, setInStockOnly] = useState(true);
+  const [priceTempMin, setPriceTempMin] = useState(null);
+  const [priceTempMax, setPriceTempMax] = useState(null);
   // Responsive items per page based on screen width
   const [itemsPerPage, setItemsPerPage] = useState(12);
   useEffect(() => {
@@ -144,6 +147,42 @@ export default function ShopAll() {
   const showEllipsis = lastIncluded < totalPages - 1;
   const showLast = lastIncluded < totalPages;
 
+  // Compute min/max across currently displayed products for slider bounds
+  const priceStats = useMemo(() => {
+    const arr = Array.isArray(displayProducts) ? displayProducts : [];
+    let min = Infinity;
+    let max = -Infinity;
+    for (const p of arr) {
+      const v = Number(p.price || 0);
+      if (Number.isFinite(v)) {
+        if (v < min) min = v;
+        if (v > max) max = v;
+      }
+    }
+    if (!Number.isFinite(min)) min = 0;
+    if (!Number.isFinite(max)) max = 0;
+    if (min > max) { min = 0; max = 0; }
+    return { min, max };
+  }, [displayProducts]);
+
+  // Initialize temp values from URL or defaults, and refresh when bounds become available
+  useEffect(() => {
+    const defaultMin = 0;
+    const defaultMax = 6000;
+    const initialMin = minPrice !== "" ? Number(minPrice) : defaultMin;
+    const initialMax = maxPrice !== "" ? Number(maxPrice) : defaultMax;
+
+    const shouldInit =
+      priceTempMin == null ||
+      priceTempMax == null ||
+      ((priceTempMin === 0 && priceTempMax === 0) && defaultMax > 0);
+
+    if (shouldInit) {
+      setPriceTempMin(Math.max(0, Math.min(initialMin, 6000)));
+      setPriceTempMax(Math.max(0, Math.min(initialMax, 6000)));
+    }
+  }, [minPrice, maxPrice, priceTempMin, priceTempMax]);
+
   return (
     <section className="shop-all" aria-label="Shop All">
       <div className="shop-layout">
@@ -166,24 +205,23 @@ export default function ShopAll() {
             </div>
           </div>
 
+
           <div className="filter-section">
             <div className="filter-section__title">Price</div>
-            <div className="filter-field filter-field--row">
-              <input
-                type="number"
-                className="filter-input form-control"
-                placeholder="Min"
-                value={minPrice}
-                onChange={(e) => setMinPrice(e.target.value)}
-                aria-label="Minimum price"
-              />
-              <input
-                type="number"
-                className="filter-input form-control"
-                placeholder="Max"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
-                aria-label="Maximum price"
+            <div className="filter-field">
+              <PriceRangeSlider
+                min={0}
+                max={6000}
+                valueMin={priceTempMin ?? 0}
+                valueMax={priceTempMax ?? 6000}
+                step={50}
+                onDebouncedChange={(lo, hi) => {
+                  setPriceTempMin(lo);
+                  setPriceTempMax(hi);
+                  setMinPrice(String(lo));
+                  setMaxPrice(String(hi));
+                  setPage(1);
+                }}
               />
             </div>
           </div>
