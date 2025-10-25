@@ -1,16 +1,37 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import "./ShopAll.css";
 import ProdGrid from "../../components/products_grid/ProdGrid";
 import useFetchBrowseProducts from "../../hooks/useFetchBrowseProducts.js";
 import useFetchCategoryNames from "../../hooks/useFetchCategoryNames.js";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function ShopAll() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [query, setQuery] = useState("");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [sort, setSort] = useState("relevance");
   const [selectedCatId, setSelectedCatId] = useState(null);
   const [inStockOnly, setInStockOnly] = useState(true);
+  // Responsive items per page based on screen width
+  const [itemsPerPage, setItemsPerPage] = useState(12);
+  useEffect(() => {
+    const compute = () => {
+      const w = typeof window !== 'undefined' ? window.innerWidth : 1200;
+      let next = 12;
+      if (w >= 1280) next = 20;       // xl: 5 cols × 4 rows
+      else if (w >= 1024) next = 16;  // lg: 4 cols × 4 rows
+      else if (w >= 768) next = 12;   // md: 3 cols × 4 rows
+      else next = 8;                  // sm/xs: 2 cols × 4 rows
+      setItemsPerPage(next);
+    };
+    compute();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', compute, { passive: true });
+      return () => window.removeEventListener('resize', compute);
+    }
+  }, []);
 
   const {
     page,
@@ -21,7 +42,7 @@ export default function ShopAll() {
     meta,
   } = useFetchBrowseProducts({
     initialPage: 1,
-    limit: 12,
+    limit: itemsPerPage,
     search: query,
     categoryId: selectedCatId,
     minPrice,
@@ -30,13 +51,45 @@ export default function ShopAll() {
     enabled: true,
   });
 
+  // Reset to first page when itemsPerPage changes to keep full rows
+  useEffect(() => {
+    setPage(1);
+  }, [itemsPerPage, setPage]);
+
   const { categories, loading: catLoading } = useFetchCategoryNames({ page: 1, limit: 40 });
+
+  // Read URL → state (on external navigation)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const incoming = params.get("search") || params.get("q") || "";
+    if (incoming !== query) {
+      setQuery(incoming || "");
+      setPage(1);
+    }
+  }, [location.search]);
+
+  // Sync state → URL (for breadcrumbs and sharing)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    params.set("page", String(page));
+    if (query) params.set("search", query); else params.delete("search");
+    if (selectedCatId) params.set("categoryId", String(selectedCatId)); else params.delete("categoryId");
+    if (minPrice) params.set("minPrice", String(minPrice)); else params.delete("minPrice");
+    if (maxPrice) params.set("maxPrice", String(maxPrice)); else params.delete("maxPrice");
+    if (inStockOnly) params.set("inStock", "true"); else params.delete("inStock");
+    if (sort && sort !== "relevance") params.set("sort", sort); else params.delete("sort");
+    const nextSearch = params.toString() ? `?${params.toString()}` : "";
+    if (nextSearch !== location.search) {
+      navigate({ pathname: location.pathname, search: nextSearch }, { replace: true });
+    }
+  }, [page, query, selectedCatId, minPrice, maxPrice, inStockOnly, sort]);
 
   const displayProducts = useMemo(() => {
     let list = Array.isArray(pageItems) ? [...pageItems] : [];
     if (sort === "price-asc") list.sort((a, b) => (Number(a.price || 0) - Number(b.price || 0)));
     else if (sort === "price-desc") list.sort((a, b) => (Number(b.price || 0) - Number(a.price || 0)));
     else if (sort === "name-asc") list.sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+    else if (sort === "name-desc") list.sort((a, b) => String(b.name || "").localeCompare(String(a.name || "")));
     return list;
   }, [pageItems, sort]);
 
@@ -46,6 +99,11 @@ export default function ShopAll() {
   const hasPrev = !!meta?.hasPrev;
   const hasNext = !!meta?.hasNext;
   
+  // Derived values for grouped sort dropdowns
+  const sortPriceValue = sort.startsWith("price") ? sort : "";
+  const sortNameValue = sort.startsWith("name") ? sort : "";
+  const handlePriceSortChange = (val) => setSort(val || "relevance");
+  const handleNameSortChange = (val) => setSort(val || "relevance");
   const goToPage = (n) => {
     if (n < 1 || n > totalPages || n === page) return;
     setPage(n);
@@ -74,7 +132,7 @@ export default function ShopAll() {
             <div className="filter-field">
               <input
                 type="text"
-                className="filter-input"
+                className="filter-input form-control"
                 placeholder="Search products"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -88,7 +146,7 @@ export default function ShopAll() {
             <div className="filter-field filter-field--row">
               <input
                 type="number"
-                className="filter-input"
+                className="filter-input form-control"
                 placeholder="Min"
                 value={minPrice}
                 onChange={(e) => setMinPrice(e.target.value)}
@@ -96,7 +154,7 @@ export default function ShopAll() {
               />
               <input
                 type="number"
-                className="filter-input"
+                className="filter-input form-control"
                 placeholder="Max"
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(e.target.value)}
@@ -107,18 +165,35 @@ export default function ShopAll() {
 
           <div className="filter-section">
             <div className="filter-section__title">Sort</div>
-            <div className="filter-field">
-              <select
-                className="filter-select"
-                value={sort}
-                onChange={(e) => setSort(e.target.value)}
-                aria-label="Sort products"
-              >
-                <option value="relevance">Relevance</option>
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
-                <option value="name-asc">Name: A → Z</option>
-              </select>
+            <div className="sort-grid">
+              <div className="sort-group">
+                <label className="filter-label form-label" htmlFor="sort-price">By Price</label>
+                <select
+                  id="sort-price"
+                  className="filter-select form-select"
+                  value={sortPriceValue}
+                  onChange={(e) => handlePriceSortChange(e.target.value)}
+                  aria-label="Sort by price"
+                >
+                  <option value="">None</option>
+                  <option value="price-asc">Low to High</option>
+                  <option value="price-desc">High to Low</option>
+                </select>
+              </div>
+              <div className="sort-group">
+                <label className="filter-label form-label" htmlFor="sort-name">By Name</label>
+                <select
+                  id="sort-name"
+                  className="filter-select form-select"
+                  value={sortNameValue}
+                  onChange={(e) => handleNameSortChange(e.target.value)}
+                  aria-label="Sort by name"
+                >
+                  <option value="">None</option>
+                  <option value="name-asc">A → Z</option>
+                  <option value="name-desc">Z → A</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -180,7 +255,7 @@ export default function ShopAll() {
             </div>
           ) : (
             <>
-              <ProdGrid products={displayProducts} loading={loading && page === 1} ariaLabel="All products" />
+              <ProdGrid products={displayProducts} loading={loading} ariaLabel="All products" />
               <nav className="shop-pagination" aria-label="Pagination">
                 <button
                   className={`shop-pagination__btn ${!hasPrev ? "is-disabled" : ""}`}
@@ -221,6 +296,12 @@ export default function ShopAll() {
                 )}
                 <span className="shop-pagination__hint">select to navigate to a page</span>
               </nav>
+
+              <section className="shop-trust" aria-label="Clementine Store Trust">
+                <p className="shop-trust__text">
+                  Shop with confidence at <strong>Clementine Store</strong>, where every purchase is protected by secure payments, trusted delivery, and real-time order tracking. We’re committed to providing <strong>high-quality products</strong>, <strong>transparent pricing</strong>, and <strong>easy, hassle-free returns</strong>—all backed by friendly customer support that’s always ready to help. Whether you’re shopping for the latest trends, everyday essentials, or unique finds, Clementine Store ensures a seamless and enjoyable experience from start to finish. Discover a place where trust meets convenience, and where your satisfaction is our top priority.
+                </p>
+              </section>
             </>
           )}
         </div>
