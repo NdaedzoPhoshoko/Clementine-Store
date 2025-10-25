@@ -4,6 +4,7 @@ import ProdGrid from "../../components/products_grid/ProdGrid";
 import useFetchBrowseProducts from "../../hooks/useFetchBrowseProducts.js";
 import useFetchCategoryNames from "../../hooks/useFetchCategoryNames.js";
 import { useNavigate, useLocation } from "react-router-dom";
+import PriceRangeSlider from "../../components/filters/PriceRangeSlider";
 
 export default function ShopAll() {
   const navigate = useNavigate();
@@ -13,7 +14,10 @@ export default function ShopAll() {
   const [maxPrice, setMaxPrice] = useState("");
   const [sort, setSort] = useState("relevance");
   const [selectedCatId, setSelectedCatId] = useState(null);
+  const [catQuery, setCatQuery] = useState("");
   const [inStockOnly, setInStockOnly] = useState(true);
+  const [priceTempMin, setPriceTempMin] = useState(null);
+  const [priceTempMax, setPriceTempMax] = useState(null);
   // Responsive items per page based on screen width
   const [itemsPerPage, setItemsPerPage] = useState(12);
   useEffect(() => {
@@ -58,6 +62,13 @@ export default function ShopAll() {
 
   const { categories, loading: catLoading } = useFetchCategoryNames({ page: 1, limit: 40 });
 
+  const filteredCategories = useMemo(() => {
+    const arr = Array.isArray(categories) ? categories : [];
+    const q = String(catQuery || "").toLowerCase().trim();
+    const byQuery = q ? arr.filter(c => String(c.name || "").toLowerCase().includes(q)) : arr;
+    return byQuery.sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+  }, [categories, catQuery]);
+
   // Read URL → state (on external navigation)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -66,14 +77,39 @@ export default function ShopAll() {
       setQuery(incoming || "");
       setPage(1);
     }
-  }, [location.search]);
+    // Map ?category=<slug> to selectedCatId
+    const catSlug = params.get("category");
+    if (!catSlug) {
+      if (selectedCatId !== null) {
+        setSelectedCatId(null);
+        setPage(1);
+      }
+    } else if (Array.isArray(categories) && categories.length) {
+      const match = categories.find((c) =>
+        String(c.name || "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") === catSlug
+      );
+      const nextId = match ? match.id : null;
+      if (nextId !== selectedCatId) {
+        setSelectedCatId(nextId);
+        setPage(1);
+      }
+    }
+  }, [location.search, categories]);
 
   // Sync state → URL (for breadcrumbs and sharing)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     params.set("page", String(page));
     if (query) params.set("search", query); else params.delete("search");
-    if (selectedCatId) params.set("categoryId", String(selectedCatId)); else params.delete("categoryId");
+    // Write category slug for readability; remove legacy numeric id
+    if (selectedCatId && Array.isArray(categories)) {
+      const selected = categories.find((c) => c.id === selectedCatId);
+      const catSlug = selected ? String(selected.name || "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") : "";
+      if (catSlug) params.set("category", catSlug); else params.delete("category");
+    } else {
+      params.delete("category");
+    }
+    params.delete("categoryId");
     if (minPrice) params.set("minPrice", String(minPrice)); else params.delete("minPrice");
     if (maxPrice) params.set("maxPrice", String(maxPrice)); else params.delete("maxPrice");
     if (inStockOnly) params.set("inStock", "true"); else params.delete("inStock");
@@ -82,7 +118,7 @@ export default function ShopAll() {
     if (nextSearch !== location.search) {
       navigate({ pathname: location.pathname, search: nextSearch }, { replace: true });
     }
-  }, [page, query, selectedCatId, minPrice, maxPrice, inStockOnly, sort]);
+  }, [page, query, selectedCatId, minPrice, maxPrice, inStockOnly, sort, categories]);
 
   const displayProducts = useMemo(() => {
     let list = Array.isArray(pageItems) ? [...pageItems] : [];
@@ -119,6 +155,42 @@ export default function ShopAll() {
   const showEllipsis = lastIncluded < totalPages - 1;
   const showLast = lastIncluded < totalPages;
 
+  // Compute min/max across currently displayed products for slider bounds
+  const priceStats = useMemo(() => {
+    const arr = Array.isArray(displayProducts) ? displayProducts : [];
+    let min = Infinity;
+    let max = -Infinity;
+    for (const p of arr) {
+      const v = Number(p.price || 0);
+      if (Number.isFinite(v)) {
+        if (v < min) min = v;
+        if (v > max) max = v;
+      }
+    }
+    if (!Number.isFinite(min)) min = 0;
+    if (!Number.isFinite(max)) max = 0;
+    if (min > max) { min = 0; max = 0; }
+    return { min, max };
+  }, [displayProducts]);
+
+  // Initialize temp values from URL or defaults, and refresh when bounds become available
+  useEffect(() => {
+    const defaultMin = 0;
+    const defaultMax = 6000;
+    const initialMin = minPrice !== "" ? Number(minPrice) : defaultMin;
+    const initialMax = maxPrice !== "" ? Number(maxPrice) : defaultMax;
+
+    const shouldInit =
+      priceTempMin == null ||
+      priceTempMax == null ||
+      ((priceTempMin === 0 && priceTempMax === 0) && defaultMax > 0);
+
+    if (shouldInit) {
+      setPriceTempMin(Math.max(0, Math.min(initialMin, 6000)));
+      setPriceTempMax(Math.max(0, Math.min(initialMax, 6000)));
+    }
+  }, [minPrice, maxPrice, priceTempMin, priceTempMax]);
+
   return (
     <section className="shop-all" aria-label="Shop All">
       <div className="shop-layout">
@@ -141,24 +213,23 @@ export default function ShopAll() {
             </div>
           </div>
 
+
           <div className="filter-section">
             <div className="filter-section__title">Price</div>
-            <div className="filter-field filter-field--row">
-              <input
-                type="number"
-                className="filter-input form-control"
-                placeholder="Min"
-                value={minPrice}
-                onChange={(e) => setMinPrice(e.target.value)}
-                aria-label="Minimum price"
-              />
-              <input
-                type="number"
-                className="filter-input form-control"
-                placeholder="Max"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
-                aria-label="Maximum price"
+            <div className="filter-field">
+              <PriceRangeSlider
+                min={0}
+                max={6000}
+                valueMin={priceTempMin ?? 0}
+                valueMax={priceTempMax ?? 6000}
+                step={50}
+                onDebouncedChange={(lo, hi) => {
+                  setPriceTempMin(lo);
+                  setPriceTempMax(hi);
+                  setMinPrice(String(lo));
+                  setMaxPrice(String(hi));
+                  setPage(1);
+                }}
               />
             </div>
           </div>
@@ -214,23 +285,37 @@ export default function ShopAll() {
 
           <div className="filter-section">
             <div className="filter-section__title">Categories</div>
-            <div className="filter-tags" aria-busy={catLoading ? "true" : undefined}>
+            <div className="filter-list" aria-busy={catLoading ? "true" : undefined}>
+              <div className="filter-list__search">
+                <input
+                  type="text"
+                  className="filter-input form-control"
+                  placeholder="Search by Category"
+                  value={catQuery}
+                  onChange={(e) => setCatQuery(e.target.value)}
+                  aria-label="Search by category"
+                />
+              </div>
               {catLoading ? (
-                <span className="filter-tag muted" aria-disabled="true">Loading...</span>
-              ) : Array.isArray(categories) && categories.length ? (
-                categories.slice(0, 24).map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    className={`filter-tag ${selectedCatId === c.id ? "filter-tag--active" : ""}`}
-                    onClick={() => setSelectedCatId(selectedCatId === c.id ? null : c.id)}
-                    aria-pressed={selectedCatId === c.id ? "true" : "false"}
-                  >
-                    {c.name}
-                  </button>
-                ))
+                <div className="filter-list__hint">Loading...</div>
+              ) : Array.isArray(filteredCategories) && filteredCategories.length ? (
+                <div className="filter-list__items" role="radiogroup" aria-label="Category filters">
+                  {filteredCategories.map((c) => (
+                    <label key={c.id} className="filter-list__item">
+                      <input
+                        type="radio"
+                        name="category"
+                        className="filter-radio filter-checkbox"
+                        checked={selectedCatId === c.id}
+                        onChange={(e) => e.target.checked && setSelectedCatId(c.id)}
+                        aria-checked={selectedCatId === c.id ? "true" : "false"}
+                      />
+                      <span className="filter-list__name">{c.name}</span>
+                    </label>
+                  ))}
+                </div>
               ) : (
-                <span className="filter-tag muted">No categories</span>
+                <div className="filter-list__hint">No categories</div>
               )}
             </div>
           </div>
