@@ -14,6 +14,7 @@ export default function ShopAll() {
   const [maxPrice, setMaxPrice] = useState("");
   const [sort, setSort] = useState("relevance");
   const [selectedCatId, setSelectedCatId] = useState(null);
+  const [catQuery, setCatQuery] = useState("");
   const [inStockOnly, setInStockOnly] = useState(true);
   const [priceTempMin, setPriceTempMin] = useState(null);
   const [priceTempMax, setPriceTempMax] = useState(null);
@@ -60,6 +61,13 @@ export default function ShopAll() {
   }, [itemsPerPage, setPage]);
 
   const { categories, loading: catLoading } = useFetchCategoryNames({ page: 1, limit: 40 });
+
+  const filteredCategories = useMemo(() => {
+    const arr = Array.isArray(categories) ? categories : [];
+    const q = String(catQuery || "").toLowerCase().trim();
+    const byQuery = q ? arr.filter(c => String(c.name || "").toLowerCase().includes(q)) : arr;
+    return byQuery.sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+  }, [categories, catQuery]);
 
   // Read URL → state (on external navigation)
   useEffect(() => {
@@ -277,23 +285,36 @@ export default function ShopAll() {
 
           <div className="filter-section">
             <div className="filter-section__title">Categories</div>
-            <div className="filter-tags" aria-busy={catLoading ? "true" : undefined}>
+            <div className="filter-list" aria-busy={catLoading ? "true" : undefined}>
+              <div className="filter-list__search">
+                <input
+                  type="text"
+                  className="filter-input form-control"
+                  placeholder="Search by Category"
+                  value={catQuery}
+                  onChange={(e) => setCatQuery(e.target.value)}
+                  aria-label="Search by category"
+                />
+              </div>
               {catLoading ? (
-                <span className="filter-tag muted" aria-disabled="true">Loading...</span>
-              ) : Array.isArray(categories) && categories.length ? (
-                categories.slice(0, 24).map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    className={`filter-tag ${selectedCatId === c.id ? "filter-tag--active" : ""}`}
-                    onClick={() => setSelectedCatId(selectedCatId === c.id ? null : c.id)}
-                    aria-pressed={selectedCatId === c.id ? "true" : "false"}
-                  >
-                    {c.name}
-                  </button>
-                ))
+                <div className="filter-list__hint">Loading...</div>
+              ) : Array.isArray(filteredCategories) && filteredCategories.length ? (
+                <div className="filter-list__items" role="listbox" aria-label="Category filters">
+                  {filteredCategories.map((c) => (
+                    <label key={c.id} className="filter-list__item">
+                      <input
+                        type="checkbox"
+                        className="filter-checkbox"
+                        checked={selectedCatId === c.id}
+                        onChange={(e) => setSelectedCatId(e.target.checked ? c.id : null)}
+                        aria-checked={selectedCatId === c.id ? "true" : "false"}
+                      />
+                      <span className="filter-list__name">{c.name}</span>
+                    </label>
+                  ))}
+                </div>
               ) : (
-                <span className="filter-tag muted">No categories</span>
+                <div className="filter-list__hint">No categories</div>
               )}
             </div>
           </div>

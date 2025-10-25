@@ -41,7 +41,46 @@
   margin-bottom: 8px;
 }
 
-.filter-field { display: flex; flex-direction: column; gap: 8px; }
+.filter-list { display: flex; flex-direction: column; gap: 8px; }
+.filter-list__search { position: relative; }
+.filter-list__items {
+  max-height: 150px;
+  overflow-y: auto;
+  /* border: 1px solid var(--color-border); */
+  border-radius: 10px;
+  padding: 6px;
+  /* background: var(--color-bg); */
+}
+.filter-list__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.filter-list__item:hover { 
+  background: var(--primary-50, #eff6ff);
+  border-color: var(--primary-300, #93c5fd);
+}
+.filter-list__item:focus-within {
+  background: var(--primary-50, #eff6ff);
+  border-color: var(--primary-400, #60a5fa);
+}
+/* Highlight checked item using modern :has selector (supported in modern browsers) */
+.filter-list__item:has(.filter-checkbox:checked) {
+  background: var(--primary-50, #eff6ff);
+  border-color: var(--primary-300, #93c5fd);
+}
+.filter-checkbox { width: 16px; height: 16px; }
+/* Color the text when the item is checked */
+.filter-checkbox:checked + .filter-list__name {
+  color: var(--palette-deep);
+  font-weight: 700;
+}
+.filter-list__name { font-size: 13px; color: var(--color-text); }
+.filter-list__hint { font-size: 12px; color: var(--color-muted); padding: 4px 6px; }
 .filter-field--row { flex-direction: row; gap: 10px; }
 
 /* Ensure row inputs share space equally (e.g., min and max price) */
