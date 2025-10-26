@@ -5,19 +5,19 @@
   grid-template-rows: var(--prod-card-media-h) 1fr; /* fixed media, fill body */
   width: 100%;
   height: var(--prod-card-height);
-  background: var(--color-surface);
+  /* background: var(--color-surface); */
   /* border: 1px solid var(--color-border); */
   border-radius: 12px;
   overflow: hidden;
   /* box-shadow: var(--shadow-soft); */
-  transition: transform 0.18s ease, opacity 0.18s ease, box-shadow 0.18s ease;
+  transition: transform 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease;
   will-change: transform, opacity;
   backface-visibility: hidden;
   cursor: pointer;
 }
 
 .prod-card:hover { 
-  transform: none;
+  transform: translateY(-5px);
   box-shadow: var(--shadow-soft);
 }
 
@@ -76,6 +76,7 @@
   margin: 0;
   font-size: 16px;
   font-weight: 700;
+  font-family: var(--font-heading);
   color: var(--color-text);
   overflow: hidden;
   display: -webkit-box;
@@ -88,6 +89,7 @@
 .prod-card__desc {
   margin: 0;
   font-size: 13px;
+  font-family: var(--font-primary);
   color: var(--color-muted);
   overflow: hidden;
   display: -webkit-box;
@@ -107,6 +109,7 @@
 .prod-card__price {
   font-weight: 400;
   font-size: 16px;
+  font-family: var(--font-primary);
   color: var(--color-text);
   margin: 0;
 }

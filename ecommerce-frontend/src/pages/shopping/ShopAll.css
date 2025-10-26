@@ -12,6 +12,11 @@
   grid-template-columns: minmax(240px, 280px) 1fr;
   gap: 24px;
   align-items: start;
+  padding-top: 10px;
+}
+
+.prod-grid__list {
+  padding-top: 10px;
 }
 
 /* Left filter panel */

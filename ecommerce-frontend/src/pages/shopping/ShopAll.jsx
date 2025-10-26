@@ -5,6 +5,7 @@ import useFetchBrowseProducts from "../../hooks/useFetchBrowseProducts.js";
 import useFetchCategoryNames from "../../hooks/useFetchCategoryNames.js";
 import { useNavigate, useLocation } from "react-router-dom";
 import PriceRangeSlider from "../../components/filters/PriceRangeSlider";
+import ErrorModal from "../../components/modals/ErrorModal";
 
 export default function ShopAll() {
   const navigate = useNavigate();
@@ -324,10 +325,27 @@ export default function ShopAll() {
         <div className="shop-results">
           <header className="shop-results__header">
             <h1 className="shop-title">Shop All</h1>
-            {error && <div className="shop-error" role="alert">Could not load products</div>}
           </header>
+          
+          {error && (
+            <ErrorModal 
+              message="Could not load products" 
+              onClose={() => {}} 
+            />
+          )}
 
-          {isEmpty ? (
+          {error ? (
+            <div className="shop-empty" role="status" aria-live="polite">
+              <img
+                className="shop-empty__img"
+                src="/illustrations/hand-drawn-no-data-illustration.png"
+                alt="Database error illustration"
+                loading="lazy"
+              />
+              <div className="shop-empty__title">Database connection issue</div>
+              <div className="shop-empty__desc">We're having trouble connecting to our database. Please try again later or contact support if the issue persists.</div>
+            </div>
+          ) : isEmpty ? (
             <div className="shop-empty" role="status" aria-live="polite">
               <img
                 className="shop-empty__img"

@@ -1,5 +1,6 @@
 import React from "react";
 import "./ProdCard.css";
+import { useNavigate } from "react-router-dom";
 
 export default function ProdCard({
   id,
@@ -13,13 +14,13 @@ export default function ProdCard({
   onAddToCart = () => {},
   isPlaceholder = false,
 }) {
+  const navigate = useNavigate();
   const displayName = name || "Product";
   const priceDisplay = typeof price === "number" ? `${currency} ${price.toFixed(2)}` : `${currency} ${price || "0.00"}`;
 
   const handleView = () => {
-    // Navigate or open modal to view product details
-    // You can replace this with your router navigation
-    console.log("view product", id);
+    // Navigate to product details page
+    navigate(`/product/${id}`);
   };
 
   const handleKeyDown = (e) => {
