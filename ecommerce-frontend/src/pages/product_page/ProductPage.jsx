@@ -19,9 +19,25 @@ export default function ProductPage() {
     images: productImages, 
     reviews, 
     reviewStats, 
+    details,
+    dimensions,
+    sizeChart,
+    careNotes,
+    sustainabilityNotes,
     loading, 
     error 
   } = useFetchProductDetails({ productId })
+  
+  // Derived UI helpers
+  const ratingDistribution = (Array.isArray(reviews) && reviews.length > 0)
+    ? [5,4,3,2,1].map(r => {
+        const count = reviews.filter(rv => Math.round(rv?.rating || 0) === r).length;
+        const percentage = reviews.length ? Math.round((count / reviews.length) * 100) : 0;
+        return { rating: r, count, percentage };
+      })
+    : [];
+  const stockCount = product?.stock ?? product?.inventory ?? product?.quantity_available ?? product?.available_quantity ?? null;
+  const inStock = stockCount != null ? stockCount > 0 : (product?.in_stock ?? product?.available ?? true);
   
   // Related products data - keeping this for now as mentioned
   const relatedProducts = [
@@ -118,15 +134,15 @@ export default function ProductPage() {
   
   // Initialize state values after product data is loaded
   useEffect(() => {
-    if (product && product.details) {
+    if (product) {
       // Set default color if available
-      if (product.details.color) {
-        setSelectedColor(product.details.color)
+      if (details?.color) {
+        setSelectedColor(details.color)
       }
       
       // Set available sizes from size chart if available
-      if (product.dimensions && product.dimensions.size_chart) {
-        const sizes = Object.keys(product.dimensions.size_chart)
+      if (sizeChart && typeof sizeChart === 'object') {
+        const sizes = Object.keys(sizeChart)
         setAvailableSizes(sizes)
         if (sizes.length > 0) {
           setSelectedSize(sizes[0])
@@ -142,7 +158,7 @@ export default function ProductPage() {
         setFormattedImages(formatted)
       }
     }
-  }, [product, productImages])
+  }, [product, details, sizeChart, productImages])
   
   // Setup Intersection Observer for lazy loading images
   useEffect(() => {
@@ -368,16 +384,17 @@ export default function ProductPage() {
             <h1 className="product-title">{product.name}</h1>
             
             <div className="product-meta">
-              <div className="price-container">
-                <span className="current-price">${parseFloat(product.price).toFixed(2)}</span>
-              </div>
-              <div className="product-stats">
-                <div className="rating">
-                  <span className="stars">★ {reviewStats.averageRating}</span>
-                  <span className="review-count">({reviewStats.reviewCount} reviews)</span>
+                <div className="price-container">
+                  <span className="current-price">${parseFloat(product.price).toFixed(2)}</span>
+                </div>
+                <div className="product-stats">
+                  <div className="rating">
+                    <span className="stars">★ {Number(reviewStats?.averageRating || 0).toFixed(1)}</span>
+                    <span className="review-count">({reviewStats?.reviewCount || 0} reviews)</span>
+                  </div>
                 </div>
               </div>
-            </div>
+              {/* stock badge moved above product-actions */}
             
             <div className="product-description">
               <h2>Description:</h2>
@@ -386,13 +403,13 @@ export default function ProductPage() {
             
             <div className="product-options">
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '20px' }}>
-                {product.details && product.details.color && (
+                {details?.color && (
                   <div className="color-selection">
                     <div className="option-label">Color: <span className="selected-value">{selectedColor}</span></div>
                     <div className="color-options">
                       <button
                         className="color-option selected"
-                        style={{ backgroundColor: '#' + Math.floor(Math.random()*16777215).toString(16) }}
+                        style={{ backgroundColor: (typeof selectedColor === 'string' && selectedColor.startsWith('#')) ? selectedColor : 'var(--color-bg)' }}
                         aria-label={`Color: ${selectedColor}`}
                         aria-pressed={true}
                       />
@@ -422,25 +439,118 @@ export default function ProductPage() {
               )}
               </div>
               
-              {product.details && product.details.features && (
-                <div className="features">
-                  <h3>Features:</h3>
-                  <ul>
-                    {product.details.features.map((feature, index) => (
-                      <li key={index}>{feature}</li>
-                    ))}
-                  </ul>
+              <details className="specs-details">
+                <summary className="specs-toggle">Show More <span className="chevron">›</span></summary>
+                <div className="specs-flex">
+                  <div className="specs-column">
+                    {Array.isArray(careNotes) && careNotes.length > 0 && (
+                      <div className="care-notes">
+                        <h3>Care Notes:</h3>
+                        <ul className="list-tabular">
+                          {careNotes.map((note, index) => (
+                            <li key={index} className="list-row">{note}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {details?.features && (
+                      <div className="features">
+                        <h3>Features:</h3>
+                        <ul className="list-tabular">
+                          {details.features.map((feature, index) => (
+                            <li key={index} className="list-row">{feature}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                
+                  <div className="specs-column">
+                    {details?.material && (
+                      <div className="material">
+                        <h3>Material:</h3>
+                        <p className="material-row">{details.material}</p>
+                      </div>
+                    )}
+                    {sizeChart && (
+                      <div className="size-chart">
+                        <h3>Size Chart:</h3>
+                        <table className="size-chart-table">
+                          <thead>
+                            <tr>
+                              <th>Size</th>
+                              <th>Measurement</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {Object.entries(sizeChart).map(([size, measurement]) => (
+                              <tr key={size}>
+                                <td>{size}</td>
+                                <td>{typeof measurement === 'object' ? JSON.stringify(measurement) : String(measurement)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                    {dimensions && (
+                      <div className="dimensions">
+                        <h3>Dimensions:</h3>
+                        {Array.isArray(dimensions) ? (
+                          <ul className="list-tabular">
+                            {dimensions.map((d, idx) => <li key={idx} className="list-row">{d}</li>)}
+                          </ul>
+                        ) : (
+                          <table className="dimensions-table">
+                            <tbody>
+                              {Object.entries(dimensions).filter(([key]) => key !== 'size_chart').map(([key, value]) => (
+                                <tr key={key}>
+                                  <td className="dim-key">{key.replace(/_/g, ' ')}</td>
+                                  <td className="dim-val">{typeof value === 'object' ? JSON.stringify(value) : String(value)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
+              </details>
               
-              {product.details && product.details.material && (
-                <div className="material">
-                  <h3>Material:</h3>
-                  <p>{product.details.material}</p>
+              {sustainabilityNotes && (
+                <div className="sustainability-notes">
+                  <h3>Sustainability:</h3>
+                  {Array.isArray(sustainabilityNotes) ? (
+                    <ul>
+                      {sustainabilityNotes.map((note, idx) => (
+                        <li key={idx}>{note}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div>
+                      {Array.isArray(sustainabilityNotes?.certifications) && sustainabilityNotes.certifications.length > 0 && (
+                        <div className="certifications">
+                          <strong>Certifications:</strong>
+                          <ul>
+                            {sustainabilityNotes.certifications.map((c, idx) => <li key={idx}>{c}</li>)}
+                          </ul>
+                        </div>
+                      )}
+                      {sustainabilityNotes?.description && (
+                        <p className="sustainability-description">{sustainabilityNotes.description}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
             
+            <div className="stock-row">
+              <span className={`stock-badge ${inStock ? 'in-stock' : 'out-of-stock'}`}>
+                {inStock ? 'In Stock' : 'Out of Stock'}{typeof stockCount === 'number' ? ` • ${stockCount} available` : ''}
+              </span>
+            </div>
             <div className="product-actions">
               <button className="add-to-cart-button" onClick={handleAddToCart}>
                 Add To Cart
@@ -508,19 +618,19 @@ export default function ProductPage() {
           {/* Reviews Summary */}
           <div className="reviews-summary">
             <div className="average-rating">
-              <div className="rating-number">{reviewsData.averageRating}</div>
+              <div className="rating-number">{Number(reviewStats?.averageRating || 0).toFixed(1)}</div>
               <div className="rating-stars">
                 {[1, 2, 3, 4, 5].map(star => (
                   <span key={star} className="star">
-                    {star <= Math.floor(reviewsData.averageRating) ? "★" : "☆"}
+                    {star <= Math.floor(Number(reviewStats?.averageRating || 0)) ? "★" : "☆"}
                   </span>
                 ))}
               </div>
-              <div className="total-reviews">from {reviewsData.totalReviews} reviews</div>
+              <div className="total-reviews">from {reviewStats?.reviewCount || 0} reviews</div>
             </div>
             
             <div className="rating-distribution">
-              {reviewsData.ratingDistribution.map(item => (
+              {(ratingDistribution.length > 0 ? ratingDistribution : [5,4,3,2,1].map(r => ({ rating: r, count: 0, percentage: 0 })) ).map(item => (
                 <div className="rating-bar" key={item.rating}>
                   <div className="rating-label">{item.rating}.0</div>
                   <div className="progress-bar-container">
@@ -579,42 +689,50 @@ export default function ProductPage() {
               </div>
               
               <div className="review-items">
-                {reviewsData.reviews.map(review => (
-                  <div className="review-item" key={review.id}>
-                    <div className="review-rating">
-                      {[1, 2, 3, 4, 5].map(star => (
-                        <span key={star} className="star">
-                          {star <= review.rating ? "★" : "☆"}
-                        </span>
-                      ))}
-                    </div>
-                    
-                    <div className="review-content">
-                      <p>{review.content}</p>
-                    </div>
-                    
-                    <div className="review-meta">
-                      <div className="review-date">{review.date}</div>
-                    </div>
-                    
-                    <div className="review-author">
-                      <div className="author-avatar">
-                        <img src={`https://i.pravatar.cc/40?u=${review.id}`} alt={review.author} />
+                {Array.isArray(reviews) && reviews.length > 0 ? (
+                  reviews.map(review => (
+                    <div className="review-item" key={review.id || review._id}>
+                      <div className="review-rating">
+                        {[1, 2, 3, 4, 5].map(star => (
+                          <span key={star} className="star">
+                            {star <= Math.round(review?.rating || 0) ? "★" : "☆"}
+                          </span>
+                        ))}
                       </div>
-                      <div className="author-name">{review.author}</div>
+                      
+                      <div className="review-content">
+                        <p>{review?.content || review?.text || review?.comment || ''}</p>
+                      </div>
+                      
+                      <div className="review-meta">
+                        <div className="review-date">{review?.date || review?.created_at || review?.createdAt || ''}</div>
+                      </div>
+                      
+                      <div className="review-author">
+                        <div className="author-avatar">
+                          <img src={`https://i.pravatar.cc/40?u=${review.id || review._id}`} alt={review?.author || review?.user?.name || 'Reviewer'} />
+                        </div>
+                        <div className="author-name">{review?.author || review?.user?.name || 'Anonymous'}</div>
+                      </div>
+                      
+                      <div className="review-actions">
+                        <button className="helpful-button">
+                          <span className="thumbs-up-icon">👍</span>
+                          <span className="helpful-count">{review?.helpfulCount || review?.helpful || 0}</span>
+                        </button>
+                        <button className="not-helpful-button">
+                          <span className="thumbs-down-icon">👎</span>
+                        </button>
+                      </div>
                     </div>
-                    
-                    <div className="review-actions">
-                      <button className="helpful-button">
-                        <span className="thumbs-up-icon">👍</span>
-                        <span className="helpful-count">{review.helpfulCount}</span>
-                      </button>
-                      <button className="not-helpful-button">
-                        <span className="thumbs-down-icon">👎</span>
-                      </button>
+                  ))
+                ) : (
+                  <div className="review-item">
+                    <div className="review-content">
+                      <p>No reviews yet.</p>
                     </div>
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </div>

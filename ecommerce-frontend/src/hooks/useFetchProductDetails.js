@@ -5,12 +5,25 @@ const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 const cacheKey = (productId) => `product-details-cache:v1:id=${productId}`;
 
+// Normalize product fields from API (price -> number, image_url cleaned)
+const normalizeProduct = (p) => {
+  if (!p) return null;
+  const imageUrl = typeof p.image_url === 'string' ? p.image_url.trim().replace(/^`|`$/g, '') : p.image_url;
+  const priceNum = typeof p.price === 'string' ? parseFloat(p.price) : p.price;
+  return { ...p, image_url: imageUrl, price: priceNum };
+};
+
 export default function useFetchProductDetails({ productId, enabled = true } = {}) {
   const [product, setProduct] = useState(null);
   const [category, setCategory] = useState(null);
   const [images, setImages] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [reviewStats, setReviewStats] = useState({ averageRating: 0, reviewCount: 0 });
+  const [details, setDetails] = useState(null);
+  const [dimensions, setDimensions] = useState(null);
+  const [sizeChart, setSizeChart] = useState(null);
+  const [careNotes, setCareNotes] = useState([]);
+  const [sustainabilityNotes, setSustainabilityNotes] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -26,6 +39,11 @@ export default function useFetchProductDetails({ productId, enabled = true } = {
       setImages([]);
       setReviews([]);
       setReviewStats({ averageRating: 0, reviewCount: 0 });
+      setDetails(null);
+      setDimensions(null);
+      setSizeChart(null);
+      setCareNotes([]);
+      setSustainabilityNotes(null);
       setError(null);
     }
   }, [productId]);
@@ -51,11 +69,24 @@ export default function useFetchProductDetails({ productId, enabled = true } = {
           const age = Date.now() - (cached.ts || 0);
           
           if (cached.product) {
-            setProduct(cached.product);
+            const prodFromCache = cached.product ? {
+              ...cached.product,
+              image_url: typeof cached.product.image_url === 'string' ? cached.product.image_url.trim().replace(/^`|`$/g, '') : cached.product.image_url,
+              price: typeof cached.product.price === 'string' ? parseFloat(cached.product.price) : cached.product.price,
+            } : null;
+            const imgsFromCache = Array.isArray(cached.images)
+              ? cached.images.map(u => typeof u === 'string' ? u.trim().replace(/^`|`$/g, '') : (u?.image_url?.trim?.().replace(/^`|`$/g, ''))).filter(Boolean)
+              : [];
+            setProduct(prodFromCache);
             setCategory(cached.category || null);
-            setImages(cached.images || []);
+            setImages(imgsFromCache);
             setReviews(cached.reviews || []);
             setReviewStats(cached.reviewStats || { averageRating: 0, reviewCount: 0 });
+            setDetails(cached.details ?? cached.product?.details ?? null);
+            setDimensions(cached.dimensions ?? cached.product?.dimensions ?? null);
+            setSizeChart(cached.sizeChart ?? cached.product?.dimensions?.size_chart ?? null);
+            setCareNotes(cached.careNotes ?? cached.product?.care_notes ?? []);
+            setSustainabilityNotes(cached.sustainabilityNotes ?? cached.product?.sustainability_notes ?? null);
             usedCache = true;
             cacheIsStale = age >= CACHE_TTL_MS;
             setLoading(false);
@@ -85,12 +116,26 @@ export default function useFetchProductDetails({ productId, enabled = true } = {
 
         const data = await response.json();
         
+        const productNorm = data.product ? {
+          ...data.product,
+          image_url: typeof data.product.image_url === 'string' ? data.product.image_url.trim().replace(/^`|`$/g, '') : data.product.image_url,
+          price: typeof data.product.price === 'string' ? parseFloat(data.product.price) : data.product.price,
+        } : null;
+        const imagesNorm = Array.isArray(data.images)
+          ? data.images.map(u => typeof u === 'string' ? u.trim().replace(/^`|`$/g, '') : (u?.image_url?.trim?.().replace(/^`|`$/g, ''))).filter(Boolean)
+          : (productNorm?.image_url ? [productNorm.image_url] : []);
+        
         // Update state with fetched data
-        setProduct(data.product || null);
+        setProduct(productNorm || null);
         setCategory(data.category || null);
-        setImages(data.images || []);
-        setReviews(data.reviews || []);
+        setImages(imagesNorm);
+        setReviews(Array.isArray(data.reviews) ? data.reviews : []);
         setReviewStats(data.reviewStats || { averageRating: 0, reviewCount: 0 });
+        setDetails(productNorm?.details || null);
+        setDimensions(productNorm?.dimensions || null);
+        setSizeChart(productNorm?.dimensions?.size_chart || null);
+        setCareNotes(productNorm?.care_notes || []);
+        setSustainabilityNotes(productNorm?.sustainability_notes || null);
         
         // Cache the result
         try {
@@ -98,11 +143,16 @@ export default function useFetchProductDetails({ productId, enabled = true } = {
             localStorage.setItem(
               KEY,
               JSON.stringify({
-                product: data.product,
+                product: productNorm,
                 category: data.category,
-                images: data.images,
-                reviews: data.reviews,
+                images: imagesNorm,
+                reviews: Array.isArray(data.reviews) ? data.reviews : [],
                 reviewStats: data.reviewStats,
+                details: productNorm?.details || null,
+                dimensions: productNorm?.dimensions || null,
+                sizeChart: productNorm?.dimensions?.size_chart || null,
+                careNotes: productNorm?.care_notes || [],
+                sustainabilityNotes: productNorm?.sustainability_notes || null,
                 ts: Date.now(),
               })
             );
@@ -136,6 +186,11 @@ export default function useFetchProductDetails({ productId, enabled = true } = {
     images,
     reviews,
     reviewStats,
+    details,
+    dimensions,
+    sizeChart,
+    careNotes,
+    sustainabilityNotes,
     loading,
     error,
     isLoading: loading,
