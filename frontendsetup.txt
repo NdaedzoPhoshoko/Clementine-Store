@@ -1,2 +1,3 @@
 for front end packages:
 npm install @emailjs/browser
+npm install react-inner-image-zoom

@@ -4,6 +4,7 @@ import useFetchProductDetails from '../../hooks/useFetchProductDetails'
 import { useParams } from 'react-router-dom'
 import ErrorModal from '../../components/modals/ErrorModal'
 import RelatedProducts from './related_products/RelatedProducts.jsx'
+import ZoomImage from '../../components/image_zoom/ZoomImage.jsx'
 
 // Placeholder components for future implementation
 const RelatedProductsSection = () => <div className="related-products-section">Related Products Coming Soon</div>
@@ -355,12 +356,13 @@ export default function ProductPage() {
                   className="main-image-wrapper"
                 >
                   {!imagesLoaded['main'] && <div className="skeleton skeleton-image"></div>}
-                  <img 
-                    src={imagesLoaded['main'] ? formattedImages[selectedImage].src : ''}
-                    alt={formattedImages[selectedImage].alt} 
-                    className={`main-image lazy-image ${imagesLoaded['main'] ? 'loaded' : ''}`}
-                    style={{ display: imagesLoaded['main'] ? 'block' : 'none' }}
-                  />
+                  {imagesLoaded['main'] && (
+                    <ZoomImage
+                      src={formattedImages[selectedImage].src}
+                      alt={formattedImages[selectedImage].alt}
+                      className="main-image"
+                    />
+                  )}
                 </div>
               )}
               
