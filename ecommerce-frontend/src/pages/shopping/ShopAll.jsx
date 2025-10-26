@@ -20,7 +20,14 @@ export default function ShopAll() {
   const [priceTempMin, setPriceTempMin] = useState(null);
   const [priceTempMax, setPriceTempMax] = useState(null);
   // Responsive items per page based on screen width
-  const [itemsPerPage, setItemsPerPage] = useState(12);
+  const getDefaultItemsPerPage = () => {
+    const w = typeof window !== 'undefined' ? window.innerWidth : 1200;
+    if (w >= 1280) return 20;
+    if (w >= 1024) return 16;
+    if (w >= 768) return 12;
+    return 8;
+  };
+  const [itemsPerPage, setItemsPerPage] = useState(getDefaultItemsPerPage());
   useEffect(() => {
     const compute = () => {
       const w = typeof window !== 'undefined' ? window.innerWidth : 1200;
@@ -45,8 +52,14 @@ export default function ShopAll() {
     loading,
     error,
     meta,
+    hasMore,
   } = useFetchBrowseProducts({
-    initialPage: 1,
+    initialPage: (() => {
+      const params = new URLSearchParams(location.search || "");
+      const pStr = params.get("page");
+      const p = pStr ? parseInt(pStr, 10) : 1;
+      return Number.isFinite(p) && p >= 1 ? p : 1;
+    })(),
     limit: itemsPerPage,
     search: query,
     categoryId: selectedCatId,
@@ -55,11 +68,16 @@ export default function ShopAll() {
     inStock: inStockOnly,
     enabled: true,
   });
-
-  // Reset to first page when itemsPerPage changes to keep full rows
-  useEffect(() => {
-    setPage(1);
-  }, [itemsPerPage, setPage]);
+  
+  // Disabled: page reset on itemsPerPage change (per user request)
+  // const itemsPerPageDidMount = useRef(false);
+  // useEffect(() => {
+  //   if (itemsPerPageDidMount.current) {
+  //     setPage(1);
+  //   } else {
+  //     itemsPerPageDidMount.current = true;
+  //   }
+  // }, [itemsPerPage]);
 
   const { categories, loading: catLoading } = useFetchCategoryNames({ page: 1, limit: 40 });
 
@@ -76,14 +94,11 @@ export default function ShopAll() {
     const incoming = params.get("search") || params.get("q") || "";
     if (incoming !== query) {
       setQuery(incoming || "");
-      setPage(1);
     }
-    // Map ?category=<slug> to selectedCatId
     const catSlug = params.get("category");
     if (!catSlug) {
       if (selectedCatId !== null) {
         setSelectedCatId(null);
-        setPage(1);
       }
     } else if (Array.isArray(categories) && categories.length) {
       const match = categories.find((c) =>
@@ -92,7 +107,6 @@ export default function ShopAll() {
       const nextId = match ? match.id : null;
       if (nextId !== selectedCatId) {
         setSelectedCatId(nextId);
-        setPage(1);
       }
     }
   }, [location.search, categories]);
@@ -133,8 +147,8 @@ export default function ShopAll() {
   const isEmpty = !loading && Array.isArray(displayProducts) && displayProducts.length === 0;
 
   const totalPages = meta?.pages || 1;
-  const hasPrev = !!meta?.hasPrev;
-  const hasNext = !!meta?.hasNext;
+  const hasPrev = typeof meta?.hasPrev !== 'undefined' ? !!meta?.hasPrev : page > 1;
+  const hasNext = typeof meta?.hasNext !== 'undefined' ? !!meta?.hasNext : !!hasMore;
   
   // Derived values for grouped sort dropdowns
   const sortPriceValue = sort.startsWith("price") ? sort : "";
@@ -142,8 +156,10 @@ export default function ShopAll() {
   const handlePriceSortChange = (val) => setSort(val || "relevance");
   const handleNameSortChange = (val) => setSort(val || "relevance");
   const goToPage = (n) => {
-    if (n < 1 || n > totalPages || n === page) return;
-    setPage(n);
+    const target = Number(n);
+    if (!Number.isFinite(target)) return;
+    if (target < 1 || target === page) return;
+    setPage(target);
   };
   
   const nextPages = useMemo(() => {
@@ -208,7 +224,7 @@ export default function ShopAll() {
                 className="filter-input form-control"
                 placeholder="Search products"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => { setQuery(e.target.value); setPage(1); }}
                 aria-label="Search products"
               />
             </div>
@@ -276,7 +292,7 @@ export default function ShopAll() {
                 <input
                   type="checkbox"
                   checked={inStockOnly}
-                  onChange={(e) => setInStockOnly(e.target.checked)}
+                  onChange={(e) => { setInStockOnly(e.target.checked); setPage(1); }}
                   aria-label="Only show items in stock"
                 />
                 <span>In Stock only</span>
@@ -308,7 +324,7 @@ export default function ShopAll() {
                         name="category"
                         className="filter-radio filter-checkbox"
                         checked={selectedCatId === c.id}
-                        onChange={(e) => e.target.checked && setSelectedCatId(c.id)}
+                        onChange={(e) => { if (e.target.checked) { setSelectedCatId(c.id); setPage(1); } }}
                         aria-checked={selectedCatId === c.id ? "true" : "false"}
                       />
                       <span className="filter-list__name">{c.name}</span>
