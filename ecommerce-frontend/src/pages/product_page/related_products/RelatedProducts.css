@@ -1,0 +1,39 @@
+/* Related Products section styling */
+.related-products {
+  margin-top: 60px;
+  padding: 30px 0;
+}
+
+.related-products__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.related-products__title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.related-products__view-all {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.related-products__grid { width: 100%; }
+
+/* Force a single responsive row using a CSS variable for columns */
+.related-one-row .prod-grid__list {
+  grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)) !important;
+  grid-auto-rows: 1fr;
+}
+
+@media (max-width: 640px) {
+  .related-one-row .prod-grid__list {
+    grid-template-columns: repeat(var(--cols, 1), minmax(0, 1fr)) !important;
+  }
+}

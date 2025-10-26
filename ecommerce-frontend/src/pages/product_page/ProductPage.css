@@ -1045,6 +1045,25 @@
 .chevron { display: inline-block; transition: transform 0.2s ease; }
 .specs-details[open] .chevron { transform: rotate(90deg); }
 
+/* Animated content wrapper */
+.specs-content {
+  overflow: hidden;
+  height: 0;
+  opacity: 0;
+  transition: height 300ms ease, opacity 200ms ease;
+  will-change: height, opacity;
+}
+.specs-details[open] .specs-content {
+  opacity: 1;
+  height: auto; /* Fallback so content opens even without JS */
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .specs-content { transition: none !important; }
+  .chevron { transition: none !important; }
+}
+
 /* Responsive for specs layout */
 @media (max-width: 768px) {
   .specs-flex { flex-direction: column; }

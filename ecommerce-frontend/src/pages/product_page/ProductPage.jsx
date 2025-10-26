@@ -3,6 +3,7 @@ import './ProductPage.css'
 import useFetchProductDetails from '../../hooks/useFetchProductDetails'
 import { useParams } from 'react-router-dom'
 import ErrorModal from '../../components/modals/ErrorModal'
+import RelatedProducts from './related_products/RelatedProducts.jsx'
 
 // Placeholder components for future implementation
 const RelatedProductsSection = () => <div className="related-products-section">Related Products Coming Soon</div>
@@ -38,6 +39,49 @@ export default function ProductPage() {
     : [];
   const stockCount = product?.stock ?? product?.inventory ?? product?.quantity_available ?? product?.available_quantity ?? null;
   const inStock = stockCount != null ? stockCount > 0 : (product?.in_stock ?? product?.available ?? true);
+  const currentCategoryId = product?.category_id ?? category?.id ?? null;
+  const currentCategoryName = product?.category_name ?? category?.name ?? null;
+
+  // Smooth expand/collapse for specs section
+  const specsDetailsRef = useRef(null);
+  const specsContentRef = useRef(null);
+  useEffect(() => {
+    const detailsEl = specsDetailsRef.current;
+    const contentEl = specsContentRef.current;
+    if (!detailsEl || !contentEl) return;
+
+    const onToggle = () => {
+      const isOpen = detailsEl.open;
+      if (isOpen) {
+        // Opening: from 0 -> auto via measured height
+        contentEl.style.height = '0px';
+        contentEl.style.opacity = '0';
+        const measured = contentEl.scrollHeight;
+        contentEl.style.height = measured + 'px';
+        contentEl.style.opacity = '1';
+        const finalizeOpen = () => {
+          contentEl.style.height = 'auto';
+          contentEl.removeEventListener('transitionend', finalizeOpen);
+        };
+        contentEl.addEventListener('transitionend', finalizeOpen);
+      } else {
+        // Closing: from current auto -> 0 using measured height
+        const measured = contentEl.scrollHeight;
+        contentEl.style.height = measured + 'px';
+        requestAnimationFrame(() => {
+          contentEl.style.height = '0px';
+          contentEl.style.opacity = '0';
+        });
+      }
+    };
+
+    // Initialize visual state
+    contentEl.style.height = detailsEl.open ? 'auto' : '0px';
+    contentEl.style.opacity = detailsEl.open ? '1' : '0';
+
+    detailsEl.addEventListener('toggle', onToggle);
+    return () => detailsEl.removeEventListener('toggle', onToggle);
+  }, []);
   
   // Related products data - keeping this for now as mentioned
   const relatedProducts = [
@@ -439,81 +483,83 @@ export default function ProductPage() {
               )}
               </div>
               
-              <details className="specs-details">
+              <details className="specs-details" ref={specsDetailsRef}>
                 <summary className="specs-toggle">Show More <span className="chevron">›</span></summary>
-                <div className="specs-flex">
-                  <div className="specs-column">
-                    {Array.isArray(careNotes) && careNotes.length > 0 && (
-                      <div className="care-notes">
-                        <h3>Care Notes:</h3>
-                        <ul className="list-tabular">
-                          {careNotes.map((note, index) => (
-                            <li key={index} className="list-row">{note}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    {details?.features && (
-                      <div className="features">
-                        <h3>Features:</h3>
-                        <ul className="list-tabular">
-                          {details.features.map((feature, index) => (
-                            <li key={index} className="list-row">{feature}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                
-                  <div className="specs-column">
-                    {details?.material && (
-                      <div className="material">
-                        <h3>Material:</h3>
-                        <p className="material-row">{details.material}</p>
-                      </div>
-                    )}
-                    {sizeChart && (
-                      <div className="size-chart">
-                        <h3>Size Chart:</h3>
-                        <table className="size-chart-table">
-                          <thead>
-                            <tr>
-                              <th>Size</th>
-                              <th>Measurement</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {Object.entries(sizeChart).map(([size, measurement]) => (
-                              <tr key={size}>
-                                <td>{size}</td>
-                                <td>{typeof measurement === 'object' ? JSON.stringify(measurement) : String(measurement)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                    {dimensions && (
-                      <div className="dimensions">
-                        <h3>Dimensions:</h3>
-                        {Array.isArray(dimensions) ? (
+                <div className="specs-content" ref={specsContentRef}>
+                  <div className="specs-flex">
+                    <div className="specs-column">
+                      {Array.isArray(careNotes) && careNotes.length > 0 && (
+                        <div className="care-notes">
+                          <h3>Care Notes:</h3>
                           <ul className="list-tabular">
-                            {dimensions.map((d, idx) => <li key={idx} className="list-row">{d}</li>)}
+                            {careNotes.map((note, index) => (
+                              <li key={index} className="list-row">{note}</li>
+                            ))}
                           </ul>
-                        ) : (
-                          <table className="dimensions-table">
+                        </div>
+                      )}
+                      {details?.features && (
+                        <div className="features">
+                          <h3>Features:</h3>
+                          <ul className="list-tabular">
+                            {details.features.map((feature, index) => (
+                              <li key={index} className="list-row">{feature}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  
+                    <div className="specs-column">
+                      {details?.material && (
+                        <div className="material">
+                          <h3>Material:</h3>
+                          <p className="material-row">{details.material}</p>
+                        </div>
+                      )}
+                      {sizeChart && (
+                        <div className="size-chart">
+                          <h3>Size Chart:</h3>
+                          <table className="size-chart-table">
+                            <thead>
+                              <tr>
+                                <th>Size</th>
+                                <th>Measurement</th>
+                              </tr>
+                            </thead>
                             <tbody>
-                              {Object.entries(dimensions).filter(([key]) => key !== 'size_chart').map(([key, value]) => (
-                                <tr key={key}>
-                                  <td className="dim-key">{key.replace(/_/g, ' ')}</td>
-                                  <td className="dim-val">{typeof value === 'object' ? JSON.stringify(value) : String(value)}</td>
+                              {Object.entries(sizeChart).map(([size, measurement]) => (
+                                <tr key={size}>
+                                  <td>{size}</td>
+                                  <td>{typeof measurement === 'object' ? JSON.stringify(measurement) : String(measurement)}</td>
                                 </tr>
                               ))}
                             </tbody>
                           </table>
-                        )}
-                      </div>
-                    )}
+                        </div>
+                      )}
+                      {dimensions && (
+                        <div className="dimensions">
+                          <h3>Dimensions:</h3>
+                          {Array.isArray(dimensions) ? (
+                            <ul className="list-tabular">
+                              {dimensions.map((d, idx) => <li key={idx} className="list-row">{d}</li>)}
+                            </ul>
+                          ) : (
+                            <table className="dimensions-table">
+                              <tbody>
+                                {Object.entries(dimensions).filter(([key]) => key !== 'size_chart').map(([key, value]) => (
+                                  <tr key={key}>
+                                    <td className="dim-key">{key.replace(/_/g, ' ')}</td>
+                                    <td className="dim-val">{typeof value === 'object' ? JSON.stringify(value) : String(value)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </details>
@@ -568,47 +614,7 @@ export default function ProductPage() {
       )}
       
       {/* Related Products Section */}
-      <section className="related-products-section">
-        <div className="section-header">
-          <h2>Related Product</h2>
-          <a href="#view-all" className="view-all-link">View All</a>
-        </div>
-        
-        <div className="related-products-grid">
-          {relatedProducts.map(product => {
-            const imageId = `related-${product.id}`
-            return (
-              <div className="related-product-card" key={product.id}>
-                <div className="product-image">
-                  <div
-                    ref={el => imageRefs.current[imageId] = el}
-                    data-id={imageId}
-                    data-src={product.image}
-                    style={{ height: '180px', width: '100%' }}
-                  >
-                    {!imagesLoaded[imageId] && <div className="skeleton" style={{ height: '100%' }}></div>}
-                    <img 
-                      src={imagesLoaded[imageId] ? product.image : ''}
-                      alt={product.name}
-                      className={`lazy-image ${imagesLoaded[imageId] ? 'loaded' : ''}`}
-                      style={{ display: imagesLoaded[imageId] ? 'block' : 'none', width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  </div>
-                </div>
-                <div className="product-details">
-                  <h3 className="product-name">{product.name}</h3>
-                  <div className="product-price">${product.price}</div>
-                  <div className="product-meta">
-                    <div className="rating">
-                      <span className="stars">★ {product.rating}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </section>
+      <RelatedProducts categoryId={currentCategoryId} categoryName={currentCategoryName} currentProductId={productId} />
       
       {/* Product Reviews Section */}
       <section className="product-reviews-section">
