@@ -52,6 +52,8 @@ export default function ProdGrid({
               description={p.description}
               price={p.price}
               currency={currency}
+              averageRating={p.average_rating || p.averageRating || 0}
+              reviewCount={p.review_count || p.reviewCount || 0}
               isPlaceholder={showSkeleton || String(p.id || '').startsWith('placeholder-')}
               onAddToCart={() => onAddToCart(p)}
             />

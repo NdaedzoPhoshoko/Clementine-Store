@@ -48,7 +48,9 @@ export const listProducts = async (req, res) => {
       }
     }
 
+    const whereClauses2 = whereClauses.map(clause => clause.replace(/^(\w+)/, 'p.$1'));
     const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
+    const whereSqlWithP = whereClauses.length ? `WHERE ${whereClauses2.join(" AND ")}` : "";
 
     // total count
     const countQuery = `SELECT COUNT(*) AS total FROM products ${whereSql}`;
@@ -58,15 +60,23 @@ export const listProducts = async (req, res) => {
     // items query
     const itemsParams = [...params, limitNum, offset];
     const itemsQuery = `
-      SELECT id, name, description, price, image_url, stock, category_id,
-             details, dimensions, care_notes, sustainability_notes
-      FROM products
-      ${whereSql}
-      ORDER BY id DESC
+      SELECT p.id, p.name, p.description, p.price, p.image_url, p.stock, p.category_id,
+             p.details, p.dimensions, p.care_notes, p.sustainability_notes,
+             COALESCE(AVG(r.rating), 0) as average_rating,
+             COUNT(r.id) as review_count
+      FROM products p
+      LEFT JOIN reviews r ON p.id = r.product_id
+      ${whereSqlWithP}
+      GROUP BY p.id
+      ORDER BY p.id DESC
       LIMIT $${itemsParams.length - 1} OFFSET $${itemsParams.length}
     `;
     const itemsResult = await pool.query(itemsQuery, itemsParams);
-    const items = itemsResult.rows;
+    const items = itemsResult.rows.map(item => ({
+      ...item,
+      average_rating: parseFloat(item.average_rating),
+      review_count: parseInt(item.review_count, 10)
+    }));
 
     const pages = Math.max(Math.ceil(total / limitNum), 1);
     const hasNext = pageNum < pages;
@@ -829,10 +839,24 @@ export const deleteAllProductImages = async (req, res) => {
 
 export const getLatestProducts = async (req, res) => {
   try {
-    const result = await pool.query(
-      "SELECT id, image_url, name, description, price FROM products ORDER BY id DESC LIMIT 20"
-    );
-    return res.status(200).json(result.rows);
+    const result = await pool.query(`
+      SELECT p.id, p.image_url, p.name, p.description, p.price,
+             COALESCE(AVG(r.rating), 0) as average_rating,
+             COUNT(r.id) as review_count
+      FROM products p
+      LEFT JOIN reviews r ON p.id = r.product_id
+      GROUP BY p.id
+      ORDER BY p.id DESC 
+      LIMIT 20
+    `);
+    
+    const products = result.rows.map(item => ({
+      ...item,
+      average_rating: parseFloat(item.average_rating),
+      review_count: parseInt(item.review_count, 10)
+    }));
+    
+    return res.status(200).json(products);
   } catch (err) {
     console.error("Get latest products error:", err.message);
     return res.status(500).json({ message: "Error fetching latest products" });

@@ -97,11 +97,35 @@
   line-height: 1.25;
 }
 
+.prod-card__price-rating-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+
 .prod-card__price {
-  margin-top: 4px;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--palette-primary, #ff7b38);
+  font-weight: 400;
+  font-size: 16px;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.prod-card__rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.prod-card__star {
+  color: #FFB800;
+}
+
+.prod-card__review-count {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  margin-left: 4px;
 }
 
 @media (max-width: 640px) {

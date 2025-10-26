@@ -25,7 +25,11 @@ export default function Products({ title = "Find Products", products = [], onAdd
         <h2 className="home-products__title">{title}</h2>
       </div>
       <ProdGrid
-        products={gridProducts}
+        products={gridProducts.map(product => ({
+          ...product,
+          averageRating: product.average_rating,
+          reviewCount: product.review_count
+        }))}
         loading={loading}
         onAddToCart={onAddToCart}
       />

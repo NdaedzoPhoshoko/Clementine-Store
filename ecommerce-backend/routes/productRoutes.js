@@ -53,7 +53,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
  *         description: If true, only products with stock > 0
  *     responses:
  *       200:
- *         description: Products list
+ *         description: List of products with pagination metadata
  *         content:
  *           application/json:
  *             schema:
@@ -62,34 +62,44 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
  *                 items:
  *                   type: array
  *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: integer
- *                       name:
- *                         type: string
- *                       description:
- *                         type: string
- *                       price:
- *                         type: number
- *                       image_url:
- *                         type: string
- *                       stock:
- *                         type: integer
- *                       category_id:
- *                         type: integer
- *                       details:
- *                         type: object
- *                         nullable: true
- *                       dimensions:
- *                         type: object
- *                         nullable: true
- *                       care_notes:
- *                         type: object
- *                         nullable: true
- *                       sustainability_notes:
- *                         type: object
- *                         nullable: true
+ *                     allOf:
+ *                       - type: object
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                           name:
+ *                             type: string
+ *                           description:
+ *                             type: string
+ *                           price:
+ *                             type: number
+ *                           image_url:
+ *                             type: string
+ *                           stock:
+ *                             type: integer
+ *                           category_id:
+ *                             type: integer
+ *                           details:
+ *                             type: object
+ *                             nullable: true
+ *                           dimensions:
+ *                             type: object
+ *                             nullable: true
+ *                           care_notes:
+ *                             type: object
+ *                             nullable: true
+ *                           sustainability_notes:
+ *                             type: object
+ *                             nullable: true
+ *                       - type: object
+ *                         properties:
+ *                           average_rating:
+ *                             type: number
+ *                             format: float
+ *                             description: Average rating score from reviews (0-5)
+ *                           review_count:
+ *                             type: integer
+ *                             description: Number of reviews for this product
  *                 meta:
  *                   type: object
  *                   properties:

@@ -8,6 +8,8 @@ export default function ProdCard({
   description,
   price,
   currency = "R",
+  averageRating = 0,
+  reviewCount = 0,
   onAddToCart = () => {},
   isPlaceholder = false,
 }) {
@@ -69,9 +71,16 @@ export default function ProdCard({
           </>
         ) : (
           <>
-            <h3 className="prod-card__name">{displayName}</h3>
+            <h4 className="prod-card__name">{displayName}</h4>
             <p className="prod-card__desc">{description}</p>
-            <div className="prod-card__price" aria-label={`Price ${priceDisplay}`}>{priceDisplay}</div>
+            <div className="prod-card__price-rating-container">
+              <div className="prod-card__price" aria-label={`Price ${priceDisplay}`}>{priceDisplay}</div>
+              <div className="prod-card__rating">
+                <span className="prod-card__star">★</span>
+                <span>{averageRating.toFixed(1)}</span>
+                <span className="prod-card__review-count">({reviewCount} reviews)</span>
+              </div>
+            </div>
           </>
         )}
       </div>

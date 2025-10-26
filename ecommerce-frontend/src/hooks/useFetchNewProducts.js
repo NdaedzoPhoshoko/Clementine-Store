@@ -74,6 +74,8 @@ export default function useFetchNewProducts() {
             name: p.name || '',
             description: p.description || '',
             price: typeof p.price === 'string' ? Number(p.price) : p.price,
+            average_rating: typeof p.average_rating === 'number' ? p.average_rating : 0,
+            review_count: typeof p.review_count === 'number' ? p.review_count : 0,
           }));
 
           console.log('[useFetchNewProducts] Normalized:', normalized);
