@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 // Cache TTL aligned with other hooks
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds
 
 const cacheKey = (productId) => `product-reviews-cache:v1:id=${productId}`;
 

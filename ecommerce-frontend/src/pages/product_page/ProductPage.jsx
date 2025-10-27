@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react'
 import './ProductPage.css'
 import useFetchProductDetails from '../../hooks/useFetchProductDetails'
+import useFetchProductReviews from '../../hooks/useFetchProductReviews'
 import { useParams } from 'react-router-dom'
 import ErrorModal from '../../components/modals/ErrorModal'
 import RelatedProducts from './related_products/RelatedProducts.jsx'
 import ZoomImage from '../../components/image_zoom/ZoomImage.jsx'
-
-// Placeholder components for future implementation
-const RelatedProductsSection = () => <div className="related-products-section">Related Products Coming Soon</div>
-const ProductReviewsSection = () => <div className="product-reviews-section">Product Reviews Coming Soon</div>
+import FlexModal from '../../components/modals/FlexModal.jsx'
 
 export default function ProductPage() {
   const { id } = useParams() || { id: '26' } // Default to product ID 26 if no param
@@ -29,12 +27,43 @@ export default function ProductPage() {
     loading, 
     error 
   } = useFetchProductDetails({ productId })
+  const { reviews: fetchedReviews, reviewStats: fetchedReviewStats, loading: reviewsLoading, error: reviewsError } = useFetchProductReviews({ productId });
+  const [selectedRatings, setSelectedRatings] = useState([]);
+  const onToggleRating = (rating) => {
+    setSelectedRatings(prev => prev.includes(rating) ? prev.filter(r => r !== rating) : [...prev, rating]);
+  };
+  const baseReviews = Array.isArray(fetchedReviews) ? fetchedReviews : reviews;
+  const baseReviewStats = fetchedReviewStats || reviewStats;
+  const filteredReviews = selectedRatings.length > 0 ? baseReviews.filter(rv => selectedRatings.includes(Math.round(rv?.rating || 0))) : baseReviews;
+  const formatDateDDMMYYYY = (input) => {
+    if (!input) return '';
+    const d = new Date(input);
+    if (isNaN(d.getTime())) return '';
+    const dd = String(d.getDate()).padStart(2, '0');
+    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const monthName = monthNames[d.getMonth()] || '';
+    const yyyy = String(d.getFullYear());
+    return `${dd} ${monthName} ${yyyy}`;
+  };
+  const renderStarsSVG = (ratingInput) => {
+    const r = Math.max(0, Math.min(5, Math.round(Number(ratingInput) || 0)));
+    return Array.from({ length: 5 }, (_, i) => (
+      <svg key={i} width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"
+          fill={i < r ? 'currentColor' : 'none'}
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
+      </svg>
+    ));
+  };
   
   // Derived UI helpers
-  const ratingDistribution = (Array.isArray(reviews) && reviews.length > 0)
+  const ratingDistribution = (Array.isArray(baseReviews) && baseReviews.length > 0)
     ? [5,4,3,2,1].map(r => {
-        const count = reviews.filter(rv => Math.round(rv?.rating || 0) === r).length;
-        const percentage = reviews.length ? Math.round((count / reviews.length) * 100) : 0;
+        const count = baseReviews.filter(rv => Math.round(rv?.rating || 0) === r).length;
+        const percentage = baseReviews.length ? Math.round((count / baseReviews.length) * 100) : 0;
         return { rating: r, count, percentage };
       })
     : [];
@@ -83,89 +112,6 @@ export default function ProductPage() {
     detailsEl.addEventListener('toggle', onToggle);
     return () => detailsEl.removeEventListener('toggle', onToggle);
   }, []);
-  
-  // Related products data - keeping this for now as mentioned
-  const relatedProducts = [
-    {
-      id: 1,
-      brand: 'Whistle',
-      name: 'Wide Leg Cropped Jeans, Denim',
-      price: 26,
-      rating: 4.8,
-      image: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?q=80&w=400&auto=format&fit=crop'
-    },
-    {
-      id: 2,
-      brand: 'John Lewis ANYDAY',
-      name: 'Long Sleeve Utility Shirt, Navy, 6',
-      price: 26,
-      rating: 4.5,
-      image: 'https://images.unsplash.com/photo-1520975922211-52c36e38d5cb?q=80&w=400&auto=format&fit=crop'
-    },
-    {
-      id: 3,
-      brand: 'John Lewis ANYDAY',
-      name: 'Stripe Overshirt, Light Blue',
-      price: 32,
-      rating: 4.5,
-      image: 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=400&auto=format&fit=crop'
-    },
-    {
-      id: 4,
-      brand: 'John Lewis ANYDAY',
-      name: 'Denim Shirt, Mid Wash',
-      price: 40,
-      rating: 4.8,
-      image: 'https://images.unsplash.com/photo-1540574769061-5f0b6d3b35b1?q=80&w=400&auto=format&fit=crop'
-    },
-    {
-      id: 5,
-      brand: 'John Lewis',
-      name: 'Linen Blazer, Navy',
-      price: 79,
-      rating: 4.8,
-      image: 'https://images.unsplash.com/photo-1556909114-23d18c54d9a9?q=80&w=400&auto=format&fit=crop'
-    }
-  ]
-  
-  // Reviews data - keeping this for now as mentioned
-  const reviewsData = {
-    averageRating: 4.5,
-    totalReviews: 1259,
-    ratingDistribution: [
-      { rating: 5, count: 2823, percentage: 80 },
-      { rating: 4, count: 38, percentage: 15 },
-      { rating: 3, count: 4, percentage: 3 },
-      { rating: 2, count: 0, percentage: 0 },
-      { rating: 1, count: 0, percentage: 0 }
-    ],
-    reviews: [
-      {
-        id: 1,
-        author: 'Darrell Steward',
-        rating: 5,
-        date: 'July 2, 2020 03:29 PM',
-        content: 'This is amazing product I have.',
-        helpfulCount: 128
-      },
-      {
-        id: 2,
-        author: 'Darlene Robertson',
-        rating: 5,
-        date: 'July 2, 2020 1:04 PM',
-        content: 'This is amazing product I have.',
-        helpfulCount: 82
-      },
-      {
-        id: 3,
-        author: 'Kathryn Murphy',
-        rating: 5,
-        date: 'June 26, 2020 10:03 PM',
-        content: 'This is amazing product I have.',
-        helpfulCount: 9
-      }
-    ]
-  }
 
   // State
   const [selectedImage, setSelectedImage] = useState(0)
@@ -176,6 +122,9 @@ export default function ProductPage() {
   const [imagesLoaded, setImagesLoaded] = useState({})
   const imageObserver = useRef(null)
   const imageRefs = useRef({})
+  const [isSpecsModalOpen, setSpecsModalOpen] = useState(false)
+  const specsToggleRef = useRef(null)
+  const specsInlineRootRef = useRef(null)
   
   // Initialize state values after product data is loaded
   useEffect(() => {
@@ -435,8 +384,8 @@ export default function ProductPage() {
                 </div>
                 <div className="product-stats">
                   <div className="rating">
-                    <span className="stars">★ {Number(reviewStats?.averageRating || 0).toFixed(1)}</span>
-                    <span className="review-count">({reviewStats?.reviewCount || 0} reviews)</span>
+                    <span className="stars">★ {Number(baseReviewStats?.averageRating || 0).toFixed(1)}</span>
+                    <span className="review-count">({baseReviewStats?.reviewCount || 0} reviews)</span>
                   </div>
                 </div>
               </div>
@@ -486,7 +435,98 @@ export default function ProductPage() {
               </div>
               
               <details className="specs-details" ref={specsDetailsRef}>
-                <summary className="specs-toggle">Show More <span className="chevron">›</span></summary>
+                <summary className="specs-toggle" ref={specsToggleRef} onClick={(e) => { e.preventDefault(); setSpecsModalOpen(v => !v); }}>View More <span className="chevron">›</span></summary>
+                {/* Inline dropdown placed directly under the summary */}
+                <div className="flexmodal__inline-root" ref={specsInlineRootRef}>
+                  <FlexModal
+                    open={isSpecsModalOpen}
+                    onClose={() => setSpecsModalOpen(false)}
+                    renderInPlace={true}
+                    parentRef={specsDetailsRef}
+                    closeOnEsc={true}
+                    closeOnOutsideClick={true}
+                    className="flexmodal__specs-popup"
+                    style={{ width: 'min(540px, 92vw)' }}
+                  >
+                    <div className="specs-content">
+                      <div className="specs-flex">
+                        <div className="specs-column">
+                          {Array.isArray(careNotes) && careNotes.length > 0 && (
+                            <div className="care-notes">
+                              <h3>Care Notes:</h3>
+                              <ul className="list-tabular">
+                                {careNotes.map((note, index) => (
+                                  <li key={index} className="list-row">{note}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {details?.features && (
+                            <div className="features">
+                              <h3>Features:</h3>
+                              <ul className="list-tabular">
+                                {details.features.map((feature, index) => (
+                                  <li key={index} className="list-row">{feature}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      
+                        <div className="specs-column">
+                          {details?.material && (
+                            <div className="material">
+                              <h3>Material:</h3>
+                              <p className="material-row">{details.material}</p>
+                            </div>
+                          )}
+                          {sizeChart && (
+                            <div className="size-chart">
+                              <h3>Size Chart:</h3>
+                              <table className="size-chart-table">
+                                <thead>
+                                  <tr>
+                                    <th>Size</th>
+                                    <th>Measurement</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {Object.entries(sizeChart).map(([size, measurement]) => (
+                                    <tr key={size}>
+                                      <td>{size}</td>
+                                      <td>{typeof measurement === 'object' ? JSON.stringify(measurement) : String(measurement)}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                          {dimensions && (
+                            <div className="dimensions">
+                              <h3>Dimensions:</h3>
+                              {Array.isArray(dimensions) ? (
+                                <ul className="list-tabular">
+                                  {dimensions.map((d, idx) => <li key={idx} className="list-row">{d}</li>)}
+                                </ul>
+                              ) : (
+                                <table className="dimensions-table">
+                                  <tbody>
+                                    {Object.entries(dimensions).filter(([key]) => key !== 'size_chart').map(([key, value]) => (
+                                      <tr key={key}>
+                                        <td className="dim-key">{key.replace(/_/g, ' ')}</td>
+                                        <td className="dim-val">{typeof value === 'object' ? JSON.stringify(value) : String(value)}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </FlexModal>
+                </div>
                 <div className="specs-content" ref={specsContentRef}>
                   <div className="specs-flex">
                     <div className="specs-column">
@@ -624,34 +664,55 @@ export default function ProductPage() {
         
         <div className="reviews-container">
           {/* Reviews Summary */}
-          <div className="reviews-summary">
-            <div className="average-rating">
-              <div className="rating-number">{Number(reviewStats?.averageRating || 0).toFixed(1)}</div>
-              <div className="rating-stars">
-                {[1, 2, 3, 4, 5].map(star => (
-                  <span key={star} className="star">
-                    {star <= Math.floor(Number(reviewStats?.averageRating || 0)) ? "★" : "☆"}
-                  </span>
+          {reviewsLoading ? (
+            <div className="reviews-summary" aria-busy="true" aria-live="polite">
+              <div className="average-rating">
+                <div className="skeleton-block" style={{ width: '64px', height: '48px' }} aria-hidden="true"></div>
+                <div className="skeleton-block" style={{ width: '120px', height: '20px', marginTop: '10px' }} aria-hidden="true"></div>
+                <div className="skeleton-block" style={{ width: '140px', height: '14px', marginTop: '10px' }} aria-hidden="true"></div>
+              </div>
+              <div className="rating-distribution">
+                {[...Array(5)].map((_, i) => (
+                  <div className="rating-bar" key={i}>
+                    <div className="skeleton-block" style={{ width: '30px', height: '14px' }} aria-hidden="true"></div>
+                    <div className="progress-bar-container">
+                      <div className="skeleton-block" style={{ width: '100%', height: '8px' }} aria-hidden="true"></div>
+                    </div>
+                    <div className="skeleton-block" style={{ width: '40px', height: '14px' }} aria-hidden="true"></div>
+                  </div>
                 ))}
               </div>
-              <div className="total-reviews">from {reviewStats?.reviewCount || 0} reviews</div>
             </div>
-            
-            <div className="rating-distribution">
-              {(ratingDistribution.length > 0 ? ratingDistribution : [5,4,3,2,1].map(r => ({ rating: r, count: 0, percentage: 0 })) ).map(item => (
-                <div className="rating-bar" key={item.rating}>
-                  <div className="rating-label">{item.rating}.0</div>
-                  <div className="progress-bar-container">
-                    <div 
-                      className="progress-bar" 
-                      style={{ width: `${item.percentage}%` }}
-                    ></div>
-                  </div>
-                  <div className="rating-count">{item.count}</div>
+          ) : (
+            <div className="reviews-summary">
+              <div className="average-rating">
+                <div className="rating-number">{Number(baseReviewStats?.averageRating || 0).toFixed(1)}</div>
+                <div className="rating-stars">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <span key={star} className="star">
+                      {star <= Math.floor(Number(baseReviewStats?.averageRating || 0)) ? "★" : "☆"}
+                    </span>
+                  ))}
                 </div>
-              ))}
+                <div className="total-reviews">from {baseReviewStats?.reviewCount || 0} reviews</div>
+              </div>
+              
+              <div className="rating-distribution">
+                {(ratingDistribution.length > 0 ? ratingDistribution : [5,4,3,2,1].map(r => ({ rating: r, count: 0, percentage: 0 })) ).map(item => (
+                  <div className="rating-bar" key={item.rating}>
+                    <div className="rating-label">{item.rating}.0</div>
+                    <div className="progress-bar-container">
+                      <div 
+                        className="progress-bar" 
+                        style={{ width: `${item.percentage}%` }}
+                      ></div>
+                    </div>
+                    <div className="rating-count">{item.count}</div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
           
           <div className="reviews-content">
             {/* Reviews Filter */}
@@ -663,7 +724,12 @@ export default function ProductPage() {
                 <div className="filter-options">
                   {[5, 4, 3, 2, 1].map(rating => (
                     <label className="filter-option" key={rating}>
-                      <input type="checkbox" name={`rating-${rating}`} />
+                      <input
+                        type="checkbox"
+                        name={`rating-${rating}`}
+                        checked={selectedRatings.includes(rating)}
+                        onChange={() => onToggleRating(rating)}
+                      />
                       <span className="star-rating">
                         <span className="star">★</span> {rating}
                       </span>
@@ -679,50 +745,45 @@ export default function ProductPage() {
             <div className="review-lists">
               <div className="review-lists-header">
                 <h3>See What Others Are Saying</h3>
+                <button type="button" className="review-write-btn">Write Review</button>
               </div>
               
               <div className="review-items">
-                {Array.isArray(reviews) && reviews.length > 0 ? (
-                  reviews.map(review => (
-                    <div className="review-item" key={review.id || review._id}>
-                      <div className="review-rating">
-                        {[1, 2, 3, 4, 5].map(star => (
-                          <span key={star} className="star">
-                            {star <= Math.round(review?.rating || 0) ? "★" : "☆"}
-                          </span>
-                        ))}
-                      </div>
-                      
-                      <div className="review-content">
-                        <p>{review?.content || review?.text || review?.comment || ''}</p>
-                      </div>
-                      
-                      <div className="review-meta">
-                        <div className="review-date">{review?.date || review?.created_at || review?.createdAt || ''}</div>
-                      </div>
-                      
-                      <div className="review-author">
-                        <div className="author-avatar">
-                          <img src={`https://i.pravatar.cc/40?u=${review.id || review._id}`} alt={review?.author || review?.user?.name || 'Reviewer'} />
+                {reviewsLoading ? (
+                  <>
+                    {[...Array(3)].map((_, i) => (
+                      <div className="review-item" key={`skeleton-${i}`}>
+                        <div className="review-header" style={{ fontFamily: 'var(--font-primary)' }}>
+                          <span className="skeleton-block" style={{ width: '180px', height: '16px' }} aria-hidden="true"></span>
+                          <span className="skeleton-block" style={{ width: '120px', height: '14px', marginLeft: 12 }} aria-hidden="true"></span>
+                          <span className="skeleton-block" style={{ width: '100px', height: '16px', marginLeft: 'auto' }} aria-hidden="true"></span>
                         </div>
-                        <div className="author-name">{review?.author || review?.user?.name || 'Anonymous'}</div>
+                        <div className="review-content comment">
+                          <div className="skeleton-block" style={{ width: '90%', height: '12px' }} aria-hidden="true"></div>
+                          <div className="skeleton-block" style={{ width: '70%', height: '12px', marginTop: 8 }} aria-hidden="true"></div>
+                        </div>
                       </div>
-                      
-                      <div className="review-actions">
-                        <button className="helpful-button">
-                          <span className="thumbs-up-icon">👍</span>
-                          <span className="helpful-count">{review?.helpfulCount || review?.helpful || 0}</span>
-                        </button>
-                        <button className="not-helpful-button">
-                          <span className="thumbs-down-icon">👎</span>
-                        </button>
+                    ))}
+                  </>
+                ) : Array.isArray(filteredReviews) && filteredReviews.length > 0 ? (
+                  filteredReviews.map(review => (
+                    <div className="review-item" key={review.id || review._id}>
+                      <div className="review-header" style={{ fontFamily: 'var(--font-primary)' }}>
+                        <span className="review-name">{review?.user_name || review?.author || review?.user?.name || 'Anonymous'}</span>
+                        {' - '}
+                        <span className="review-date">{formatDateDDMMYYYY(review?.created_at || review?.createdAt || review?.date)}</span>
+                        <span className="review-stars" aria-label={`${Math.round(review?.rating || 0)} out of 5 stars`}>{renderStarsSVG(review?.rating)}</span>
+                      </div>
+                      <div className="review-content comment">
+                        <p>{review?.comment || review?.content || review?.text || ''}</p>
                       </div>
                     </div>
                   ))
                 ) : (
                   <div className="review-item">
-                    <div className="review-content">
-                      <p>No reviews yet.</p>
+                    <div className="review-content no-reviews">
+                      <img src="/illustrations/hand-drawn-no-data-illustration.png" alt="No reviews illustration" className="no-reviews__img" loading="lazy" />
+                      <p className="no-reviews__text">No such rating is given yet, be the first to rate</p>
                     </div>
                   </div>
                 )}

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import './Modal.css';
+import './ErrorModal.css';
 
 export default function ErrorModal({ message = 'An unexpected error occurred.', onClose, durationMs = 12000 }) {
   const [closing, setClosing] = useState(false);

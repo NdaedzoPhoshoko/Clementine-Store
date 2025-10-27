@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 
 // Cache TTL aligned with other hooks
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const REVIEWS_TTL_MS = 60 * 1000; // Reviews refresh every 60s
 
 const cacheKey = (productId) => `product-details-cache:v1:id=${productId}`;
 
@@ -28,6 +29,7 @@ export default function useFetchProductDetails({ productId, enabled = true } = {
   const [error, setError] = useState(null);
 
   const controllerRef = useRef(null);
+  const reviewsControllerRef = useRef(null);
   const lastProductIdRef = useRef(productId);
 
   // Reset when product ID changes
@@ -58,7 +60,8 @@ export default function useFetchProductDetails({ productId, enabled = true } = {
     const KEY = cacheKey(productId);
 
     let usedCache = false;
-    let cacheIsStale = true;
+    let detailsCacheIsStale = true;
+    let reviewsCacheIsStale = true;
 
     // Try cache first for this product ID
     try {
@@ -66,7 +69,8 @@ export default function useFetchProductDetails({ productId, enabled = true } = {
         const raw = localStorage.getItem(KEY);
         if (raw) {
           const cached = JSON.parse(raw);
-          const age = Date.now() - (cached.ts || 0);
+          const detailsAge = Date.now() - (cached.ts_details ?? cached.ts ?? 0);
+          const reviewsAge = Date.now() - (cached.ts_reviews ?? cached.ts ?? 0);
           
           if (cached.product) {
             const prodFromCache = cached.product ? {
@@ -88,7 +92,8 @@ export default function useFetchProductDetails({ productId, enabled = true } = {
             setCareNotes(cached.careNotes ?? cached.product?.care_notes ?? []);
             setSustainabilityNotes(cached.sustainabilityNotes ?? cached.product?.sustainability_notes ?? null);
             usedCache = true;
-            cacheIsStale = age >= CACHE_TTL_MS;
+            detailsCacheIsStale = detailsAge >= CACHE_TTL_MS;
+            reviewsCacheIsStale = reviewsAge >= REVIEWS_TTL_MS;
             setLoading(false);
           }
         }
@@ -153,6 +158,8 @@ export default function useFetchProductDetails({ productId, enabled = true } = {
                 sizeChart: productNorm?.dimensions?.size_chart || null,
                 careNotes: productNorm?.care_notes || [],
                 sustainabilityNotes: productNorm?.sustainability_notes || null,
+                ts_details: Date.now(),
+                ts_reviews: Date.now(),
                 ts: Date.now(),
               })
             );
@@ -171,12 +178,61 @@ export default function useFetchProductDetails({ productId, enabled = true } = {
       }
     };
 
-    if (!usedCache || cacheIsStale) {
+    const fetchReviewsOnly = async () => {
+      if (!productId) return;
+      try {
+        const rController = new AbortController();
+        reviewsControllerRef.current?.abort();
+        reviewsControllerRef.current = rController;
+
+        const response = await fetch(`http://localhost:5000/api/products/${productId}/reviews`, {
+          signal: rController.signal,
+          headers: { 'Accept': 'application/json' }
+        });
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+        const data = await response.json();
+        const reviewsArr = Array.isArray(data.reviews) ? data.reviews : [];
+        const stats = data.reviewStats || data.stats || { averageRating: 0, reviewCount: 0 };
+
+        setReviews(reviewsArr);
+        setReviewStats(stats);
+
+        // Update only reviews part of the cache
+        try {
+          if (typeof window !== 'undefined' && window.localStorage) {
+            const raw = localStorage.getItem(KEY);
+            const cached = raw ? JSON.parse(raw) : {};
+            localStorage.setItem(
+              KEY,
+              JSON.stringify({
+                ...cached,
+                reviews: reviewsArr,
+                reviewStats: stats,
+                ts_reviews: Date.now(),
+              })
+            );
+          }
+        } catch (e) {
+          console.warn('[useFetchProductDetails] Cache write (reviews) failed:', e);
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error('[useFetchProductDetails] Fetch reviews error:', err);
+        }
+      }
+    };
+
+    if (!usedCache || detailsCacheIsStale) {
       fetchLatest();
+    } else if (reviewsCacheIsStale) {
+      fetchReviewsOnly();
     }
 
     return () => {
       controller.abort();
+      reviewsControllerRef.current?.abort();
     };
   }, [productId, enabled]);
 
