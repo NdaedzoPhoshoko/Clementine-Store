@@ -6,6 +6,53 @@ import { useParams } from 'react-router-dom'
 import ErrorModal from '../../components/modals/ErrorModal'
 import RelatedProducts from './related_products/RelatedProducts.jsx'
 import ZoomImage from '../../components/image_zoom/ZoomImage.jsx'
+import useAccordionData from '../../hooks/useAccordionData.jsx'
+import { ChevronDown, ChevronUp } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
+
+function Accordion({ items }) {
+  const [openIndex, setOpenIndex] = useState(null)
+  const toggle = (idx) => setOpenIndex((prev) => (prev === idx ? null : idx))
+  return (
+    <div className="accordion">
+      {Array.isArray(items) && items.map((item, idx) => (
+        <div key={idx} className="accordion-item">
+          <button
+            type="button"
+            className="accordion-header"
+            onClick={() => toggle(idx)}
+            aria-expanded={openIndex === idx}
+            aria-controls={`accordion-panel-${idx}`}
+            id={`accordion-header-${idx}`}
+          >
+            <span className="accordion-title">{item.title}</span>
+            {openIndex === idx ? (
+              <ChevronUp className="accordion-icon" aria-hidden="true" />
+            ) : (
+              <ChevronDown className="accordion-icon" aria-hidden="true" />
+            )}
+          </button>
+          <AnimatePresence initial={false}>
+            {openIndex === idx && (
+              <motion.div
+                className="accordion-panel"
+                id={`accordion-panel-${idx}`}
+                role="region"
+                aria-labelledby={`accordion-header-${idx}`}
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25, ease: 'easeInOut' }}
+              >
+                <div className="accordion-content">{item.content}</div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export default function ProductPage() {
   const { id } = useParams() || { id: '26' } // Default to product ID 26 if no param
@@ -23,6 +70,7 @@ export default function ProductPage() {
     sizeChart,
     careNotes,
     sustainabilityNotes,
+    colorVariants,
     loading, 
     error 
   } = useFetchProductDetails({ productId })
@@ -71,46 +119,8 @@ export default function ProductPage() {
   const currentCategoryId = product?.category_id ?? category?.id ?? null;
   const currentCategoryName = product?.category_name ?? category?.name ?? null;
 
-  // Smooth expand/collapse for specs section
-  const specsDetailsRef = useRef(null);
-  const specsContentRef = useRef(null);
-  useEffect(() => {
-    const detailsEl = specsDetailsRef.current;
-    const contentEl = specsContentRef.current;
-    if (!detailsEl || !contentEl) return;
-
-    const onToggle = () => {
-      const isOpen = detailsEl.open;
-      if (isOpen) {
-        // Opening: from 0 -> auto via measured height
-        contentEl.style.height = '0px';
-        contentEl.style.opacity = '0';
-        const measured = contentEl.scrollHeight;
-        contentEl.style.height = measured + 'px';
-        contentEl.style.opacity = '1';
-        const finalizeOpen = () => {
-          contentEl.style.height = 'auto';
-          contentEl.removeEventListener('transitionend', finalizeOpen);
-        };
-        contentEl.addEventListener('transitionend', finalizeOpen);
-      } else {
-        // Closing: from current auto -> 0 using measured height
-        const measured = contentEl.scrollHeight;
-        contentEl.style.height = measured + 'px';
-        requestAnimationFrame(() => {
-          contentEl.style.height = '0px';
-          contentEl.style.opacity = '0';
-        });
-      }
-    };
-
-    // Initialize visual state
-    contentEl.style.height = detailsEl.open ? 'auto' : '0px';
-    contentEl.style.opacity = detailsEl.open ? '1' : '0';
-
-    detailsEl.addEventListener('toggle', onToggle);
-    return () => detailsEl.removeEventListener('toggle', onToggle);
-  }, []);
+  // Build accordion data for specs section
+  const accordionItems = useAccordionData({ details, sizeChart, careNotes, sustainabilityNotes, dimensions })
 
   // State
   const [selectedImage, setSelectedImage] = useState(0)
@@ -125,8 +135,12 @@ export default function ProductPage() {
   // Initialize state values after product data is loaded
   useEffect(() => {
     if (product) {
-      // Set default color if available
-      if (details?.color) {
+      // Prefer color variants for default selection
+      const variants = Array.isArray(colorVariants) ? colorVariants : [];
+      if (variants.length > 0) {
+        setSelectedColor(variants[0]?.name || variants[0]?.hex || '')
+      } else if (details?.color) {
+        // Fallback to single color from details
         setSelectedColor(details.color)
       }
       
@@ -152,7 +166,7 @@ export default function ProductPage() {
         }
       }
     }
-  }, [product, details, sizeChart, productImages])
+  }, [product, details, sizeChart, productImages, colorVariants])
   
   // Setup Intersection Observer for lazy loading images
   useEffect(() => {
@@ -382,7 +396,7 @@ export default function ProductPage() {
             
             <div className="product-meta">
                 <div className="price-container">
-                  <span className="current-price">${parseFloat(product.price).toFixed(2)}</span>
+                  <span className="current-price">R{' '}{parseFloat(product.price).toFixed(2)}</span>
                 </div>
                 <div className="product-stats">
                   <div className="rating">
@@ -400,18 +414,37 @@ export default function ProductPage() {
             
             <div className="product-options">
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '20px' }}>
-                {details?.color && (
+                {(Array.isArray(colorVariants) && colorVariants.length > 0) ? (
                   <div className="color-selection">
                     <div className="option-label">Color: <span className="selected-value">{selectedColor}</span></div>
                     <div className="color-options">
-                      <button
-                        className="color-option selected"
-                        style={{ backgroundColor: (typeof selectedColor === 'string' && selectedColor.startsWith('#')) ? selectedColor : 'var(--color-bg)' }}
-                        aria-label={`Color: ${selectedColor}`}
-                        aria-pressed={true}
-                      />
+                      {colorVariants.map((cv, idx) => (
+                        <button
+                          key={cv.name || cv.hex || idx}
+                          className={`color-option ${selectedColor === (cv.name || cv.hex) ? 'selected' : ''}`}
+                          style={{ backgroundColor: (typeof cv.hex === 'string' && cv.hex) ? cv.hex : 'var(--color-bg)' }}
+                          aria-label={`Color: ${cv.name || cv.hex}`}
+                          aria-pressed={selectedColor === (cv.name || cv.hex)}
+                          onClick={() => setSelectedColor(cv.name || cv.hex || '')}
+                          title={cv.name || cv.hex}
+                        />
+                      ))}
                     </div>
                   </div>
+                ) : (
+                  details?.color && (
+                    <div className="color-selection">
+                      <div className="option-label">Color: <span className="selected-value">{selectedColor}</span></div>
+                      <div className="color-options">
+                        <button
+                          className="color-option selected"
+                          style={{ backgroundColor: (typeof selectedColor === 'string' && selectedColor.startsWith('#')) ? selectedColor : 'var(--color-bg)' }}
+                          aria-label={`Color: ${selectedColor}`}
+                          aria-pressed={true}
+                        />
+                      </div>
+                    </div>
+                  )
                 )}
                 
                 {availableSizes.length > 0 && (
@@ -436,86 +469,9 @@ export default function ProductPage() {
               )}
               </div>
               
-              <details className="specs-details" ref={specsDetailsRef}>
-                <summary className="specs-toggle">Show More <span className="chevron">›</span></summary>
-                <div className="specs-content" ref={specsContentRef}>
-                  <div className="specs-flex">
-                    <div className="specs-column">
-                      {Array.isArray(careNotes) && careNotes.length > 0 && (
-                        <div className="care-notes">
-                          <h3>Care Notes:</h3>
-                          <ul className="list-tabular">
-                            {careNotes.map((note, index) => (
-                              <li key={index} className="list-row">{note}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      {details?.features && (
-                        <div className="features">
-                          <h3>Features:</h3>
-                          <ul className="list-tabular">
-                            {details.features.map((feature, index) => (
-                              <li key={index} className="list-row">{feature}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  
-                    <div className="specs-column">
-                      {details?.material && (
-                        <div className="material">
-                          <h3>Material:</h3>
-                          <p className="material-row">{details.material}</p>
-                        </div>
-                      )}
-                      {sizeChart && (
-                        <div className="size-chart">
-                          <h3>Size Chart:</h3>
-                          <table className="size-chart-table">
-                            <thead>
-                              <tr>
-                                <th>Size</th>
-                                <th>Measurement</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {Object.entries(sizeChart).map(([size, measurement]) => (
-                                <tr key={size}>
-                                  <td>{size}</td>
-                                  <td>{typeof measurement === 'object' ? JSON.stringify(measurement) : String(measurement)}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                      {dimensions && (
-                        <div className="dimensions">
-                          <h3>Dimensions:</h3>
-                          {Array.isArray(dimensions) ? (
-                            <ul className="list-tabular">
-                              {dimensions.map((d, idx) => <li key={idx} className="list-row">{d}</li>)}
-                            </ul>
-                          ) : (
-                            <table className="dimensions-table">
-                              <tbody>
-                                {Object.entries(dimensions).filter(([key]) => key !== 'size_chart').map(([key, value]) => (
-                                  <tr key={key}>
-                                    <td className="dim-key">{key.replace(/_/g, ' ')}</td>
-                                    <td className="dim-val">{typeof value === 'object' ? JSON.stringify(value) : String(value)}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </details>
+              <div className="specs-details">
+                <Accordion items={accordionItems} />
+              </div>
               
               {sustainabilityNotes && (
                 <div className="sustainability-notes">
@@ -553,9 +509,19 @@ export default function ProductPage() {
             <div className="product-actions">
               <button className="add-to-cart-button" onClick={handleAddToCart}>
                 Add To Cart
+                <svg className="btn-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M3 3h2l3.6 7.59a2 2 0 0 0 1.8 1.18H17a2 2 0 0 0 1.94-1.5L21 6H6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <circle cx="9" cy="20" r="1" fill="currentColor" />
+                  <circle cx="17" cy="20" r="1" fill="currentColor" />
+                </svg>
               </button>
               <button className="checkout-button" onClick={handleCheckout}>
                 Checkout Now
+                <svg className="btn-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="2" y="5" width="20" height="14" rx="2" fill="none" stroke="currentColor" strokeWidth="2" />
+                  <line x1="2" y1="9" x2="22" y2="9" stroke="currentColor" strokeWidth="2" />
+                  <rect x="6" y="13" width="6" height="3" fill="currentColor" />
+                </svg>
               </button>
             </div>
             

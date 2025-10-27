@@ -91,6 +91,10 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
  *                           sustainability_notes:
  *                             type: object
  *                             nullable: true
+ *                           color_variants:
+ *                             type: object
+ *                             nullable: true
+ *                             description: JSON object or array describing color variants (e.g., name/hex/image/stock)
  *                       - type: object
  *                         properties:
  *                           average_rating:
@@ -173,6 +177,11 @@ router.get("/", listProducts);
  *                 nullable: true
  *                 description: JSON string for sustainability information (object or array)
  *                 example: "{\"eco_friendly\": true, \"certifications\": [\"GOTS\", \"Fair Trade\"]}"
+ *               color_variants:
+ *                 type: string
+ *                 nullable: true
+ *                 description: JSON string for color variants (object or array)
+ *                 example: "[{\"name\":\"Navy\",\"hex\":\"#001F3F\"},{\"name\":\"Sand\",\"hex\":\"#C2B280\"}]"
  *     responses:
  *       201:
  *         description: Product created
@@ -208,6 +217,9 @@ router.get("/", listProducts);
  *                       type: object
  *                       nullable: true
  *                     sustainability_notes:
+ *                       type: object
+ *                       nullable: true
+ *                     color_variants:
  *                       type: object
  *                       nullable: true
  *       400:
@@ -252,6 +264,7 @@ router.post("/", protect, requireAdmin, upload.single("image"), createProduct);
  *               dimensions: { type: object, nullable: true, description: "Product dimensions as JSON object or array" }
  *               care_notes: { type: object, nullable: true, description: "Care instructions as JSON object or array" }
  *               sustainability_notes: { type: object, nullable: true, description: "Sustainability information as JSON object or array" }
+ *               color_variants: { type: object, nullable: true, description: "Color variants as JSON object or array" }
  *     responses:
  *       200:
  *         description: Product updated
@@ -274,6 +287,7 @@ router.post("/", protect, requireAdmin, upload.single("image"), createProduct);
  *                     dimensions: { type: object, nullable: true }
  *                     care_notes: { type: object, nullable: true }
  *                     sustainability_notes: { type: object, nullable: true }
+ *                     color_variants: { type: object, nullable: true }
  *       400:
  *         description: Invalid input (id, name, price, or stock)
  *       404:
@@ -525,6 +539,9 @@ router.delete("/:id/images", protect, requireAdmin, deleteAllProductImages);
  *                       type: object
  *                       nullable: true
  *                     sustainability_notes:
+ *                       type: object
+ *                       nullable: true
+ *                     color_variants:
  *                       type: object
  *                       nullable: true
  *                 category:

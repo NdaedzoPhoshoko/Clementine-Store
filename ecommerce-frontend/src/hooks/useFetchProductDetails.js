@@ -14,6 +14,19 @@ const normalizeProduct = (p) => {
   return { ...p, image_url: imageUrl, price: priceNum };
 };
 
+// Normalize color variants from API: accept either { colors: [...] } or [...]
+const normalizeColorVariants = (cv) => {
+  if (!cv) return [];
+  const arr = Array.isArray(cv) ? cv : (Array.isArray(cv.colors) ? cv.colors : []);
+  return arr
+    .filter(Boolean)
+    .map((c) => ({
+      name: typeof c?.name === 'string' ? c.name.trim() : (c?.name != null ? String(c.name) : ''),
+      hex: typeof c?.hex === 'string' ? c.hex.trim().replace(/^`|`$/g, '') : (c?.hex || ''),
+    }))
+    .filter((c) => c.name || (typeof c.hex === 'string' && c.hex.startsWith('#')));
+};
+
 export default function useFetchProductDetails({ productId, enabled = true } = {}) {
   const [product, setProduct] = useState(null);
   const [category, setCategory] = useState(null);
@@ -25,6 +38,7 @@ export default function useFetchProductDetails({ productId, enabled = true } = {
   const [sizeChart, setSizeChart] = useState(null);
   const [careNotes, setCareNotes] = useState([]);
   const [sustainabilityNotes, setSustainabilityNotes] = useState(null);
+  const [colorVariants, setColorVariants] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -46,6 +60,7 @@ export default function useFetchProductDetails({ productId, enabled = true } = {
       setSizeChart(null);
       setCareNotes([]);
       setSustainabilityNotes(null);
+      setColorVariants([]);
       setError(null);
     }
   }, [productId]);
@@ -91,6 +106,10 @@ export default function useFetchProductDetails({ productId, enabled = true } = {
             setSizeChart(cached.sizeChart ?? cached.product?.dimensions?.size_chart ?? null);
             setCareNotes(cached.careNotes ?? cached.product?.care_notes ?? []);
             setSustainabilityNotes(cached.sustainabilityNotes ?? cached.product?.sustainability_notes ?? null);
+            const cvFromCache = Array.isArray(cached.colorVariants)
+              ? cached.colorVariants
+              : normalizeColorVariants(cached.product?.color_variants);
+            setColorVariants(cvFromCache);
             usedCache = true;
             detailsCacheIsStale = detailsAge >= CACHE_TTL_MS;
             reviewsCacheIsStale = reviewsAge >= REVIEWS_TTL_MS;
@@ -129,6 +148,7 @@ export default function useFetchProductDetails({ productId, enabled = true } = {
         const imagesNorm = Array.isArray(data.images)
           ? data.images.map(u => typeof u === 'string' ? u.trim().replace(/^`|`$/g, '') : (u?.image_url?.trim?.().replace(/^`|`$/g, ''))).filter(Boolean)
           : (productNorm?.image_url ? [productNorm.image_url] : []);
+        const colorVariantsNorm = normalizeColorVariants(productNorm?.color_variants);
         
         // Update state with fetched data
         setProduct(productNorm || null);
@@ -141,6 +161,7 @@ export default function useFetchProductDetails({ productId, enabled = true } = {
         setSizeChart(productNorm?.dimensions?.size_chart || null);
         setCareNotes(productNorm?.care_notes || []);
         setSustainabilityNotes(productNorm?.sustainability_notes || null);
+        setColorVariants(colorVariantsNorm);
         
         // Cache the result
         try {
@@ -158,6 +179,7 @@ export default function useFetchProductDetails({ productId, enabled = true } = {
                 sizeChart: productNorm?.dimensions?.size_chart || null,
                 careNotes: productNorm?.care_notes || [],
                 sustainabilityNotes: productNorm?.sustainability_notes || null,
+                colorVariants: colorVariantsNorm,
                 ts_details: Date.now(),
                 ts_reviews: Date.now(),
                 ts: Date.now(),
@@ -247,6 +269,7 @@ export default function useFetchProductDetails({ productId, enabled = true } = {
     sizeChart,
     careNotes,
     sustainabilityNotes,
+    colorVariants,
     loading,
     error,
     isLoading: loading,

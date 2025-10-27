@@ -62,6 +62,7 @@ export const listProducts = async (req, res) => {
     const itemsQuery = `
       SELECT p.id, p.name, p.description, p.price, p.image_url, p.stock, p.category_id,
              p.details, p.dimensions, p.care_notes, p.sustainability_notes,
+             p.color_variants,
              COALESCE(AVG(r.rating), 0) as average_rating,
              COUNT(r.id) as review_count
       FROM products p
@@ -102,6 +103,7 @@ export const getProductById = async (req, res) => {
     const productQuery = `
       SELECT p.id, p.name, p.description, p.price, p.image_url, p.stock, p.category_id,
              p.details, p.dimensions, p.care_notes, p.sustainability_notes,
+             p.color_variants,
              c.name AS category_name, c.description AS category_description
       FROM products p
       LEFT JOIN categories c ON c.id = p.category_id
@@ -146,6 +148,7 @@ export const getProductById = async (req, res) => {
         dimensions: p.dimensions,
         care_notes: p.care_notes,
         sustainability_notes: p.sustainability_notes,
+        color_variants: p.color_variants,
       },
       category: p.category_id
         ? { id: p.category_id, name: p.category_name, description: p.category_description }
@@ -209,7 +212,7 @@ export const getProductReviews = async (req, res) => {
 
 export const createProduct = async (req, res) => {
   try {
-    const { name, description, price, stock, category_id, details, dimensions, care_notes, sustainability_notes } = req.body || {};
+    const { name, description, price, stock, category_id, details, dimensions, care_notes, sustainability_notes, color_variants } = req.body || {};
 
     const trimmedName = typeof name === "string" ? name.trim() : "";
     const priceNum = parseFloat(price);
@@ -221,6 +224,7 @@ export const createProduct = async (req, res) => {
     let dimensionsJson = null;
     let careNotesJson = null;
     let sustainabilityNotesJson = null;
+    let colorVariantsJson = null;
 
     if (details !== undefined) {
       if (details === null) {
@@ -312,6 +316,28 @@ export const createProduct = async (req, res) => {
       }
     }
 
+    if (color_variants !== undefined) {
+      if (color_variants === null) {
+        colorVariantsJson = null;
+      } else if (typeof color_variants === 'string') {
+        const trimmed = color_variants.trim();
+        if (trimmed === "") {
+          colorVariantsJson = null;
+        } else {
+          try {
+            colorVariantsJson = JSON.parse(trimmed);
+          } catch (err) {
+            return res.status(400).json({ message: "Invalid JSON format for color_variants" });
+          }
+        }
+      } else {
+        colorVariantsJson = color_variants;
+      }
+      if (colorVariantsJson !== null && !Array.isArray(colorVariantsJson) && typeof colorVariantsJson !== 'object') {
+        return res.status(400).json({ message: "color_variants must be an array or object" });
+      }
+    }
+
     if (!trimmedName) {
       return res.status(400).json({ message: "Product name is required" });
     }
@@ -351,9 +377,9 @@ export const createProduct = async (req, res) => {
 
 
     const insertQuery = `
-      INSERT INTO products (name, description, price, image_url, stock, category_id, details, dimensions, care_notes, sustainability_notes)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-      RETURNING id, name, description, price, image_url, stock, category_id, details, dimensions, care_notes, sustainability_notes
+      INSERT INTO products (name, description, price, image_url, stock, category_id, details, dimensions, care_notes, sustainability_notes, color_variants)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      RETURNING id, name, description, price, image_url, stock, category_id, details, dimensions, care_notes, sustainability_notes, color_variants
     `;
     const insertParams = [
       trimmedName,
@@ -366,6 +392,7 @@ export const createProduct = async (req, res) => {
       dimensionsJson !== null ? JSON.stringify(dimensionsJson) : null,
       careNotesJson !== null ? JSON.stringify(careNotesJson) : null,
       sustainabilityNotesJson !== null ? JSON.stringify(sustainabilityNotesJson) : null,
+      colorVariantsJson !== null ? JSON.stringify(colorVariantsJson) : null,
     ];
     const result = await pool.query(insertQuery, insertParams);
     const product = result.rows[0];
@@ -391,7 +418,7 @@ export const updateProduct = async (req, res) => {
     }
 
     const existingRes = await pool.query(
-      "SELECT id, name, description, price, image_url, stock, category_id, details, dimensions, care_notes, sustainability_notes FROM products WHERE id=$1",
+      "SELECT id, name, description, price, image_url, stock, category_id, details, dimensions, care_notes, sustainability_notes, color_variants FROM products WHERE id=$1",
       [id]
     );
     if (existingRes.rows.length === 0) {
@@ -399,7 +426,7 @@ export const updateProduct = async (req, res) => {
     }
     const existing = existingRes.rows[0];
 
-    const { name, description, price, image_url, stock, category_id, details, dimensions, care_notes, sustainability_notes } = req.body || {};
+    const { name, description, price, image_url, stock, category_id, details, dimensions, care_notes, sustainability_notes, color_variants } = req.body || {};
 
     // Validate provided fields only
     if (typeof name !== "undefined") {
@@ -516,11 +543,27 @@ export const updateProduct = async (req, res) => {
       }
     }
 
+    if (typeof color_variants !== "undefined") {
+      if (color_variants === null) {
+        existing.color_variants = null;
+      } else {
+        try {
+          const colorVariantsJson = typeof color_variants === 'string' ? JSON.parse(color_variants) : color_variants;
+          if (!Array.isArray(colorVariantsJson) && typeof colorVariantsJson !== 'object') {
+            return res.status(400).json({ message: "color_variants must be an array or object" });
+          }
+          existing.color_variants = colorVariantsJson;
+        } catch (err) {
+          return res.status(400).json({ message: "Invalid JSON format for color_variants" });
+        }
+      }
+    }
+
     const updateQuery = `
       UPDATE products
-      SET name=$1, description=$2, price=$3, image_url=$4, stock=$5, category_id=$6, details=$7, dimensions=$8, care_notes=$9, sustainability_notes=$10
-      WHERE id=$11
-      RETURNING id, name, description, price, image_url, stock, category_id, details, dimensions, care_notes, sustainability_notes
+      SET name=$1, description=$2, price=$3, image_url=$4, stock=$5, category_id=$6, details=$7, dimensions=$8, care_notes=$9, sustainability_notes=$10, color_variants=$11
+      WHERE id=$12
+      RETURNING id, name, description, price, image_url, stock, category_id, details, dimensions, care_notes, sustainability_notes, color_variants
     `;
     const updateParams = [
       existing.name,
@@ -533,6 +576,7 @@ export const updateProduct = async (req, res) => {
       existing.dimensions,
       existing.care_notes,
       existing.sustainability_notes,
+      existing.color_variants,
       id,
     ];
     const result = await pool.query(updateQuery, updateParams);

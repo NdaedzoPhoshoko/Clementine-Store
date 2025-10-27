@@ -22,7 +22,7 @@
 .main-image-container {
   position: relative;
   width: 100%;
-  height: 500px;
+  height: 600px;
   overflow: hidden;
 }
 
@@ -721,11 +721,14 @@
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 10px;
-  color: #333;
+  color: var(--color-text);
+  font-family: var(--font-primary);
 }
 
 .selected-value {
   font-weight: normal;
+  color: var(--color-muted);
+  font-family: var(--font-primary);
 }
 
 .color-options {
@@ -774,28 +777,31 @@
 }
 
 .size-option {
-  min-width: 40px;
-  height: 35px;
+  min-width: 30px;
+  height: 25px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--color-border);
-  background-color: var(--color-bg);
+  border: none;
+  background-color: var(--color-surface);
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
+  font-family: var(--font-primary);
   padding: 0 10px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease, background-color 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .size-option:hover {
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-soft);
+  background-color: var(--color-primary);
+  color: #fff;
+  border: none;
 }
 
 .size-option.selected {
-  border-color: var(--color-primary);
-  background-color: var(--color-surface);
+  background-color: var(--color-primary);
+  color: #fff;
+  border: none;
 }
 
 /* Product Actions */
@@ -879,6 +885,15 @@
   cursor: not-allowed;
 }
 
+/* Inline icons for action buttons */
+.product-actions .btn-icon {
+  width: 16px;
+  height: 16px;
+  margin-left: 8px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
 .delivery-info {
   margin-top: 10px;
 }
@@ -887,6 +902,8 @@
   color: var(--color-primary);
   text-decoration: none;
   font-size: 14px;
+  font-family: var(--font-primary);
+  font-weight: 600;
 }
 
 .delivery-link:hover { color: var(--color-accent); }
@@ -997,8 +1014,16 @@
   }
   
   .main-image-container {
-    height: 400px;
+    height: 500px;
   }
+}
+
+/* Larger viewport tiers for a taller main image */
+@media (min-width: 1200px) {
+  .main-image-container { height: 780px; }
+}
+@media (min-width: 1440px) {
+  .main-image-container { height: 640px; }
 }
 
 /* Specs two-column layout */
@@ -1021,18 +1046,13 @@
   padding: 0;
 }
 .list-row {
-  border: 1px solid var(--color-border);
-  background-color: var(--color-bg);
   border-radius: 6px;
   padding: 8px 10px;
   color: var(--color-text);
-  margin-bottom: 8px;
 }
 
 /* Material single-row presentation */
 .material-row {
-  border: 1px solid var(--color-border);
-  background-color: var(--color-bg);
   border-radius: 6px;
   padding: 8px 10px;
   color: var(--color-text);
@@ -1078,13 +1098,13 @@
   border-radius: 12px;
   font-size: 12px;
   font-weight: 600;
-  border: 1px solid var(--color-border);
-  background-color: var(--color-surface);
+  /* border: 1px solid var(--color-border);
+  background-color: var(--color-surface); */
   color: var(--color-text);
 }
 .stock-badge.in-stock {
   color: #0b8f33;
-  border-color: #0b8f33;
+  /* border-color: #0b8f33; */
   box-shadow: var(--shadow-soft);
 }
 .stock-badge.out-of-stock {
@@ -1094,6 +1114,13 @@
 
 /* Specs expand/collapse */
 .specs-details { margin-top: 12px; }
+.accordion { display: flex; flex-direction: column; gap: 8px; }
+.accordion-item { border-radius: 8px; }
+.accordion-header { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 7px 12px; font-weight: 600; background: transparent; border: none; cursor: pointer; }
+.accordion-title { display: inline-block; font-family: var(--font-heading); font-size: 16px;}
+.accordion-icon { width: 18px; height: 18px; }
+.accordion-panel { overflow: hidden; }
+.accordion-content { padding: 0 12px; color: var(--color-muted) !important; font-size: 14px; }
 .specs-toggle {
   cursor: pointer;
   display: inline-flex;
@@ -1101,6 +1128,11 @@
   gap: 6px;
   color: var(--color-primary);
   font-weight: 600;
+}
+.specs-icon {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
 }
 .specs-toggle:hover { color: var(--color-accent); }
 .chevron { display: inline-block; transition: transform 0.2s ease; }

@@ -209,3 +209,18 @@ $$;
  ON products USING gin ((sustainability_notes::text) gin_trgm_ops);
 
 COMMIT;
+
+ALTER TABLE products
+  ADD COLUMN IF NOT EXISTS color_variants JSONB;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'products_color_variants_jsonb_type'
+  ) THEN
+    ALTER TABLE products
+      ADD CONSTRAINT products_color_variants_jsonb_type
+      CHECK (color_variants IS NULL OR jsonb_typeof(color_variants) IN ('array','object'));
+  END IF;
+END
+$$;
