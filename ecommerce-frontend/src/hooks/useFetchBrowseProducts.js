@@ -52,7 +52,7 @@ export default function useFetchBrowseProducts({
       lastSignatureRef.current = signature;
       setItems([]);
       setItemsByPage({});
-      setPage(1);
+      // Removed setPage(1) to avoid forcing page resets on filter changes
       setHasMore(true);
       setError(null);
     }

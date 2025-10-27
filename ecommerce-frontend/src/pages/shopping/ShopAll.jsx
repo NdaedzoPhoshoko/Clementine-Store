@@ -6,6 +6,7 @@ import useFetchCategoryNames from "../../hooks/useFetchCategoryNames.js";
 import { useNavigate, useLocation } from "react-router-dom";
 import PriceRangeSlider from "../../components/filters/PriceRangeSlider";
 import ErrorModal from "../../components/modals/ErrorModal";
+import PaginationBar from "../../components/pagination/PaginationBar";
 
 export default function ShopAll() {
   const navigate = useNavigate();
@@ -224,7 +225,7 @@ export default function ShopAll() {
                 className="filter-input form-control"
                 placeholder="Search products"
                 value={query}
-                onChange={(e) => { setQuery(e.target.value); setPage(1); }}
+                onChange={(e) => setQuery(e.target.value)}
                 aria-label="Search products"
               />
             </div>
@@ -245,7 +246,6 @@ export default function ShopAll() {
                   setPriceTempMax(hi);
                   setMinPrice(String(lo));
                   setMaxPrice(String(hi));
-                  setPage(1);
                 }}
               />
             </div>
@@ -292,7 +292,7 @@ export default function ShopAll() {
                 <input
                   type="checkbox"
                   checked={inStockOnly}
-                  onChange={(e) => { setInStockOnly(e.target.checked); setPage(1); }}
+                  onChange={(e) => setInStockOnly(e.target.checked)}
                   aria-label="Only show items in stock"
                 />
                 <span>In Stock only</span>
@@ -324,7 +324,7 @@ export default function ShopAll() {
                         name="category"
                         className="filter-radio filter-checkbox"
                         checked={selectedCatId === c.id}
-                        onChange={(e) => { if (e.target.checked) { setSelectedCatId(c.id); setPage(1); } }}
+                        onChange={(e) => { if (e.target.checked) { setSelectedCatId(c.id); } }}
                         aria-checked={selectedCatId === c.id ? "true" : "false"}
                       />
                       <span className="filter-list__name">{c.name}</span>
@@ -375,46 +375,13 @@ export default function ShopAll() {
           ) : (
             <>
               <ProdGrid products={displayProducts} loading={loading} ariaLabel="All products" />
-              <nav className="shop-pagination" aria-label="Pagination">
-                <button
-                  className={`shop-pagination__btn ${!hasPrev ? "is-disabled" : ""}`}
-                  onClick={() => hasPrev && goToPage(page - 1)}
-                  aria-disabled={!hasPrev ? "true" : undefined}
-                  aria-label="Previous page"
-                >
-                  ‹
-                </button>
-                <span className="shop-pagination__page is-active" aria-current="page">{page}</span>
-                <button
-                  className={`shop-pagination__btn ${!hasNext ? "is-disabled" : ""}`}
-                  onClick={() => hasNext && goToPage(page + 1)}
-                  aria-disabled={!hasNext ? "true" : undefined}
-                  aria-label="Next page"
-                >
-                  ›
-                </button>
-                {nextPages.map((p) => (
-                  <button
-                    key={`next-${p}`}
-                    className="shop-pagination__page"
-                    onClick={() => goToPage(p)}
-                    aria-label={`Go to page ${p}`}
-                  >
-                    {p}
-                  </button>
-                ))}
-                {showEllipsis && <span className="shop-pagination__ellipsis" aria-hidden="true">…</span>}
-                {showLast && (
-                  <button
-                    className="shop-pagination__page"
-                    onClick={() => goToPage(totalPages)}
-                    aria-label={`Go to last page (${totalPages})`}
-                  >
-                    {totalPages}
-                  </button>
-                )}
-                <span className="shop-pagination__hint">select to navigate to a page</span>
-              </nav>
+              <PaginationBar
+                page={page}
+                totalPages={totalPages}
+                hasPrev={hasPrev}
+                hasNext={hasNext}
+                onPageChange={goToPage}
+              />
 
               <section className="shop-trust" aria-label="Clementine Store Trust">
                 <p className="shop-trust__text">
