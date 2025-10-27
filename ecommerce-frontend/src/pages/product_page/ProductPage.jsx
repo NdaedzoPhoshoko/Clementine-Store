@@ -6,7 +6,6 @@ import { useParams } from 'react-router-dom'
 import ErrorModal from '../../components/modals/ErrorModal'
 import RelatedProducts from './related_products/RelatedProducts.jsx'
 import ZoomImage from '../../components/image_zoom/ZoomImage.jsx'
-import FlexModal from '../../components/modals/FlexModal.jsx'
 
 export default function ProductPage() {
   const { id } = useParams() || { id: '26' } // Default to product ID 26 if no param
@@ -122,9 +121,6 @@ export default function ProductPage() {
   const [imagesLoaded, setImagesLoaded] = useState({})
   const imageObserver = useRef(null)
   const imageRefs = useRef({})
-  const [isSpecsModalOpen, setSpecsModalOpen] = useState(false)
-  const specsToggleRef = useRef(null)
-  const specsInlineRootRef = useRef(null)
   
   // Initialize state values after product data is loaded
   useEffect(() => {
@@ -143,13 +139,17 @@ export default function ProductPage() {
         }
       }
       
-      // Format images
+      // Format images (filter out empty/invalid URLs)
       if (productImages && productImages.length > 0) {
-        const formatted = productImages.map((url, index) => ({
+        const valid = productImages.filter(u => typeof u === 'string' && u.trim().length > 0)
+        const formatted = valid.map((url, index) => ({
           src: url.trim(),
           alt: `${product.name} view ${index + 1}`
         }))
         setFormattedImages(formatted)
+        if (formatted.length > 0 && selectedImage >= formatted.length) {
+          setSelectedImage(0)
+        }
       }
     }
   }, [product, details, sizeChart, productImages])
@@ -362,12 +362,14 @@ export default function ProductPage() {
                     style={{ width: '100%', height: '100%' }}
                   >
                     {!imagesLoaded[`thumb-${index}`] && <div className="skeleton skeleton-thumbnail"></div>}
-                    <img 
-                      src={imagesLoaded[`thumb-${index}`] ? image.src : ''}
-                      alt="" 
-                      className={`lazy-image ${imagesLoaded[`thumb-${index}`] ? 'loaded' : ''}`}
-                      style={{ display: imagesLoaded[`thumb-${index}`] ? 'block' : 'none' }}
-                    />
+                    {imagesLoaded[`thumb-${index}`] && (
+                      <img 
+                        src={image.src || null}
+                        alt="" 
+                        className="lazy-image loaded"
+                        style={{ display: 'block' }}
+                      />
+                    )}
                   </div>
                 </button>
               ))}
@@ -435,98 +437,7 @@ export default function ProductPage() {
               </div>
               
               <details className="specs-details" ref={specsDetailsRef}>
-                <summary className="specs-toggle" ref={specsToggleRef} onClick={(e) => { e.preventDefault(); setSpecsModalOpen(v => !v); }}>View More <span className="chevron">›</span></summary>
-                {/* Inline dropdown placed directly under the summary */}
-                <div className="flexmodal__inline-root" ref={specsInlineRootRef}>
-                  <FlexModal
-                    open={isSpecsModalOpen}
-                    onClose={() => setSpecsModalOpen(false)}
-                    renderInPlace={true}
-                    parentRef={specsDetailsRef}
-                    closeOnEsc={true}
-                    closeOnOutsideClick={true}
-                    className="flexmodal__specs-popup"
-                    style={{ width: 'min(540px, 92vw)' }}
-                  >
-                    <div className="specs-content">
-                      <div className="specs-flex">
-                        <div className="specs-column">
-                          {Array.isArray(careNotes) && careNotes.length > 0 && (
-                            <div className="care-notes">
-                              <h3>Care Notes:</h3>
-                              <ul className="list-tabular">
-                                {careNotes.map((note, index) => (
-                                  <li key={index} className="list-row">{note}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                          {details?.features && (
-                            <div className="features">
-                              <h3>Features:</h3>
-                              <ul className="list-tabular">
-                                {details.features.map((feature, index) => (
-                                  <li key={index} className="list-row">{feature}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      
-                        <div className="specs-column">
-                          {details?.material && (
-                            <div className="material">
-                              <h3>Material:</h3>
-                              <p className="material-row">{details.material}</p>
-                            </div>
-                          )}
-                          {sizeChart && (
-                            <div className="size-chart">
-                              <h3>Size Chart:</h3>
-                              <table className="size-chart-table">
-                                <thead>
-                                  <tr>
-                                    <th>Size</th>
-                                    <th>Measurement</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {Object.entries(sizeChart).map(([size, measurement]) => (
-                                    <tr key={size}>
-                                      <td>{size}</td>
-                                      <td>{typeof measurement === 'object' ? JSON.stringify(measurement) : String(measurement)}</td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          )}
-                          {dimensions && (
-                            <div className="dimensions">
-                              <h3>Dimensions:</h3>
-                              {Array.isArray(dimensions) ? (
-                                <ul className="list-tabular">
-                                  {dimensions.map((d, idx) => <li key={idx} className="list-row">{d}</li>)}
-                                </ul>
-                              ) : (
-                                <table className="dimensions-table">
-                                  <tbody>
-                                    {Object.entries(dimensions).filter(([key]) => key !== 'size_chart').map(([key, value]) => (
-                                      <tr key={key}>
-                                        <td className="dim-key">{key.replace(/_/g, ' ')}</td>
-                                        <td className="dim-val">{typeof value === 'object' ? JSON.stringify(value) : String(value)}</td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </FlexModal>
-                </div>
+                <summary className="specs-toggle">Show More <span className="chevron">›</span></summary>
                 <div className="specs-content" ref={specsContentRef}>
                   <div className="specs-flex">
                     <div className="specs-column">

@@ -1,0 +1,5 @@
+the zoom feature on productpage images is not smooth or working well. it sjumping, and maybe we must do a recommended way for this react zoom feature.
+
+react-inner-image-zoom
+
+i want it to be fast and working without jumping , it must move okay and freelyPLEASE INSPECT AND FIX
