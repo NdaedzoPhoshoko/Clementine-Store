@@ -1,4 +1,4 @@
-the zoom feature on productpage images is not smooth or working well. it sjumping, and maybe we must do a recommended way for this react zoom feature.
+the zoom feature on productpage images is not smooth or working well. it sjumping, for this react zoom feature.
 
 react-inner-image-zoom
 
