@@ -173,6 +173,28 @@ export default function ShopAll() {
   const showEllipsis = lastIncluded < totalPages - 1;
   const showLast = lastIncluded < totalPages;
 
+  // Clear-all filters derivation and handler
+  const isDefaultFilters =
+    (query === "") &&
+    (minPrice === "" && maxPrice === "") &&
+    (selectedCatId === null) &&
+    (inStockOnly === true) &&
+    (sort === "relevance") &&
+    (catQuery === "");
+
+  const handleClearFilters = () => {
+    setQuery("");
+    setMinPrice("");
+    setMaxPrice("");
+    setPriceTempMin(0);
+    setPriceTempMax(6000);
+    setSelectedCatId(null);
+    setInStockOnly(true);
+    setSort("relevance");
+    setCatQuery("");
+    // Do NOT change page here to avoid forcing pagination
+  };
+
   // Compute min/max across currently displayed products for slider bounds
   const priceStats = useMemo(() => {
     const arr = Array.isArray(displayProducts) ? displayProducts : [];
@@ -215,6 +237,15 @@ export default function ShopAll() {
         <aside className="shop-filters" aria-label="Filters">
           <div className="filters__header">
             <h2 className="filters__title">Filters</h2>
+            <button
+              type="button"
+              className="filters__clear-btn"
+              onClick={handleClearFilters}
+              disabled={isDefaultFilters}
+              aria-label="Clear all filters"
+            >
+              Clear all
+            </button>
           </div>
 
           <div className="filter-section">
@@ -318,7 +349,7 @@ export default function ShopAll() {
               ) : Array.isArray(filteredCategories) && filteredCategories.length ? (
                 <div className="filter-list__items" role="radiogroup" aria-label="Category filters">
                   {filteredCategories.map((c) => (
-                    <label key={c.id} className="filter-list__item">
+                    <label key={c.id} className="filter-list__item" onClick={(e) => { if (selectedCatId === c.id) { e.preventDefault(); setSelectedCatId(null); } }}>
                       <input
                         type="radio"
                         name="category"
@@ -327,7 +358,12 @@ export default function ShopAll() {
                         onChange={(e) => { if (e.target.checked) { setSelectedCatId(c.id); } }}
                         aria-checked={selectedCatId === c.id ? "true" : "false"}
                       />
-                      <span className="filter-list__name">{c.name}</span>
+                      <span
+                        className="filter-list__name"
+                        onClick={(e) => { if (selectedCatId === c.id) { e.preventDefault(); e.stopPropagation(); setSelectedCatId(null); } }}
+                      >
+                        {c.name}
+                      </span>
                     </label>
                   ))}
                 </div>

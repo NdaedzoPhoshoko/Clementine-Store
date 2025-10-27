@@ -672,28 +672,13 @@ export default function ProductPage() {
                 </div>
               </div>
               
-              <div className="filter-section">
-                <h4 className="filter-title">Review Topics</h4>
-                <div className="filter-options">
-                  {['Product Quality', 'Seller Services', 'Product Price', 'Shipment', 'Match with Description'].map(topic => (
-                    <label className="filter-option" key={topic}>
-                      <input type="checkbox" name={topic.toLowerCase().replace(/\s+/g, '-')} />
-                      <span>{topic}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
+
             </div>
             
             {/* Review Lists */}
             <div className="review-lists">
               <div className="review-lists-header">
-                <h3>Review Lists</h3>
-                <div className="review-tabs">
-                  <button className="review-tab active">All Reviews</button>
-                  <button className="review-tab">With Photo & Video</button>
-                  <button className="review-tab">With Description</button>
-                </div>
+                <h3>See What Others Are Saying</h3>
               </div>
               
               <div className="review-items">
