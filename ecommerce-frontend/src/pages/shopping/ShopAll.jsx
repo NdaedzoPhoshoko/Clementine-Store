@@ -345,7 +345,14 @@ export default function ShopAll() {
                 />
               </div>
               {catLoading ? (
-                <div className="filter-list__hint">Loading...</div>
+                <div className="filter-list__items filter-list__items--skeleton" aria-hidden="true">
+                  {[...Array(8)].map((_, i) => (
+                    <div key={i} className="filter-list__item skeleton-item" role="presentation">
+                      <span className="skeleton-block skeleton--checkbox" aria-hidden="true"></span>
+                      <span className="skeleton-block skeleton--text" aria-hidden="true"></span>
+                    </div>
+                  ))}
+                </div>
               ) : Array.isArray(filteredCategories) && filteredCategories.length ? (
                 <div className="filter-list__items" role="radiogroup" aria-label="Category filters">
                   {filteredCategories.map((c) => (

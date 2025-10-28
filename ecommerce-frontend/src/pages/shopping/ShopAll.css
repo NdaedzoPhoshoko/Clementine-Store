@@ -249,3 +249,194 @@
 .shop-filters .filter-section .filter-field input[type="radio"] { cursor: pointer; }
 .shop-filters .filter-section .filter-field label span { cursor: pointer; }
 
+
+/* Skeleton placeholders for filter categories */
+.filter-list__items--skeleton { padding: 6px; }
+.filter-list__item.skeleton-item { display: flex; align-items: center; gap: 10px; padding: 6px 8px; }
+
+.skeleton-block { position: relative; display: inline-block; background-color: var(--color-border); border-radius: 8px; overflow: hidden; }
+.skeleton-block::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0) 100%); transform: translateX(-100%); animation: shimmer 1.2s ease-in-out infinite; }
+
+.skeleton--checkbox { width: 16px; height: 16px; border-radius: 4px; }
+.skeleton--text { width: 120px; height: 14px; border-radius: 6px; }
+
+@keyframes shimmer { to { transform: translateX(100%); } }
+.filter-list__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  cursor: pointer;
+}
+.filter-list__item:hover { 
+  background: var(--primary-50, #eff6ff);
+  border-color: var(--primary-300, #93c5fd);
+}
+.filter-list__item:focus-within {
+  background: var(--primary-50, #eff6ff);
+  border-color: var(--primary-400, #60a5fa);
+}
+/* Highlight checked item using modern :has selector (supported in modern browsers) */
+.filter-list__item:has(.filter-checkbox:checked) {
+  background: var(--primary-50, #eff6ff);
+  border-color: var(--primary-300, #93c5fd);
+}
+.filter-checkbox { width: 16px; height: 16px; cursor: pointer; }
+/* Color the text when the item is checked */
+.filter-checkbox:checked + .filter-list__name {
+  color: var(--palette-deep);
+  font-weight: 700;
+}
+.filter-list__name { font-size: 13px; color: var(--color-text); }
+.filter-list__hint { font-size: 12px; color: var(--color-muted); padding: 4px 6px; }
+.filter-field--row { flex-direction: row; gap: 10px; }
+
+/* Ensure row inputs share space equally (e.g., min and max price) */
+.filter-field--row > .filter-input { flex: 1; }
+
+.filter-input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 36px;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--control-radius, 999px);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.filter-input:focus {
+  outline: none;
+  border-color: var(--palette-secondary);
+  box-shadow: 0 0 0 3px rgba(255, 58, 149, 0.12);
+  background: var(--color-bg);
+}
+
+.filter-select {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 36px;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--control-radius, 999px);
+  cursor: pointer;
+}
+
+/* Sort groups — two columns on wide screens, stacked on mobile */
+.sort-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.sort-group { display: flex; flex-direction: column; gap: 6px; }
+.filter-label { font-size: 12px; font-weight: 700; color: var(--color-muted); }
+
+@media (max-width: 640px) {
+  .sort-grid { grid-template-columns: 1fr; }
+}
+.filter-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.filter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.filter-tag:hover { box-shadow: var(--shadow-soft); }
+.filter-tag.muted { color: var(--color-muted); cursor: default; }
+.filter-tag--active {
+  background: linear-gradient(180deg, var(--color-accent), var(--palette-deep));
+  color: var(--color-bg);
+  border-color: transparent;
+}
+
+/* Right results column */
+.shop-results__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.shop-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+.shop-error { color: var(--palette-deep); font-weight: 700; }
+
+@media (max-width: 880px) {
+  .shop-layout { grid-template-columns: 1fr; }
+  .shop-filters { position: relative; top: 0; }
+}
+
+/* Empty state message when no results */
+.shop-empty {
+  display: grid;
+  place-items: center;
+  min-height: 280px;
+  padding: 24px;
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.shop-empty__img {
+  width: clamp(160px, 28vw, 240px);
+  height: auto;
+  display: block;
+  margin: 0 auto 12px;
+  opacity: 0.95;
+}
+
+.shop-empty__title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--color-text);
+  margin-top: 4px;
+}
+
+.shop-empty__desc {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--color-muted);
+}
+
+@media (max-width: 640px) {
+  .shop-empty__img { width: clamp(140px, 42vw, 200px); }
+  .shop-empty__title { font-size: 16px; }
+  .shop-empty__desc { font-size: 13px; }
+}
+
+/* Pagination styles moved to reusable component `src/components/pagination/PaginationBar.css` */
+
+.shop-trust {
+  margin-top: 12px;
+}
+
+.shop-trust__text {
+  color: var(--color-muted, #6b7280);
+  font-size: 14px;
+  line-height: 1.5;
+  /* Clamp to three lines for consistent height */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  /* Non-webkit compatibility hint */
+  line-clamp: 3; /* standard property for compatibility */
+}
+
+
+/* Availability toggle interactions */
+.shop-filters .filter-section .filter-field label { cursor: pointer; }
+.shop-filters .filter-section .filter-field input[type="checkbox"] { cursor: pointer; }
+.shop-filters .filter-section .filter-field input[type="radio"] { cursor: pointer; }
+.shop-filters .filter-section .filter-field label span { cursor: pointer; }
+
