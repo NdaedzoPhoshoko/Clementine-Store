@@ -192,6 +192,7 @@
   font-weight: 600;
   margin-bottom: 8px;
   color: #333;
+  display: none;
 }
 
 .see-more {
@@ -1105,11 +1106,13 @@
 .stock-badge.in-stock {
   color: #0b8f33;
   /* border-color: #0b8f33; */
-  box-shadow: var(--shadow-soft);
+  /* box-shadow: var(--shadow-soft); */
+  background-color: transparent;
 }
 .stock-badge.out-of-stock {
   color: #b00020;
-  border-color: #b00020;
+  /* border-color: #b00020; */
+  background-color: transparent;
 }
 
 /* Specs expand/collapse */
@@ -1163,6 +1166,13 @@
 }
 
 .sustainability-notes {
+  display: block;
+  margin-top: 12px;
+  font-size: 14px;
+  margin-left: 10px;
+}
+
+.sustainability-notes h3, .certifications {
   display: none;
 }
 

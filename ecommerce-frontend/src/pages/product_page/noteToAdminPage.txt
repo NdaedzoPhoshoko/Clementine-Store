@@ -1,0 +1,45 @@
+Reminder: When i make the page for uploading proiducts( I must render my POST api/product endpoint data this way), so that the data remains consistent and matches the productdetails page
+
+{
+  "product": {
+    "id": 123,
+    "name": "Classic Tee",
+    "description": "Soft cotton t-shirt",
+    "price": 249.99,
+    "image_url": "https://cdn.example.com/products/123/main.jpg",
+    "stock": 42,
+    "category_id": 7,
+    "category_name": "T-Shirts",
+    "details": {
+      "material": "100% Cotton",
+      "features": ["Soft-touch", "Crew neck", "Short sleeve"]
+    },
+    "dimensions": {
+      "length": "70 cm",
+      "width": "52 cm",
+      "height": "60 cm",
+      "size_chart": {
+        "S": "32 cm",
+        "M": "64 cm",
+        "L": "84 cm"
+      }
+    },
+    "care_notes": ["Machine wash cold", "Do not tumble dry"],
+    "sustainability_notes": {
+    "certifications": ["GOTS", "OEKO-TEX Standard 100"],
+    "description": "Made with 100% organic cotton"
+  },
+    "color_variants": [
+      {"name": "Black", "hex": "#000000"},
+      {"name": "White", "hex": "#FFFFFF"},
+      {"name": "Royal Blue", "hex": "#4169E1"}
+    ]
+  },
+  "category": { "id": 7, "name": "T-Shirts" },
+  "images": [
+    {"image_url": "https://cdn.example.com/products/123/main.jpg"},
+    {"image_url": "https://cdn.example.com/products/123/alt1.jpg"},
+    "https://cdn.example.com/products/123/alt2.jpg"
+  ],
+  "reviewStats": { "averageRating": 4.3, "reviewCount": 19 }
+}

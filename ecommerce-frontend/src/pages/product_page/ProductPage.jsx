@@ -469,10 +469,6 @@ export default function ProductPage() {
               )}
               </div>
               
-              <div className="specs-details">
-                <Accordion items={accordionItems} />
-              </div>
-              
               {sustainabilityNotes && (
                 <div className="sustainability-notes">
                   <h3>Sustainability:</h3>
@@ -528,6 +524,10 @@ export default function ProductPage() {
             <div className="delivery-info">
               <a href="#delivery" className="delivery-link">Delivery T&C</a>
             </div>
+
+            <div className="specs-details">
+                <Accordion items={accordionItems} />
+              </div>
           </div>
         </div>
       )}

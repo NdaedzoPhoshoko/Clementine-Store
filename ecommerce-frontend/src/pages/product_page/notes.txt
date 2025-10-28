@@ -5,37 +5,3 @@ maybe let it compress images whose sizes is above 0.99mb
 
 also note, when building ui for uploading images, i must allow them to choose color on a color picker then upload images for that product
 this will allow users to choose color of clothe then preview on the product details page before adding to cart.
-
-add script for table variant for products
-CREATE TABLE product_variants (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-    color_name TEXT NOT NULL,
-    color_hex TEXT CHECK (color_hex ~ '^#[0-9A-Fa-f]{6}$'),
-    image_url TEXT,
-    price NUMERIC(10,2),
-    stock INT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT NOW()
-);
-CREATE INDEX idx_product_variants_product_id ON product_variants(product_id);
-
-add endpoints 
-GET /api/products/:id → single product + its variants (colors, sizes, etc.)
-POST /api/products/:id/variants → add a new color variant
-PUT /api/products/:id/variants/:variantId
-
-On your product page:
-Fetch the product with all variants.
-Display color options as swatches (buttons or color circles).
-When a user clicks a color:
-Change the main product image.
-Update price and stock if different.
-When implementing the admin side for uploading products- make sure that you look at UI for pruduct since dimensions needs to be added, care notes, additional details
-
-
-when implementing ui to upload products on admin account 
-for additional details put placeholder texts such as the one below because you will need to give an idea of jwat to write, to admin 
-- details: ["Textural boucle upholstery", "Solid wood frame", "Professional upholstery cleaning recommended"]
-- dimensions: ["Overall: 30\"W x 36\"D x 30\"H", "Seat height: 18\"", "Weight: 28 lb"]
-- care_notes: ["Vacuum regularly using upholstery attachment", "Blot spills immediately", "Avoid direct sunlight to prevent fading"]
-- sustainability_notes: ["Made with sustainably sourced materials", "Low-VOC finishes"]
