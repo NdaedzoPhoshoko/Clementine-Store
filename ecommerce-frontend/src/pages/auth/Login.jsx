@@ -1,0 +1,76 @@
+import React, { useState } from 'react';
+import AuthLayout from './AuthLayout';
+import './AuthStyles.css';
+
+export default function Login() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+
+  const validate = () => {
+    const next = {};
+    if (!email.trim()) next.email = 'Email is required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) next.email = 'Enter a valid email';
+    if (!password) next.password = 'Password is required';
+    else if (password.length < 8) next.password = 'At least 8 characters';
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  };
+
+  const onSubmit = (e) => {
+    e.preventDefault();
+    if (!validate()) return;
+    setLoading(true);
+    // TODO: integrate API login
+    setTimeout(() => setLoading(false), 800);
+  };
+
+  return (
+    <AuthLayout>
+      <header className="auth__header">
+        <h1 className="auth__title">Welcome</h1>
+        <p className="auth__subtitle">Get started for a seamless shopping experience</p>
+      </header>
+
+      <div className="auth__divider" role="separator" aria-label="or" />
+
+      <form className="auth__form" onSubmit={onSubmit} noValidate>
+        <label className="auth__label" htmlFor="login-email">Email</label>
+        <input
+          id="login-email"
+          type="email"
+          className="auth__input form-control"
+          placeholder="john@doe.com"
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        {errors.email && <div className="auth__error" role="alert">{errors.email}</div>}
+
+        <div className="auth__field-row">
+          <label className="auth__label" htmlFor="login-password">Password</label>
+          <a className="auth__link" href="/auth/forgot" aria-label="Forgot password">Forgot password?</a>
+        </div>
+        <input
+          id="login-password"
+          type="password"
+          className="auth__input form-control"
+          placeholder="At least 8 characters"
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        {errors.password && <div className="auth__error" role="alert">{errors.password}</div>}
+
+        <button className="auth__submit" type="submit" disabled={loading}>
+          {loading ? 'Logging in…' : 'Login'}
+        </button>
+      </form>
+
+      <p className="auth__meta">
+        Don't have an account? <a className="auth__link" href="/auth/signup">Register</a>
+      </p>
+    </AuthLayout>
+  );
+}
