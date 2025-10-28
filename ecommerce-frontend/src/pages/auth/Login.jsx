@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import AuthLayout from './AuthLayout';
 import './AuthStyles.css';
 import { Link } from 'react-router-dom';
+import { useAuthLogin } from '../../hooks/use_auth';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -9,6 +10,7 @@ export default function Login() {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const { login, loading: loginLoading, error: loginError } = useAuthLogin();
 
   const validate = () => {
     const next = {};
@@ -20,12 +22,14 @@ export default function Login() {
     return Object.keys(next).length === 0;
   };
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
-    setLoading(true);
-    // TODO: integrate API login
-    setTimeout(() => setLoading(false), 800);
+    try {
+      await login({ email, password });
+    } catch (_) {
+      // handled via loginError state from hook
+    }
   };
 
   return (
@@ -77,9 +81,10 @@ export default function Login() {
           </button>
         </div>
         {errors.password && <div className="auth__error" role="alert">{errors.password}</div>}
+        {loginError && <div className="auth__error" role="alert">{loginError}</div>}
 
-        <button className="auth__submit" type="submit" disabled={loading}>
-          {loading ? 'Logging in…' : 'Login'}
+        <button className="auth__submit" type="submit" disabled={loginLoading}>
+          {loginLoading ? 'Logging in…' : 'Login'}
         </button>
       </form>
 

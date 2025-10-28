@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import AuthLayout from './AuthLayout';
 import './AuthStyles.css';
 import { Link } from 'react-router-dom';
+import { useAuthRegister } from '../../hooks/use_auth';
 
 export default function Signup() {
   const [name, setName] = useState('');
@@ -12,6 +13,7 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const { register, loading: registerLoading, error: registerError } = useAuthRegister();
 
   const validate = () => {
     const next = {};
@@ -26,12 +28,14 @@ export default function Signup() {
     return Object.keys(next).length === 0;
   };
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
-    setLoading(true);
-    // TODO: integrate API signup (include name, email, password)
-    setTimeout(() => setLoading(false), 800);
+    try {
+      await register({ name, email, password });
+    } catch (_) {
+      // handled via registerError state from hook
+    }
   };
 
   return (
@@ -117,9 +121,10 @@ export default function Signup() {
           </button>
         </div>
         {errors.confirm && <div className="auth__error" role="alert">{errors.confirm}</div>}
+        {registerError && <div className="auth__error" role="alert">{registerError}</div>}
 
-        <button className="auth__submit" type="submit" disabled={loading}>
-          {loading ? 'Creating…' : 'Create account'}
+        <button className="auth__submit" type="submit" disabled={registerLoading}>
+          {registerLoading ? 'Creating…' : 'Create account'}
         </button>
       </form>
 
