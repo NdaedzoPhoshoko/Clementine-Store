@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import AuthLayout from './AuthLayout';
 import './AuthStyles.css';
+import { Link } from 'react-router-dom';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -51,7 +52,7 @@ export default function Login() {
 
         <div className="auth__field-row">
           <label className="auth__label" htmlFor="login-password">Password</label>
-          <a className="auth__link" href="/auth/forgot" aria-label="Forgot password">Forgot password?</a>
+          <Link className="auth__link" to="/auth/forgot" aria-label="Forgot password">Forgot password?</Link>
         </div>
         <div className="auth__input-wrap">
           <input
@@ -83,7 +84,7 @@ export default function Login() {
       </form>
 
       <p className="auth__meta">
-        Don't have an account? <a className="auth__link" href="/auth/signup">Register</a>
+        Don't have an account? <Link className="auth__link" to="/auth/signup">Register</Link>
       </p>
     </AuthLayout>
   );

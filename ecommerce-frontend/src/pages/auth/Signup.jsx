@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import AuthLayout from './AuthLayout';
 import './AuthStyles.css';
+import { Link } from 'react-router-dom';
 
 export default function Signup() {
   const [name, setName] = useState('');
@@ -123,7 +124,7 @@ export default function Signup() {
       </form>
 
       <p className="auth__meta">
-        Already have an account? <a className="auth__link" href="/auth/login">Login</a>
+        Already have an account? <Link className="auth__link" to="/auth/login">Sign in</Link>
       </p>
     </AuthLayout>
   );

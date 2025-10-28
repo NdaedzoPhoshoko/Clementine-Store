@@ -87,6 +87,10 @@
 }
 .auth__field-row { display: flex; justify-content: space-between; align-items: baseline; }
 
+.auth__field-row .auth__link {
+  font-size: .95;
+}
+
 /* Submit */
 .auth__submit {
   margin-top: .5rem;
