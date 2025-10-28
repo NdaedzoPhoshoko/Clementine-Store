@@ -32,9 +32,15 @@
 }
 
 .home-categories__track {
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   padding: 12px 4px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none; /* Firefox */
 }
+.home-categories__track::-webkit-scrollbar { display: none; }
 
 /* Card */
 .cat-card {
@@ -113,7 +119,14 @@
   width: 100%;
   min-height: 64px;
   padding: 12px 4px; /* track sits between chevrons now */
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none; /* Firefox */
 }
+.home-categories__track::-webkit-scrollbar { display: none; }
 
 /* Animated inner list */
 .home-categories__list {
