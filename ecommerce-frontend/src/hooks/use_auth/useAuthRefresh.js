@@ -1,0 +1,41 @@
+import { useState, useCallback } from 'react';
+import { authStorage } from './authStorage';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000';
+
+export default function useAuthRefresh() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [data, setData] = useState(null);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    setData(null);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+        method: 'POST',
+        headers: { accept: '*/*' },
+        credentials: 'include',
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const message = payload?.message || payload?.error || 'Refresh failed';
+        throw new Error(message);
+      }
+      // If server returns new tokens, persist them; otherwise just store the message
+      if (payload?.accessToken || payload?.token || payload?.user) {
+        authStorage.setAuth({ user: payload.user, token: payload.token, accessToken: payload.accessToken });
+      }
+      setData(payload);
+      return payload;
+    } catch (e) {
+      setError(e?.message || 'Unknown error');
+      throw e;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { refresh, loading, error, data };
+}
