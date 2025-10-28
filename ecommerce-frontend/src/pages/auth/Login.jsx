@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AuthLayout from './AuthLayout';
 import './AuthStyles.css';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthLogin } from '../../hooks/use_auth';
+import SuccessModal from '../../components/modals/success_modal/SuccessModal.jsx';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -11,6 +12,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { login, loading: loginLoading, error: loginError } = useAuthLogin();
+  const [modal, setModal] = useState({ open: false, variant: 'success', title: '', message: '' });
+  const navigate = useNavigate();
 
   const validate = () => {
     const next = {};
@@ -27,10 +30,25 @@ export default function Login() {
     if (!validate()) return;
     try {
       await login({ email, password });
+      setModal({
+        open: true,
+        variant: 'success',
+        title: 'Welcome back',
+        message: "You're in! Explore new arrivals, trending fits, and exclusive deals.",
+      });
     } catch (_) {
       // handled via loginError state from hook
     }
   };
+
+  useEffect(() => {
+    if (loginError) {
+      const msg = typeof loginError === 'string'
+        ? loginError
+        : 'There was an error logging you in.';
+      setModal({ open: true, variant: 'error', title: 'Try Again', message: msg });
+    }
+  }, [loginError]);
 
   return (
     <AuthLayout>
@@ -81,7 +99,7 @@ export default function Login() {
           </button>
         </div>
         {errors.password && <div className="auth__error" role="alert">{errors.password}</div>}
-        {loginError && <div className="auth__error" role="alert">{loginError}</div>}
+        {/* DB errors are shown via modal; keep inline validation errors only */}
 
         <button className="auth__submit" type="submit" disabled={loginLoading}>
           {loginLoading ? 'Logging in…' : 'Login'}
@@ -91,6 +109,20 @@ export default function Login() {
       <p className="auth__meta">
         Don't have an account? <Link className="auth__link" to="/auth/signup">Register</Link>
       </p>
+
+      <SuccessModal
+        open={modal.open}
+        variant={modal.variant}
+        title={modal.title}
+        message={modal.message}
+        onClose={() => setModal((m) => ({ ...m, open: false }))}
+        onAfterClose={() => {
+          if (modal.variant === 'success') {
+            navigate('/shop-all');
+          }
+        }}
+        autoCloseMs={10000}
+      />
     </AuthLayout>
   );
 }

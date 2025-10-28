@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AuthLayout from './AuthLayout';
 import './AuthStyles.css';
 import { Link } from 'react-router-dom';
 import { useAuthRegister } from '../../hooks/use_auth';
+import SuccessModal from '../../components/modals/success_modal/SuccessModal.jsx';
 
 export default function Signup() {
   const [name, setName] = useState('');
@@ -14,6 +15,7 @@ export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const { register, loading: registerLoading, error: registerError } = useAuthRegister();
+  const [modal, setModal] = useState({ open: false, variant: 'success', title: '', message: '' });
 
   const validate = () => {
     const next = {};
@@ -33,10 +35,25 @@ export default function Signup() {
     if (!validate()) return;
     try {
       await register({ name, email, password });
+      setModal({
+        open: true,
+        variant: 'success',
+        title: 'Sign In',
+        message: 'Thanks for signing up. You can now login your account.',
+      });
     } catch (_) {
       // handled via registerError state from hook
     }
   };
+
+  useEffect(() => {
+    if (registerError) {
+      const msg = typeof registerError === 'string'
+        ? registerError
+        : 'There was an error creating your account.';
+      setModal({ open: true, variant: 'error', title: 'Try Again', message: msg });
+    }
+  }, [registerError]);
 
   return (
     <AuthLayout>
@@ -121,7 +138,7 @@ export default function Signup() {
           </button>
         </div>
         {errors.confirm && <div className="auth__error" role="alert">{errors.confirm}</div>}
-        {registerError && <div className="auth__error" role="alert">{registerError}</div>}
+        {/* DB errors are shown via modal; keep inline validation errors only */}
 
         <button className="auth__submit" type="submit" disabled={registerLoading}>
           {registerLoading ? 'Creating…' : 'Create account'}
@@ -131,6 +148,15 @@ export default function Signup() {
       <p className="auth__meta">
         Already have an account? <Link className="auth__link" to="/auth/login">Sign in</Link>
       </p>
+
+      <SuccessModal
+        open={modal.open}
+        variant={modal.variant}
+        title={modal.title}
+        message={modal.message}
+        onClose={() => setModal((m) => ({ ...m, open: false }))}
+        autoCloseMs={10000}
+      />
     </AuthLayout>
   );
 }

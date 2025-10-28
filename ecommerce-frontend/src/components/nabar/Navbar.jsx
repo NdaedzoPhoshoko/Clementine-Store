@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./navbar.css";
+import AccountAvatar from "../account_avatar/AccountAvatar.jsx";
+import { authStorage } from "../../hooks/use_auth/authStorage.js";
+import useAuthLogOut from "../../hooks/use_auth/useAuthLogOut.js";
 import useFetchCategoryNames from "../../hooks/useFetchCategoryNames.js";
 import useFetchAutocomplete from "../../hooks/useFetchAutocomplete.js";
 import { useNavigate, Link } from "react-router-dom";
@@ -9,7 +12,9 @@ const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [recentSearches, setRecentSearches] = useState(["Orange hoodie", "Leather wallet", "Sneakers"]);
+  const [showAccountDropdown, setShowAccountDropdown] = useState(false);
   const navigate = useNavigate();
+  const { logout, loading: logoutLoading } = useAuthLogOut();
 
   // Skeleton loading for Home mega menu images
   const HOME_IMG_COUNT = 6;
@@ -23,6 +28,22 @@ const Navbar = () => {
     });
   };
   const navCenterRef = useRef(null);
+  const accountRef = useRef(null);
+  // Delayed close timer for account dropdown
+  const closeTimerRef = useRef(null);
+  const DELAY_CLOSE_MS = 300;
+  const cancelClose = () => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  };
+  const scheduleClose = () => {
+    cancelClose();
+    closeTimerRef.current = setTimeout(() => {
+      setShowAccountDropdown(false);
+    }, DELAY_CLOSE_MS);
+  };
 
   // Home menu tags with images; used to render grid with skeletons
   const homeTags = [
@@ -77,7 +98,10 @@ const Navbar = () => {
 
   useEffect(() => {
     const onKeyDown = (e) => {
-      if (e.key === "Escape") setShowSearchDropdown(false);
+      if (e.key === "Escape") {
+        setShowSearchDropdown(false);
+        setShowAccountDropdown(false);
+      }
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
@@ -87,6 +111,16 @@ const Navbar = () => {
     const onClick = (e) => {
       if (navCenterRef.current && !navCenterRef.current.contains(e.target)) {
         setShowSearchDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  useEffect(() => {
+    const onClick = (e) => {
+      if (accountRef.current && !accountRef.current.contains(e.target)) {
+        setShowAccountDropdown(false);
       }
     };
     document.addEventListener("mousedown", onClick);
@@ -434,12 +468,80 @@ const Navbar = () => {
         </div>
 
         <div className="nav-right">
-          <Link to="/account" className="nav-icon" aria-label="Account">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-          </Link>
+          <div
+            className="nav-account"
+            ref={accountRef}
+            onMouseEnter={() => { cancelClose(); setShowAccountDropdown(true); }}
+            onMouseLeave={scheduleClose}
+          >
+            <AccountAvatar />
+            {showAccountDropdown && (
+              <div className="account-dropdown" role="menu" aria-label="Account menu" onMouseEnter={cancelClose} onMouseLeave={scheduleClose}>
+                <div className="account-card">
+                  {(() => {
+                    const user = authStorage.getUser();
+                    const isAuthed = authStorage.isAuthenticated();
+                    const displayName = user?.name || user?.fullName || [user?.firstName, user?.lastName].filter(Boolean).join(" ") || "Guest";
+                    const initials = (displayName || "").trim().split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase() || "").join("");
+                    return (
+                      <>
+                        <div className="account-card__intro">
+                          {isAuthed
+                            ? 'View your account to manage orders, addresses, and cart items. Log out anytime.'
+                            : 'Sign in to browse products, track orders, and unlock exclusive deals.'}
+                        </div>
+                        <div className="account-card__header">
+                          {isAuthed && initials ? (
+                            <span className="account-avatar__circle account-avatar__circle--lg" aria-hidden="true">
+                              <span className="account-avatar__initials">{initials}</span>
+                            </span>
+                          ) : (
+                            <span className="account-card__avatar-icon" aria-hidden="true">
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                <circle cx="12" cy="7" r="4" />
+                              </svg>
+                            </span>
+                          )}
+                          <div className="account-card__identity">
+                            <div className="account-card__name">{displayName}</div>
+                          </div>
+                        </div>
+                        <div className="account-card__actions">
+                          {isAuthed ? (
+                            <>
+                              <Link to="/account" className="account-btn account-btn--dark" onClick={() => setShowAccountDropdown(false)}>
+                                View account
+                              </Link>
+                              <button
+                                type="button"
+                                className="account-btn account-btn--light"
+                                disabled={logoutLoading}
+                                onMouseDown={async () => {
+                                  try {
+                                    await logout();
+                                  } catch {}
+                                  setShowAccountDropdown(false);
+                                  navigate('/');
+                                }}
+                              >
+                                {logoutLoading ? 'Logging out…' : 'Log out'}
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <Link to="/auth/login" className="account-btn account-btn--light" onClick={() => setShowAccountDropdown(false)}>Log in</Link>
+                              <Link to="/auth/signup" className="account-btn account-btn--dark" onClick={() => setShowAccountDropdown(false)}>Sign up</Link>
+                            </>
+                          )}
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+          </div>
           <Link to="/cart" className="nav-icon" aria-label="Cart">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <circle cx="9" cy="21" r="1" />
