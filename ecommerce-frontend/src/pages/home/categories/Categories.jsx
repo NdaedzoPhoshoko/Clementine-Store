@@ -1,12 +1,21 @@
 import './Categories.css'
 import useFetchCategoriesWithImages from '../../../hooks/useFetchCategoriesWithImages.js'
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-function CategoryCard({ name, image, isPlaceholder = false }) {
+// Match Navbar's slugify behavior for category filters
+const slugify = (s) => s.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
+
+function CategoryCard({ name, image, isPlaceholder = false, onClick }) {
   const fallback = '/images/imageNoVnXXmDNi0.png';
   const src = image && image.length > 0 ? image : fallback;
   return (
-    <button className={`cat-card ${isPlaceholder ? 'cat-card--skeleton' : ''}`} aria-label={isPlaceholder ? 'Loading category' : (name || 'Category')} disabled={isPlaceholder ? true : undefined}>
+    <button
+      className={`cat-card ${isPlaceholder ? 'cat-card--skeleton' : ''}`}
+      aria-label={isPlaceholder ? 'Loading category' : (name || 'Category')}
+      disabled={isPlaceholder ? true : undefined}
+      onClick={isPlaceholder ? undefined : onClick}
+    >
       <span className="cat-card__avatar" aria-hidden>
         {isPlaceholder ? (
           <span className="cat-card__avatar-skeleton skeleton-block" />
@@ -33,6 +42,8 @@ export default function Categories({ onError }) {
   const [offset, setOffset] = useState(0);
   const [cats, setCats] = useState([]);
   const [unitX, setUnitX] = useState(236); // card width + gap in px
+
+  const navigate = useNavigate();
 
   const { categories, loading, error } = useFetchCategoriesWithImages({ page, limit: itemsPerView * 2 });
 
@@ -127,8 +138,20 @@ export default function Categories({ onError }) {
           <div className="home-categories__list" style={{ transform: `translateX(-${offset * unitX}px)` }}>
             {renderList.map((c, i) => {
               const isPh = String(c.id || '').startsWith('ph-');
+              const label = c.name || '';
+              const onCardClick = () => {
+                if (!isPh && label.trim()) {
+                  navigate(`/shop-all?category=${slugify(label)}`);
+                }
+              };
               return (
-                <CategoryCard key={c.id ?? `${offset}-${i}`} name={c.name} image={c.image} isPlaceholder={isPh} />
+                <CategoryCard
+                  key={c.id ?? `${offset}-${i}`}
+                  name={c.name}
+                  image={c.image}
+                  isPlaceholder={isPh}
+                  onClick={onCardClick}
+                />
               );
             })}
           </div>
