@@ -7,6 +7,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const validate = () => {
     const next = {};
@@ -52,15 +53,28 @@ export default function Login() {
           <label className="auth__label" htmlFor="login-password">Password</label>
           <a className="auth__link" href="/auth/forgot" aria-label="Forgot password">Forgot password?</a>
         </div>
-        <input
-          id="login-password"
-          type="password"
-          className="auth__input form-control"
-          placeholder="At least 8 characters"
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+        <div className="auth__input-wrap">
+          <input
+            id="login-password"
+            type={showPassword ? 'text' : 'password'}
+            className="auth__input form-control auth__input--with-toggle"
+            placeholder="At least 8 characters"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <button
+            type="button"
+            className="auth__toggle"
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            onClick={() => setShowPassword((v) => !v)}
+          >
+            <svg className="auth__toggle-svg" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 5C6 5 2 12 2 12s4 7 10 7 10-7 10-7-4-7-10-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z" fill="currentColor"/>
+            </svg>
+            <span>{showPassword ? 'Hide' : 'Show'}</span>
+          </button>
+        </div>
         {errors.password && <div className="auth__error" role="alert">{errors.password}</div>}
 
         <button className="auth__submit" type="submit" disabled={loading}>

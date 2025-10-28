@@ -9,6 +9,8 @@ export default function Signup() {
   const [confirm, setConfirm] = useState('');
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const validate = () => {
     const next = {};
@@ -66,27 +68,53 @@ export default function Signup() {
         {errors.email && <div className="auth__error" role="alert">{errors.email}</div>}
 
         <label className="auth__label" htmlFor="signup-password">Password</label>
-        <input
-          id="signup-password"
-          type="password"
-          className="auth__input form-control"
-          placeholder="At least 8 characters"
-          autoComplete="new-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+        <div className="auth__input-wrap">
+          <input
+            id="signup-password"
+            type={showPassword ? 'text' : 'password'}
+            className="auth__input form-control auth__input--with-toggle"
+            placeholder="At least 8 characters"
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <button
+            type="button"
+            className="auth__toggle"
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            onClick={() => setShowPassword((v) => !v)}
+          >
+            <svg className="auth__toggle-svg" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 5C6 5 2 12 2 12s4 7 10 7 10-7 10-7-4-7-10-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z" fill="currentColor"/>
+            </svg>
+            <span>{showPassword ? 'Hide' : 'Show'}</span>
+          </button>
+        </div>
         {errors.password && <div className="auth__error" role="alert">{errors.password}</div>}
 
         <label className="auth__label" htmlFor="signup-confirm">Confirm password</label>
-        <input
-          id="signup-confirm"
-          type="password"
-          className="auth__input form-control"
-          placeholder="Repeat your password"
-          autoComplete="new-password"
-          value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
-        />
+        <div className="auth__input-wrap">
+          <input
+            id="signup-confirm"
+            type={showConfirm ? 'text' : 'password'}
+            className="auth__input form-control auth__input--with-toggle"
+            placeholder="Repeat your password"
+            autoComplete="new-password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+          />
+          <button
+            type="button"
+            className="auth__toggle"
+            aria-label={showConfirm ? 'Hide password' : 'Show password'}
+            onClick={() => setShowConfirm((v) => !v)}
+          >
+            <svg className="auth__toggle-svg" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 5C6 5 2 12 2 12s4 7 10 7 10-7 10-7-4-7-10-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Z" fill="currentColor"/>
+            </svg>
+            <span>{showConfirm ? 'Hide' : 'Show'}</span>
+          </button>
+        </div>
         {errors.confirm && <div className="auth__error" role="alert">{errors.confirm}</div>}
 
         <button className="auth__submit" type="submit" disabled={loading}>
