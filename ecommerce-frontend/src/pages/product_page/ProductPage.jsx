@@ -10,6 +10,24 @@ import useAccordionData from '../../hooks/useAccordionData.jsx'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 
+function useInView(options = { rootMargin: '200px', threshold: 0.1 }) {
+  const ref = useRef(null)
+  const [inView, setInView] = useState(false)
+  useEffect(() => {
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting) {
+          setInView(true)
+          if (ref.current) obs.unobserve(ref.current)
+        }
+      })
+    }, options)
+    if (ref.current) obs.observe(ref.current)
+    return () => obs.disconnect()
+  }, [])
+  return [ref, inView]
+}
+
 function Accordion({ items }) {
   const [openIndex, setOpenIndex] = useState(null)
   const toggle = (idx) => setOpenIndex((prev) => (prev === idx ? null : idx))
@@ -74,7 +92,9 @@ export default function ProductPage() {
     loading, 
     error 
   } = useFetchProductDetails({ productId })
-  const { reviews: fetchedReviews, reviewStats: fetchedReviewStats, loading: reviewsLoading, error: reviewsError } = useFetchProductReviews({ productId });
+  const [reviewsRef, reviewsInView] = useInView({ rootMargin: '300px', threshold: 0.2 })
+  const [relatedRef, relatedInView] = useInView({ rootMargin: '300px', threshold: 0.1 })
+  const { reviews: fetchedReviews, reviewStats: fetchedReviewStats, loading: reviewsLoading, error: reviewsError } = useFetchProductReviews({ productId, enabled: reviewsInView });
   const [selectedRatings, setSelectedRatings] = useState([]);
   const onToggleRating = (rating) => {
     setSelectedRatings(prev => prev.includes(rating) ? prev.filter(r => r !== rating) : [...prev, rating]);
@@ -185,7 +205,7 @@ export default function ProductPage() {
           imageObserver.current.unobserve(entry.target)
         }
       })
-    }, { threshold: 0.1, rootMargin: '100px' })
+    }, { threshold: 0.1, rootMargin: '250px' })
     
     return () => {
       if (imageObserver.current) {
@@ -533,11 +553,43 @@ export default function ProductPage() {
       )}
       
       {/* Related Products Section */}
-      <RelatedProducts categoryId={currentCategoryId} categoryName={currentCategoryName} currentProductId={productId} />
+      <div ref={relatedRef} className="related-products-section" aria-busy={!relatedInView ? "true" : undefined}>
+        {relatedInView ? (
+          <RelatedProducts categoryId={currentCategoryId} categoryName={currentCategoryName} currentProductId={productId} />
+        ) : (
+          <div className="related-products-skeleton">
+            <div className="skeleton-block" style={{ width: '180px', height: '24px', marginBottom: '16px' }}></div>
+            <div className="related-products-skeleton__grid">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="skeleton-block" style={{ height: '200px' }}></div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
       
       {/* Product Reviews Section */}
-      <section className="product-reviews-section">
+      <section ref={reviewsRef} className="product-reviews-section" aria-busy={!reviewsInView || reviewsLoading ? "true" : undefined}>
         <h2>Product Reviews</h2>
+        {(!reviewsInView || reviewsLoading) ? (
+          <div className="reviews-skeleton">
+            <div className="reviews-skeleton__summary">
+              <div className="skeleton-block" style={{ width: '80px', height: '48px' }}></div>
+              <div className="skeleton-block" style={{ width: '100px', height: '20px' }}></div>
+              <div className="skeleton-block" style={{ width: '140px', height: '14px' }}></div>
+            </div>
+            <div className="reviews-skeleton__distribution">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="skeleton-block" style={{ width: '100%', height: '12px', marginBottom: '8px' }}></div>
+              ))}
+            </div>
+            <div className="reviews-skeleton__list">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="skeleton-block" style={{ width: '100%', height: '80px', marginTop: '12px' }}></div>
+              ))}
+            </div>
+          </div>
+        ) : null}
         
         <div className="reviews-container">
           {/* Reviews Summary */}

@@ -10,7 +10,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 30px;
-  background-color: var(--color-surface);
+  /* background-color: var(--color-surface); */
 }
 
 /* Product Gallery */
@@ -1197,3 +1197,16 @@
 .review-items .skeleton-block {
   display: inline-block;
 }
+
+/* Hide busy review content except skeleton */
+.product-reviews-section[aria-busy="true"] > :not(.reviews-skeleton):not(h2) {
+  display: none !important;
+}
+.reviews-skeleton { padding: 8px 0; }
+.reviews-skeleton__summary { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+.reviews-skeleton__distribution { margin-bottom: 12px; }
+.reviews-skeleton__list { }
+
+/* Related products skeleton grid and busy state */
+.related-products-skeleton__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.related-products-section[aria-busy="true"] > :not(.related-products-skeleton) { display: none !important; }
