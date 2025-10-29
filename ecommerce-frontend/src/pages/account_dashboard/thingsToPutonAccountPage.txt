@@ -1,0 +1,69 @@
+MVP Essentials
+
+- Account header: avatar, full name, email (verified badge), member since.
+- Quick actions: Track Order , Start Return , Manage Addresses , Add Payment .
+- Status cards: orders count, saved items, credits/points snapshot.
+Profile & Contact
+
+- Editable fields: name, email, phone.
+- Email verification state and CTA to resend verification.
+- Marketing consent flag and communication preferences.
+Addresses
+
+- List of saved addresses with labels ( Home , Work ).
+- Default shipping/billing indicators and “Set as default”.
+- Add, edit, delete, and validation feedback.
+- Shortcuts in checkout to pick an address.
+Orders & Returns
+
+- Recent orders list with status, items preview, totals.
+- Actions: View details , Track shipment , Invoice , Start return .
+- Returns history with status and RMA reference.
+- Digital purchases: downloads, license keys if applicable.
+Payments & Billing
+
+- Saved payment methods (masked card, brand, expiry).
+- Add/remove methods, set default, billing address linkage.
+- Invoices and receipts (download PDFs).
+- Subscriptions if you offer recurring products.
+Saved Items & Activity
+
+- Wishlist/favorites and “Save for later” from cart.
+- Recently viewed items.
+- Saved carts or draft orders (optional).
+Credits & Loyalty
+
+- Store credit balance and transaction history.
+- Loyalty tier, points balance, and redemption actions.
+- Coupons and gift cards (active/expired).
+Preferences
+
+- Notification settings: email, SMS, push toggles.
+- Language, currency, and regional settings.
+- Accessibility preferences (reduced motion, high contrast).
+Security & Privacy
+
+- Change password and 2FA setup (TOTP/SMS).
+- Active sessions/devices with Sign out of all devices .
+- Download my data, delete account, and privacy policy links.
+Support
+
+- Help shortcuts: Contact support , FAQ , Returns policy .
+- Live chat entry if available.
+Nice‑to‑Haves
+
+- Profile completeness progress bar.
+- Personalized recommendations based on history.
+- Membership perks and referral program.
+Routing & Data
+
+- Route: /account (guarded; redirect to /auth/login?next=/account if unauthenticated).
+- Subroutes: /account/addresses , /account/orders , /account/payments , /account/security .
+- Data sources: GET /api/me , GET /api/orders?limit=... , GET/POST /api/addresses , GET/POST /api/payment-methods , GET /api/credits .
+- Use authStorage for displaying name/initials and gating access; reuse useAuthLogOut for logout.
+States & UX
+
+- Empty states with clear CTAs (e.g., “No saved addresses — Add one”).
+- Skeleton loading for profile/summary tiles.
+- Consistent actions: buttons/links show pointer cursor and accessible labels.
+- Mobile-first layout: stacked cards, collapsible sections.
