@@ -7,6 +7,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import ShopAll from './pages/shopping/ShopAll'
 import Breadcrumbs from './components/breadcrumbs/Breadcrumbs'
 import ProductPage from './pages/product_page/ProductPage'
+import Login from './pages/auth/Login'
+import Signup from './pages/auth/Signup'
 
 function App() {
   return (
@@ -21,6 +23,9 @@ function App() {
             <Route path="/shop-all" element={<ShopAll />} />
             {/* Product details route */}
             <Route path="/product/:id" element={<ProductPage />} />
+            {/* Auth routes */}
+            <Route path="/auth/login" element={<Login />} />
+            <Route path="/auth/signup" element={<Signup />} />
             {/* Fallback to home */}
             <Route path="*" element={<Home />} />
           </Routes>
