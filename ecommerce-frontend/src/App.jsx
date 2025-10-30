@@ -9,6 +9,7 @@ import Breadcrumbs from './components/breadcrumbs/Breadcrumbs'
 import ProductPage from './pages/product_page/ProductPage'
 import Login from './pages/auth/Login'
 import Signup from './pages/auth/Signup'
+import SessionExpiryHandler from './components/auth/SessionExpiryHandler'
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
           </Routes>
         </main>
         <Footer />
+        <SessionExpiryHandler />
       </div>
     </BrowserRouter>
   )
