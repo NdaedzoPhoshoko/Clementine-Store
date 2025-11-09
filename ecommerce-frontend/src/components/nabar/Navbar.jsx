@@ -6,8 +6,11 @@ import useAuthLogOut from "../../hooks/use_auth/useAuthLogOut.js";
 import useFetchCategoryNames from "../../hooks/useFetchCategoryNames.js";
 import useFetchAutocomplete from "../../hooks/useFetchAutocomplete.js";
 import { useNavigate, Link } from "react-router-dom";
+import useFetchCart from "../../hooks/for_cart/useFetchCart.js";
 
 const Navbar = () => {
+  const { items, meta } = useFetchCart({ enabled: true });
+  const cartCount = Number(meta?.totalItems ?? (Array.isArray(items) ? items.length : 0));
   const [activeMenu, setActiveMenu] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
@@ -548,7 +551,7 @@ const Navbar = () => {
               <circle cx="20" cy="21" r="1" />
               <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
             </svg>
-            <span className="cart-counter" aria-label="Cart items count">0</span>
+            <span className="cart-counter" aria-label="Cart items count" aria-live="polite">{cartCount}</span>
           </Link>
         </div>
       </div>

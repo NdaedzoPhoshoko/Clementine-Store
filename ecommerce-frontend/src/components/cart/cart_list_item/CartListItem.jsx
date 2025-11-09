@@ -91,13 +91,9 @@ export default function CartListItem({ item = {}, onRemove, onRestore, refresh, 
 
   return (
     <div
-      className="cart-item cart-item--clickable"
+      className="cart-item"
       role="listitem"
       aria-label={String(name || 'Item')}
-      tabIndex={0}
-      onClick={handleView}
-      onKeyDown={onKeyDown}
-      title={productIdResolved ? 'View product details' : ''}
     > 
       <div className="cart-item__media">
         {/* eslint-disable-next-line jsx-a11y/img-redundant-alt */}
@@ -107,12 +103,35 @@ export default function CartListItem({ item = {}, onRemove, onRestore, refresh, 
           className="cart-item__image"
           loading="lazy"
           decoding="async"
+          role="link"
+          tabIndex={0}
+          onClick={handleView}
+          onKeyDown={onKeyDown}
+          title={productIdResolved ? 'View product details' : ''}
         />
       </div>
 
       <div className="cart-item__content">
-        <div className="cart-item__title" title={name || ''}>{name || ''}</div>
-        <div className="cart-item__desc" title={description || ''}>{description || ''}</div>
+        <div
+          className="cart-item__title"
+          role="link"
+          tabIndex={0}
+          title={name || ''}
+          onClick={handleView}
+          onKeyDown={onKeyDown}
+        >
+          {name || ''}
+        </div>
+        <div
+          className="cart-item__desc"
+          role="link"
+          tabIndex={0}
+          title={description || ''}
+          onClick={handleView}
+          onKeyDown={onKeyDown}
+        >
+          {description || ''}
+        </div>
 
         <div className="cart-item__variants">
           <span className="variant variant--size" aria-label="Selected size">Size: {size || '—'}</span>

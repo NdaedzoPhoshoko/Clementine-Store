@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import authStorage from '../use_auth/authStorage.js';
+import useAuthRefresh from '../use_auth/useAuthRefresh.js';
 
 // Cart data changes frequently; use a shorter TTL than product listings
 const CACHE_TTL_MS = 60 * 1000; // 1 minute
@@ -20,6 +21,7 @@ export default function useFetchCart({ enabled = true } = {}) {
 
   const user = authStorage.getUser();
   const accessToken = authStorage.getAccessToken();
+  const { refresh: refreshAuth } = useAuthRefresh();
   const signature = useMemo(() => String(user?.id ?? 'unknown'), [user?.id]);
 
   useEffect(() => {
@@ -68,10 +70,25 @@ export default function useFetchCart({ enabled = true } = {}) {
       for (let i = 0; i < attempts.length; i++) {
         const url = attempts[i];
         try {
-          const headers = { accept: 'application/json' };
+          let headers = { accept: 'application/json' };
           if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
 
-          const res = await fetch(url, { headers, signal: controller.signal });
+          let res = await fetch(url, { headers, signal: controller.signal });
+
+          // If unauthorized, attempt silent refresh and retry once
+          if (res.status === 401) {
+            try {
+              await refreshAuth({ silent: true });
+              const newToken = authStorage.getAccessToken();
+              if (newToken) {
+                headers = { ...headers, Authorization: `Bearer ${newToken}` };
+                res = await fetch(url, { headers, signal: controller.signal });
+              }
+            } catch (_) {
+              // fall through and handle as unauthorized
+            }
+          }
+
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
           const ct = res.headers.get('content-type') || '';

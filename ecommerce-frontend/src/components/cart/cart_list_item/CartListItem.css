@@ -53,6 +53,13 @@
   -webkit-box-orient: vertical;
 }
 
+/* Pointer cursor for the specific clickable parts */
+.cart-item__title,
+.cart-item__desc,
+.cart-item__image {
+  cursor: pointer;
+}
+
 .cart-item__variants { display: flex; gap: 12px; align-items: center; }
 .variant { font-size: 13px; color: var(--color-muted); }
 .variant--size { padding: 4px 10px; border: 1px solid var(--color-border); border-radius: 999px; background: var(--color-bg); }
