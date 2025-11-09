@@ -94,15 +94,22 @@ export const addCartItem = async (req, res) => {
       return res.status(400).json({ message: "Requested quantity exceeds available stock" });
     }
 
-    const upsertRes = await pool.query(
-      `INSERT INTO cart_items (cart_id, product_id, quantity)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (cart_id, product_id)
-       DO UPDATE SET quantity = cart_items.quantity + EXCLUDED.quantity
-       RETURNING id, quantity, added_at`,
-      [cart.id, productId, qty]
-    );
-    const cartItem = upsertRes.rows[0];
+    let cartItem;
+    if (existingItemRes.rows.length > 0) {
+      // Item exists: update quantity
+      const updateRes = await pool.query(
+        "UPDATE cart_items SET quantity=$1 WHERE id=$2 RETURNING id, quantity, added_at",
+        [newQty, existingItemRes.rows[0].id]
+      );
+      cartItem = updateRes.rows[0];
+    } else {
+      // Item does not exist: insert new
+      const insertRes = await pool.query(
+        "INSERT INTO cart_items (cart_id, product_id, quantity) VALUES ($1, $2, $3) RETURNING id, quantity, added_at",
+        [cart.id, productId, qty]
+      );
+      cartItem = insertRes.rows[0];
+    }
 
     // Fetch updated items to compute totals
     const itemsRes = await pool.query(
@@ -150,7 +157,7 @@ export const updateCartItem = async (req, res) => {
     }
 
     const itemRes = await pool.query(
-      `SELECT ci.id, ci.cart_id, ci.product_id, ci.quantity, c.user_id, c.status
+      `SELECT ci.id, ci.cart_id, ci.product_id, ci.quantity, c.user_id, c.status AS cart_status
        FROM cart_items ci
        JOIN cart c ON c.id = ci.cart_id
        WHERE ci.id = $1`,
@@ -164,7 +171,7 @@ export const updateCartItem = async (req, res) => {
     if (item.user_id !== userId) {
       return res.status(403).json({ message: "Forbidden: cart item does not belong to user" });
     }
-    if (item.status !== "ACTIVE") {
+    if (item.cart_status !== "ACTIVE") {
       return res.status(400).json({ message: "Cannot modify items on a non-ACTIVE cart" });
     }
 
@@ -219,67 +226,51 @@ export const updateCartItem = async (req, res) => {
 };
 
 export const deleteCartItem = async (req, res) => {
+  const userId = req.user.id;
+  const cartItemId = parseInt(req.params.id, 10);
+
+  if (!Number.isInteger(cartItemId) || cartItemId <= 0) {
+    return res.status(400).json({ message: "Invalid cart item ID" });
+  }
+
   try {
-    const cartItemId = parseInt(req.params.id, 10);
-    const userId = parseInt(req.user?.id, 10);
+    // Start transaction
+    await pool.query("BEGIN");
 
-    if (!cartItemId || cartItemId <= 0) {
-      return res.status(400).json({ message: "Invalid cart item id" });
-    }
-    if (!userId || userId <= 0) {
-      return res.status(401).json({ message: "Not authorized" });
-    }
-
-    const itemRes = await pool.query(
-      `SELECT ci.id, ci.cart_id, ci.product_id, ci.quantity, c.user_id, c.status
+    // 1. Verify the cart item belongs to the user's ACTIVE cart
+    const itemResult = await pool.query(
+      `SELECT ci.id, c.user_id, c.status AS cart_status, c.id AS cart_id
        FROM cart_items ci
-       JOIN cart c ON c.id = ci.cart_id
+       JOIN carts c ON ci.cart_id = c.id
        WHERE ci.id = $1`,
       [cartItemId]
     );
-    if (itemRes.rows.length === 0) {
+    if (itemResult.rows.length === 0) {
+      await pool.query("ROLLBACK");
       return res.status(404).json({ message: "Cart item not found" });
     }
-
-    const item = itemRes.rows[0];
+    const item = itemResult.rows[0];
     if (item.user_id !== userId) {
+      await pool.query("ROLLBACK");
       return res.status(403).json({ message: "Forbidden: cart item does not belong to user" });
     }
-    if (item.status !== "ACTIVE") {
+    if (item.cart_status !== "ACTIVE") {
+      await pool.query("ROLLBACK");
       return res.status(400).json({ message: "Cannot modify items on a non-ACTIVE cart" });
     }
 
-    await pool.query("DELETE FROM cart_items WHERE id=$1", [cartItemId]);
+    // 2. Delete cart item
+    await pool.query(`DELETE FROM cart_items WHERE id = $1`, [cartItemId]);
 
-    // Fetch updated cart and items
-    const cartRes = await pool.query(
-      "SELECT id, user_id, status, created_at FROM cart WHERE id=$1",
-      [item.cart_id]
-    );
-    const cart = cartRes.rows[0];
+    // 4. Commit transaction
+    await pool.query("COMMIT");
 
-    const itemsRes = await pool.query(
-      `SELECT ci.id AS cart_item_id, ci.quantity, ci.added_at,
-              p.id AS product_id, p.name, p.description, p.price, p.image_url, p.stock, p.category_id
-       FROM cart_items ci
-       JOIN products p ON p.id = ci.product_id
-       WHERE ci.cart_id = $1
-       ORDER BY ci.added_at DESC`,
-      [item.cart_id]
-    );
-    const items = itemsRes.rows;
-
-    let totalItems = 0;
-    let subtotal = 0;
-    for (const it of items) {
-      totalItems += Number(it.quantity);
-      subtotal += Number(it.quantity) * Number(it.price);
-    }
-    subtotal = Number(subtotal.toFixed(2));
-
-    return res.status(200).json({ cart, items, meta: { totalItems, subtotal } });
-  } catch (err) {
-    console.error("Delete cart item error:", err.message);
-    return res.status(500).json({ message: "Error deleting cart item" });
+    // 5. Return updated cart
+    const updatedCartData = await getCartWithItems(item.cart_id);
+    res.status(200).json(updatedCartData);
+  } catch (error) {
+    await pool.query("ROLLBACK");
+    console.error("Error deleting cart item:", error);
+    res.status(500).json({ message: "Server error while deleting cart item" });
   }
 };
