@@ -1,5 +1,5 @@
 import express from "express";
-import { getUserCart } from "../controllers/cartController.js";
+import { getUserCart, clearUserCart } from "../controllers/cartController.js";
 import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -69,5 +69,58 @@ const router = express.Router();
  *                       type: number
  */
 router.get("/", protect, getUserCart);
+
+/**
+ * @swagger
+ * /api/cart:
+ *   delete:
+ *     summary: Clear all items from the user's active cart
+ *     tags:
+ *       - Shopping Cart
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Cart cleared successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 cart:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     user_id:
+ *                       type: integer
+ *                     status:
+ *                       type: string
+ *                     created_at:
+ *                       type: string
+ *                       format: date-time
+ *                 items:
+ *                   type: array
+ *                   items: {}
+ *                 meta:
+ *                   type: object
+ *                   properties:
+ *                     totalItems:
+ *                       type: integer
+ *                       example: 0
+ *                     subtotal:
+ *                       type: number
+ *                       example: 0
+ *                 message:
+ *                   type: string
+ *                   example: "Cart cleared successfully"
+ *       401:
+ *         description: Not authorized
+ *       404:
+ *         description: No active cart found
+ *       500:
+ *         description: Server error while clearing cart
+ */
+router.delete("/", protect, clearUserCart);
 
 export default router;

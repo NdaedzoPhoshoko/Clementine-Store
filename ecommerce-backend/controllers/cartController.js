@@ -225,6 +225,54 @@ export const updateCartItem = async (req, res) => {
   }
 };
 
+export const clearUserCart = async (req, res) => {
+  try {
+    const userId = parseInt(req.user?.id, 10);
+    if (!userId || userId <= 0) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
+    // Start transaction
+    await pool.query("BEGIN");
+
+    // 1. Get the user's active cart
+    const cartResult = await pool.query(
+      "SELECT id FROM cart WHERE user_id = $1 AND status = 'ACTIVE'",
+      [userId]
+    );
+
+    if (cartResult.rows.length === 0) {
+      await pool.query("ROLLBACK");
+      return res.status(404).json({ message: "No active cart found" });
+    }
+
+    const cartId = cartResult.rows[0].id;
+
+    // 2. Delete all cart items for this cart
+    await pool.query(
+      "DELETE FROM cart_items WHERE cart_id = $1",
+      [cartId]
+    );
+
+    // 3. Commit transaction
+    await pool.query("COMMIT");
+
+    // 4. Return empty cart
+    const cart = cartResult.rows[0];
+    return res.status(200).json({ 
+      cart, 
+      items: [], 
+      meta: { totalItems: 0, subtotal: 0 },
+      message: "Cart cleared successfully"
+    });
+
+  } catch (err) {
+    await pool.query("ROLLBACK");
+    console.error("Clear user cart error:", err.message);
+    return res.status(500).json({ message: "Error clearing cart" });
+  }
+};
+
 export const deleteCartItem = async (req, res) => {
   const userId = req.user.id;
   const cartItemId = parseInt(req.params.id, 10);
