@@ -12,6 +12,9 @@
   font-family: var(--font-primary);
 }
 
+.cart-item--clickable { cursor: pointer; }
+.cart-item--clickable:focus { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+
 .cart-item__media { width: 96px; height: 96px; }
 .cart-item__image {
   width: 96px;
@@ -61,6 +64,55 @@
 .price { font-weight: 700; font-size: 16px; color: var(--color-text); }
 .qty { font-size: 13px; color: var(--color-muted); }
 
+/* Actions row: quantity stepper + delete */
+.cart-item__actions { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+
+.qty-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: var(--color-bg);
+}
+
+.qty-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 160ms ease, transform 160ms ease, color 160ms ease;
+}
+
+.qty-btn:hover, .qty-btn:focus-visible { background: var(--color-hover); }
+.qty-btn:active { transform: scale(0.96); }
+
+.qty-value { min-width: 20px; text-align: center; font-weight: 600; }
+
+.delete-btn {
+  appearance: none;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-danger);
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 160ms ease, box-shadow 160ms ease, transform 160ms ease, filter 160ms ease;
+}
+
+.delete-btn:hover, .delete-btn:focus-visible { background: var(--color-surface); box-shadow: var(--shadow-1); filter: brightness(1.05); }
+.delete-btn:active { transform: scale(0.96); }
+
 .stock { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--color-border); }
 .stock--in { color: #0f766e; background: #ecfdf5; border-color: #d1fae5; }
 .stock--out { color: #b91c1c; background: #fee2e2; border-color: #fecaca; }
@@ -70,3 +122,5 @@
   .cart-item__media, .cart-item__image { width: 72px; height: 72px; }
   .cart-item__aside { align-items: flex-start; }
 }
+
+/* Confirm modal styles moved to Cart.css */

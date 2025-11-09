@@ -10,7 +10,7 @@ import ProductPage from './pages/product_page/ProductPage'
 import Login from './pages/auth/Login'
 import Signup from './pages/auth/Signup'
 import SessionExpiryHandler from './components/auth/SessionExpiryHandler'
-import CartList from './components/cart/cart_list/CartList'
+import Cart from './pages/cart/Cart'
 
 function App() {
   return (
@@ -25,12 +25,13 @@ function App() {
             <Route path="/shop-all" element={<ShopAll />} />
             {/* Product details route */}
             <Route path="/product/:id" element={<ProductPage />} />
+            {/* Cart page */}
+            <Route path="/cart" element={<Cart />} />
             {/* Auth routes */}
             <Route path="/auth/login" element={<Login />} />
             <Route path="/auth/signup" element={<Signup />} />
             {/* Fallback to home */}
             <Route path="*" element={<Home />} />
-            <Route path="/cart" element={<CartList />} />
           </Routes>
         </main>
         <Footer />

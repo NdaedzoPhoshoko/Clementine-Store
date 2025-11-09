@@ -1,6 +1,6 @@
 import './CartList.css';
+import { useEffect, useMemo, useState } from 'react';
 import CartListItem from '../cart_list_item/CartListItem.jsx';
-import useFetchCart from '../../../hooks/for_cart/useFetchCart.js';
 
 const toNumber = (v) => (typeof v === 'string' ? parseFloat(v) : Number(v));
 const formatPrice = (v) => {
@@ -9,15 +9,27 @@ const formatPrice = (v) => {
   return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
-export default function CartList() {
-  const { cart, items, meta, loading, error, refresh } = useFetchCart({ enabled: true });
+export default function CartList({ items = [], meta = {}, loading = false, error = null, refresh, onRequestDelete, deleting = false }) {
+  // Local display state to support optimistic removal
+  const [displayItems, setDisplayItems] = useState(items);
+
+  useEffect(() => {
+    setDisplayItems(items);
+  }, [items]);
+
+  // Compute totals from local displayItems to reflect optimistic updates instantly
+  const { totalItems, subtotal } = useMemo(() => {
+    const total = displayItems.reduce((s, it) => s + Number(it.quantity || 0), 0);
+    const sub = displayItems.reduce((s, it) => s + (toNumber(it.price) * Number(it.quantity || 0)), 0);
+    return {
+      totalItems: Number.isFinite(Number(meta?.totalItems)) ? Number(meta.totalItems) : total,
+      subtotal: formatPrice(Number.isFinite(Number(meta?.subtotal)) ? Number(meta.subtotal) : sub),
+    };
+  }, [displayItems, meta]);
 
   if (error) {
     return (
       <div className="cart-list">
-        <div className="cart-list__header">
-          <h3 className="cart-list__title">Your Cart</h3>
-        </div>
         <div className="cart-list__error">
           <p>Failed to load your cart: {String(error)}</p>
           <button className="cart-list__retry" onClick={refresh}>Try again</button>
@@ -29,9 +41,6 @@ export default function CartList() {
   if (loading && (!items || items.length === 0)) {
     return (
       <div className="cart-list">
-        <div className="cart-list__header">
-          <h3 className="cart-list__title">Your Cart</h3>
-        </div>
         <div className="cart-list__items">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="cart-item skeleton">
@@ -53,17 +62,26 @@ export default function CartList() {
     );
   }
 
-  const totalItems = Number(meta?.totalItems ?? items?.length ?? 0);
-  const subtotal = formatPrice(meta?.subtotal ?? items.reduce((s, it) => s + (toNumber(it.price) * Number(it.quantity || 0)), 0));
+
+  const handleRemoveImmediate = (item) => {
+    const id = item?.cart_item_id;
+    setDisplayItems((prev) => prev.filter((it) => Number(it.cart_item_id) !== Number(id)));
+  };
+
+  const handleRestoreItem = (item) => {
+    // Re-insert the item if deletion fails (place it back near its original position)
+    setDisplayItems((prev) => {
+      // Avoid duplicates
+      if (prev.some((it) => Number(it.cart_item_id) === Number(item?.cart_item_id))) return prev;
+      return [item, ...prev];
+    });
+  };
 
   return (
-    <div className="cart-list">
-      <div className="cart-list__header">
-        <h3 className="cart-list__title">Your Cart</h3>
-        <div className="cart-list__meta">
-          <span className="cart-list__count">Items: {totalItems}</span>
-          <span className="cart-list__subtotal">Subtotal: R{subtotal}</span>
-        </div>
+    <div className="cart-list cart-list--interactive">
+      <div className="cart-list__meta">
+        <span className="cart-list__count">Items: {totalItems}</span>
+        <span className="cart-list__subtotal">Subtotal: R{subtotal}</span>
       </div>
 
       {(!items || items.length === 0) ? (
@@ -72,8 +90,16 @@ export default function CartList() {
         </div>
       ) : (
         <div className="cart-list__items" role="list" aria-label="Cart items">
-          {items.map((it) => (
-            <CartListItem key={it.cart_item_id} item={it} />
+          {displayItems.map((it) => (
+            <CartListItem
+              key={it.cart_item_id}
+              item={it}
+              refresh={refresh}
+              onRemove={handleRemoveImmediate}
+              onRestore={handleRestoreItem}
+              onRequestDelete={onRequestDelete}
+              deleting={deleting}
+            />
           ))}
         </div>
       )}

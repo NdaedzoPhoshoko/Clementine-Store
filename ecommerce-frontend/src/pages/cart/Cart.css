@@ -1,0 +1,180 @@
+/* Cart Page Layout using global variables */
+.cart-page {
+  display: grid;
+  grid-template-columns: 60% 1fr; /* list takes 60%, details take remaining space */
+  column-gap: 24px; /* sensible fixed gap for readability */
+  row-gap: 24px; /* keep vertical rhythm */
+  align-items: start;
+  padding: 20px; /* page-level breathing room */
+}
+
+/* Outer cart container and header (title outside grid) */
+.cart-container { padding: 0 20px; }
+.cart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 4px;
+  margin: 8px 0;
+}
+.cart-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text);
+  font-family: var(--font-heading);
+}
+
+.cart__list-container {
+  min-width: 0;
+  padding: 12px; /* inner spacing for list container */
+  margin: 8px 0; /* vertical rhythm */
+}
+
+.cart_details-container {
+  /* width handled by grid; remove min-width to honor 20% track */
+  padding: 12px; /* inner spacing for details container */
+  margin: 8px 0; /* vertical rhythm */
+}
+
+.details-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-soft);
+  padding: 16px 18px; /* slightly more horizontal comfort */
+  font-family: var(--font-primary);
+}
+
+.details-title {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+  font-family: var(--font-heading);
+}
+
+.details-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.details-row:last-child { border-bottom: none; }
+.label { color: var(--color-muted); font-size: 14px; }
+.value { color: var(--color-text); font-size: 14px; font-weight: 600; }
+
+.details-cta { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.checkout-btn {
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 700;
+  transition: background-color 150ms ease, transform 120ms ease, box-shadow 150ms ease, filter 150ms ease;
+}
+.checkout-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.checkout-btn:hover,
+.checkout-btn:focus {
+  outline: none;
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  box-shadow: var(--shadow-soft), 0 8px 24px rgba(0,0,0,0.08);
+}
+.checkout-btn:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-soft);
+}
+.retry-btn {
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .cart-container { padding: 0 12px; }
+  .cart-page {
+    grid-template-columns: 1fr;
+    padding: 12px; /* adjust padding for small screens */
+  }
+  .cart_details-container { order: 2; padding-top: 0; }
+  .cart__list-container { margin-bottom: 12px; }
+}
+
+/* Confirm Delete Modal */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.35);
+  display: block;
+  z-index: 1000;
+}
+
+.confirm-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(520px, 92vw);
+  max-height: 80vh;
+  overflow: auto;
+  background: var(--color-bg, #fff);
+  color: var(--color-text, #222);
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 10px;
+  box-shadow: var(--shadow-soft, 0 10px 30px rgba(0,0,0,0.20));
+  padding: 20px;
+  z-index: 1001;
+}
+
+.confirm-title {
+  margin: 0 0 8px;
+  font-family: var(--font-heading, inherit);
+  font-size: 1.25rem;
+  color: var(--color-text, #222);
+}
+
+.confirm-desc {
+  margin: 0 0 16px;
+  color: var(--color-text, #444);
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn {
+  appearance: none;
+  border: 1px solid var(--color-border, #ddd);
+  background: var(--color-bg, #fff);
+  color: var(--color-text, #222);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-family: var(--font-primary, inherit);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn--ghost {
+  background: transparent;
+}
+
+.btn--danger {
+  background: var(--palette-primary, #ff4d4f);
+  border-color: var(--palette-primary, #ff4d4f);
+  color: #fff;
+}

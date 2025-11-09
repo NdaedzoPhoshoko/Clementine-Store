@@ -285,6 +285,37 @@ export const clearUserCart = async (req, res) => {
   }
 };
 
+// Helper: fetch a cart and its items with computed meta
+async function getCartWithItems(cartId) {
+  const cartRes = await pool.query(
+    "SELECT id, user_id, status, created_at FROM cart WHERE id=$1",
+    [cartId]
+  );
+  const cart = cartRes.rows[0] || null;
+
+  const itemsRes = await pool.query(
+    `SELECT ci.id AS cart_item_id, ci.quantity, ci.added_at,
+            ci.size, ci.color_hex,
+            p.id AS product_id, p.name, p.description, p.price, p.image_url, p.stock, p.category_id
+     FROM cart_items ci
+     JOIN products p ON p.id = ci.product_id
+     WHERE ci.cart_id = $1
+     ORDER BY ci.added_at DESC`,
+    [cartId]
+  );
+  const items = itemsRes.rows;
+
+  let totalItems = 0;
+  let subtotal = 0;
+  for (const it of items) {
+    totalItems += Number(it.quantity);
+    subtotal += Number(it.quantity) * Number(it.price);
+  }
+  subtotal = Number(subtotal.toFixed(2));
+
+  return { cart, items, meta: { totalItems, subtotal } };
+}
+
 export const deleteCartItem = async (req, res) => {
   const userId = req.user.id;
   const cartItemId = parseInt(req.params.id, 10);
@@ -301,7 +332,7 @@ export const deleteCartItem = async (req, res) => {
     const itemResult = await pool.query(
       `SELECT ci.id, c.user_id, c.status AS cart_status, c.id AS cart_id
        FROM cart_items ci
-       JOIN carts c ON ci.cart_id = c.id
+       JOIN cart c ON ci.cart_id = c.id
        WHERE ci.id = $1`,
       [cartItemId]
     );
