@@ -93,6 +93,8 @@ export default function useFetchCart({ enabled = true } = {}) {
                 category_id: Number(it.category_id ?? 0),
                 quantity: Number(it.quantity ?? 0),
                 added_at: it.added_at || null,
+                size: typeof it.size === 'string' ? it.size : '',
+                color_hex: typeof it.color_hex === 'string' ? it.color_hex : '',
               }))
             : [];
 

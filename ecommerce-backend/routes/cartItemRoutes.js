@@ -27,6 +27,12 @@ const router = express.Router();
  *               quantity:
  *                 type: integer
  *                 default: 1
+  *               size:
+  *                 type: string
+  *                 description: Selected size for variant products
+  *               color_hex:
+  *                 type: string
+  *                 description: Selected color hex code (e.g., #001F3F)
  *     responses:
  *       201:
  *         description: Updated cart with items and totals
@@ -59,6 +65,10 @@ const router = express.Router();
  *                       added_at:
  *                         type: string
  *                         format: date-time
+  *                       size:
+  *                         type: string
+  *                       color_hex:
+  *                         type: string
  *                       product_id:
  *                         type: integer
  *                       name:

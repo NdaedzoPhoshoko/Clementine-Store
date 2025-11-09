@@ -20,6 +20,7 @@ export const getUserCart = async (req, res) => {
 
     const itemsResult = await pool.query(
       `SELECT ci.id AS cart_item_id, ci.quantity, ci.added_at,
+              ci.size, ci.color_hex,
               p.id AS product_id, p.name, p.description, p.price, p.image_url, p.stock, p.category_id
        FROM cart_items ci
        JOIN products p ON p.id = ci.product_id
@@ -47,10 +48,19 @@ export const getUserCart = async (req, res) => {
 
 export const addCartItem = async (req, res) => {
   try {
-    const { product_id, quantity = 1 } = req.body || {};
+    const { product_id, quantity = 1, size, color_hex } = req.body || {};
     const userId = parseInt(req.user?.id, 10);
     const productId = parseInt(product_id, 10);
     const qty = Math.max(parseInt(quantity, 10) || 1, 1);
+    const sizeStr = typeof size === "string" ? size.trim() : "";
+    const colorHexStr = typeof color_hex === "string" ? color_hex.trim() : "";
+
+    if (colorHexStr) {
+      const hexOk = /^#?[0-9A-Fa-f]{3,8}$/.test(colorHexStr);
+      if (!hexOk) {
+        return res.status(400).json({ message: "Invalid color_hex format" });
+      }
+    }
 
     if (!userId || userId <= 0) {
       return res.status(401).json({ message: "Not authorized" });
@@ -84,8 +94,8 @@ export const addCartItem = async (req, res) => {
 
     // Check existing item to enforce stock constraint
     const existingItemRes = await pool.query(
-      "SELECT id, quantity FROM cart_items WHERE cart_id=$1 AND product_id=$2",
-      [cart.id, productId]
+      "SELECT id, quantity FROM cart_items WHERE cart_id=$1 AND product_id=$2 AND size=$3 AND color_hex=$4",
+      [cart.id, productId, sizeStr, colorHexStr]
     );
     const existingQty = existingItemRes.rows.length ? parseInt(existingItemRes.rows[0].quantity, 10) : 0;
     const newQty = existingQty + qty;
@@ -98,15 +108,15 @@ export const addCartItem = async (req, res) => {
     if (existingItemRes.rows.length > 0) {
       // Item exists: update quantity
       const updateRes = await pool.query(
-        "UPDATE cart_items SET quantity=$1 WHERE id=$2 RETURNING id, quantity, added_at",
+        "UPDATE cart_items SET quantity=$1 WHERE id=$2 RETURNING id, quantity, added_at, size, color_hex",
         [newQty, existingItemRes.rows[0].id]
       );
       cartItem = updateRes.rows[0];
     } else {
       // Item does not exist: insert new
       const insertRes = await pool.query(
-        "INSERT INTO cart_items (cart_id, product_id, quantity) VALUES ($1, $2, $3) RETURNING id, quantity, added_at",
-        [cart.id, productId, qty]
+        "INSERT INTO cart_items (cart_id, product_id, quantity, size, color_hex) VALUES ($1, $2, $3, $4, $5) RETURNING id, quantity, added_at, size, color_hex",
+        [cart.id, productId, qty, sizeStr, colorHexStr]
       );
       cartItem = insertRes.rows[0];
     }
@@ -114,6 +124,7 @@ export const addCartItem = async (req, res) => {
     // Fetch updated items to compute totals
     const itemsRes = await pool.query(
       `SELECT ci.id AS cart_item_id, ci.quantity, ci.added_at,
+              ci.size, ci.color_hex,
               p.id AS product_id, p.name, p.description, p.price, p.image_url, p.stock, p.category_id
        FROM cart_items ci
        JOIN products p ON p.id = ci.product_id
@@ -201,6 +212,7 @@ export const updateCartItem = async (req, res) => {
 
     const itemsRes = await pool.query(
       `SELECT ci.id AS cart_item_id, ci.quantity, ci.added_at,
+              ci.size, ci.color_hex,
               p.id AS product_id, p.name, p.description, p.price, p.image_url, p.stock, p.category_id
        FROM cart_items ci
        JOIN products p ON p.id = ci.product_id

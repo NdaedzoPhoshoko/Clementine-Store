@@ -224,3 +224,29 @@ BEGIN
   END IF;
 END
 $$;
+
+BEGIN;
+
+-- Add variant columns to cart_items to support size and color selection
+ALTER TABLE cart_items
+  ADD COLUMN IF NOT EXISTS size VARCHAR(50) NOT NULL DEFAULT '';
+
+ALTER TABLE cart_items
+  ADD COLUMN IF NOT EXISTS color_hex VARCHAR(12) NOT NULL DEFAULT '';
+
+-- Replace legacy unique constraint with variant-aware uniqueness
+ALTER TABLE cart_items
+  DROP CONSTRAINT IF EXISTS cart_items_cart_id_product_id_key;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'cart_items_cart_id_product_id_size_color_hex_key'
+  ) THEN
+    ALTER TABLE cart_items
+      ADD CONSTRAINT cart_items_cart_id_product_id_size_color_hex_key
+      UNIQUE (cart_id, product_id, size, color_hex);
+  END IF;
+END $$;
+
+COMMIT;

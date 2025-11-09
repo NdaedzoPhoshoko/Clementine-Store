@@ -46,6 +46,10 @@ const router = express.Router();
  *                       added_at:
  *                         type: string
  *                         format: date-time
+  *                       size:
+  *                         type: string
+  *                       color_hex:
+  *                         type: string
  *                       product_id:
  *                         type: integer
  *                       name:
