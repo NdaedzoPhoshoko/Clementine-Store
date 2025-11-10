@@ -4,6 +4,8 @@ import CartList from '../../components/cart/cart_list/CartList.jsx';
 import useFetchCart from '../../hooks/for_cart/useFetchCart.js';
 import useDeleteCartItem from '../../hooks/for_cart/useDeleteCartItem.js';
 import useUpdateCartItemQuantity from '../../hooks/for_cart/useUpdateCartItemQuantity.js';
+import { useCart } from '../../hooks/for_cart/CartContext.jsx';
+import { createPortal } from 'react-dom'
 
 const toNumber = (v) => (typeof v === 'string' ? parseFloat(v) : Number(v));
 const formatPrice = (v) => {
@@ -17,6 +19,7 @@ export default function Cart() {
   const { deleteItem, loading: deleting } = useDeleteCartItem();
   const { updateQuantity } = useUpdateCartItemQuantity();
   const qtyTimersRef = useRef({});
+  const { items: ctxItems, meta: ctxMeta, setItems: setCtxItems, updateItemQuantity, hydrate } = useCart();
 
   // Local visible items to support optimistic removal controlled at the page level
   const [visibleItems, setVisibleItems] = useState(items);
@@ -24,10 +27,46 @@ export default function Cart() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [numOfItems, setNumOfItems] = useState((items || []).length);
 
+  // Inline styles to keep modal code self-contained in this file
+  const overlayStyle = {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(0,0,0,0.55)',
+    zIndex: 10000,
+  };
+  const modalStyle = {
+    position: 'fixed',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    background: '#fff',
+    borderRadius: '12px',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.25)',
+    padding: '16px',
+    width: 'min(92vw, 460px)',
+    zIndex: 10001,
+  };
+  
+  // Lock page scroll while modal is open
   useEffect(() => {
-    setVisibleItems(items);
-    setNumOfItems((items || []).length);
-  }, [items]);
+    if (showConfirm) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prev || '';
+      };
+    }
+  }, [showConfirm]);
+
+  // Hydrate context whenever backend provides fresh data
+  useEffect(() => {
+    hydrate({ items, meta });
+  }, [items, meta, hydrate]);
+
+  useEffect(() => {
+    setVisibleItems(ctxItems);
+    setNumOfItems((ctxItems || []).length);
+  }, [ctxItems]);
 
   // Derive order summary from visibleItems for immediate updates on quantity changes
   const { itemsCountLocal, subtotalLocal } = useMemo(() => {
@@ -69,6 +108,7 @@ export default function Cart() {
     const prev = visibleItems;
     // Optimistic removal
     setVisibleItems((list) => list.filter((it) => Number(it.cart_item_id) !== Number(id)));
+    setCtxItems((list) => Array.isArray(list) ? list.filter((it) => Number(it.cart_item_id) !== Number(id)) : []);
     // Close modal immediately
     closeConfirm();
     // Perform deletion in background; restore on failure
@@ -78,32 +118,27 @@ export default function Cart() {
         await refresh();
       } catch (err) {
         setVisibleItems(prev);
+        // restore context as well
+        setCtxItems(prev);
         alert(`Failed to remove item: ${err?.message || err}`);
       }
     })();
   };
 
-  useEffect(() => {
-    return () => {
-      Object.values(qtyTimersRef.current || {}).forEach((t) => clearTimeout(t));
-      qtyTimersRef.current = {};
-    };
-  }, []);
-
   const scheduleQuantityUpdate = (cartItemId, nextQty) => {
-    const key = String(cartItemId);
-    const timers = qtyTimersRef.current;
-    if (timers[key]) clearTimeout(timers[key]);
-    timers[key] = setTimeout(async () => {
+    const id = Number(cartItemId);
+    const timers = qtyTimersRef.current || {};
+    if (timers[id]) clearTimeout(timers[id]);
+    timers[id] = setTimeout(async () => {
       try {
-        await updateQuantity(cartItemId, Number(nextQty));
+        await updateQuantity(id, Number(nextQty));
         await refresh();
       } catch (err) {
-        console.warn('[Cart] Failed to update quantity:', err);
-      } finally {
-        delete timers[key];
+        // Optionally handle rollback
+        console.error('Failed to update quantity', err);
       }
-    }, 500);
+    }, 400);
+    qtyTimersRef.current = timers;
   };
 
   const onQuantityChange = (cartItemId, nextQty) => {
@@ -113,11 +148,15 @@ export default function Cart() {
         ? { ...it, quantity: Number(nextQty) }
         : it
     )));
+    // Update shared cart context so Navbar counter updates instantly
+    updateItemQuantity(cartItemId, nextQty);
+    // Back-end update debounced
     scheduleQuantityUpdate(cartItemId, nextQty);
   };
 
   return (
-    <div className="cart-container">
+    <>
+      <div className="cart-container">
       <header className="cart-header">
         <h3 className="cart-title">Your Shopping Bag</h3>
       </header>
@@ -158,52 +197,44 @@ export default function Cart() {
 
             <div className="details-row">
               <span className="label">Est. Delivery</span>
-              <span className="value text-muted">{estimatedDelivery}</span>
+              <span className="value text-muted">Within the next 5-7 business days</span>
             </div>
+
             <div className="details-cta">
-              <button
-                type="button"
-                className="checkout-btn"
-                onClick={onCheckout}
-                disabled={!canCheckout}
-                aria-label="Proceed to checkout"
-              >
+              <button className="checkout-btn" disabled={!canCheckout} onClick={onCheckout}>
                 Checkout
               </button>
             </div>
           </div>
         </aside>
       </div>
+    </div>
 
       {showConfirm && (
-        <div className="confirm-overlay" role="presentation" onClick={closeConfirm}>
-          <div
-            className="confirm-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="confirm-title"
-            aria-describedby="confirm-desc"
-            onClick={(ev) => ev.stopPropagation()}
-          >
-            <h3 className="confirm-title font-heading" id="confirm-title">Remove item?</h3>
-            <p className="confirm-desc" id="confirm-desc">
-              "{confirmItem?.name}" will be removed from your cart. This can’t be undone.
-            </p>
-            <div className="confirm-actions">
-              <button type="button" className="btn btn--ghost" onClick={closeConfirm}>Cancel</button>
-              <button
-                type="button"
-                className="btn btn--danger"
-                onClick={onConfirmDelete}
-                disabled={deleting}
-                autoFocus
-              >
-                Delete
-              </button>
+        createPortal(
+          <>
+            <div className="confirm-overlay" onClick={closeConfirm} style={overlayStyle} />
+            <div
+              className="confirm-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="confirm-title"
+              aria-describedby="confirm-desc"
+              style={modalStyle}
+            >
+              <h4 id="confirm-title" className="confirm-title">Remove item?</h4>
+              <p id="confirm-desc" className="confirm-desc">
+                Are you sure you want to remove {confirmItem?.name || 'this item'} from your cart?
+              </p>
+              <div className="confirm-actions">
+                <button className="btn btn--ghost" type="button" onClick={closeConfirm}>Cancel</button>
+                <button className="btn btn--danger" type="button" onClick={onConfirmDelete} disabled={deleting}>Remove</button>
+              </div>
             </div>
-          </div>
-        </div>
+          </>,
+          document.body
+        )
       )}
-    </div>
-  );
+     </>
+   );
 }

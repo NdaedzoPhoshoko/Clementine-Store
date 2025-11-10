@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import "./navbar.css";
 import AccountAvatar from "../account_avatar/AccountAvatar.jsx";
 import { authStorage } from "../../hooks/use_auth/authStorage.js";
@@ -6,11 +6,14 @@ import useAuthLogOut from "../../hooks/use_auth/useAuthLogOut.js";
 import useFetchCategoryNames from "../../hooks/useFetchCategoryNames.js";
 import useFetchAutocomplete from "../../hooks/useFetchAutocomplete.js";
 import { useNavigate, Link } from "react-router-dom";
-import useFetchCart from "../../hooks/for_cart/useFetchCart.js";
+import { useCart } from "../../hooks/for_cart/CartContext.jsx";
 
 const Navbar = () => {
-  const { items, meta } = useFetchCart({ enabled: true });
-  const cartCount = Number(meta?.totalItems ?? (Array.isArray(items) ? items.length : 0));
+  const { items, clearCart } = useCart();
+  const cartCount = useMemo(() => {
+    const list = Array.isArray(items) ? items : [];
+    return list.reduce((sum, it) => sum + Number(it.quantity || 0), 0);
+  }, [items]);
   const [activeMenu, setActiveMenu] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
@@ -18,18 +21,9 @@ const Navbar = () => {
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
   const navigate = useNavigate();
   const { logout, loading: logoutLoading } = useAuthLogOut();
-
-  // Skeleton loading for Home mega menu images
-  const HOME_IMG_COUNT = 6;
-  const [homeLoadedCount, setHomeLoadedCount] = useState(0);
-  const [homeImagesReady, setHomeImagesReady] = useState(false);
-  const markHomeImgLoaded = () => {
-    setHomeLoadedCount((c) => {
-      const next = c + 1;
-      if (next >= HOME_IMG_COUNT) setHomeImagesReady(true);
-      return next;
-    });
-  };
+  // In account dropdown actions, update the logout handler to also clear cart
+  // The actual JSX is further below; this comment indicates the change
+  // Declare refs used across event handlers and JSX
   const navCenterRef = useRef(null);
   const accountRef = useRef(null);
   // Delayed close timer for account dropdown
@@ -523,6 +517,9 @@ const Navbar = () => {
                                 onMouseDown={async () => {
                                   try {
                                     await logout();
+                                  } catch {}
+                                  try {
+                                    clearCart();
                                   } catch {}
                                   setShowAccountDropdown(false);
                                   navigate('/');
