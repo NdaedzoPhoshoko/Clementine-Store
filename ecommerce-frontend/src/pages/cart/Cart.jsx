@@ -8,6 +8,7 @@ import { useCart } from '../../hooks/for_cart/CartContext.jsx';
 import { createPortal } from 'react-dom'
 import authStorage from '../../hooks/use_auth/authStorage.js'
 import { Link } from 'react-router-dom'
+import ErrorModal from '../../components/modals/ErrorModal.jsx'
 
 const toNumber = (v) => (typeof v === 'string' ? parseFloat(v) : Number(v));
 const formatPrice = (v) => {
@@ -23,6 +24,8 @@ export default function Cart() {
   const { updateQuantity } = useUpdateCartItemQuantity();
   const qtyTimersRef = useRef({});
   const { items: ctxItems, meta: ctxMeta, setItems: setCtxItems, updateItemQuantity, hydrate } = useCart();
+  const [errorModalMsg, setErrorModalMsg] = useState('');
+  const closeErrorModal = () => setErrorModalMsg('');
 
   // Local visible items to support optimistic removal controlled at the page level
   const [visibleItems, setVisibleItems] = useState(items);
@@ -121,9 +124,9 @@ export default function Cart() {
         await refresh();
       } catch (err) {
         setVisibleItems(prev);
-        // restore context as well
         setCtxItems(prev);
-        alert(`Failed to remove item: ${err?.message || err}`);
+        const msg = err?.message || err || 'Failed to remove item.';
+        setErrorModalMsg(String(msg));
       }
     })();
   };
@@ -137,8 +140,8 @@ export default function Cart() {
         await updateQuantity(id, Number(nextQty));
         await refresh();
       } catch (err) {
-        // Optionally handle rollback
-        console.error('Failed to update quantity', err);
+        const msg = err?.message || err || 'Failed to update quantity.';
+        setErrorModalMsg(String(msg));
       }
     }, 400);
     qtyTimersRef.current = timers;
@@ -157,8 +160,19 @@ export default function Cart() {
     scheduleQuantityUpdate(cartItemId, nextQty);
   };
 
+  useEffect(() => {
+    if (error) {
+      const msg = typeof error === 'string' ? error : (error?.message || 'Failed to load your cart.');
+      setErrorModalMsg(String(msg));
+    }
+  }, [error]);
+
   return (
     <>
+      {/* Error modal for cart-related failures */}
+      {Boolean(errorModalMsg) && (
+        <ErrorModal message={errorModalMsg} onClose={closeErrorModal} durationMs={10000} />
+      )}
       <div className="cart-container">
         <header className="cart-header">
           <h3 className="cart-title">Your Shopping Bag</h3>
@@ -180,17 +194,30 @@ export default function Cart() {
         ) : (
           <div className="cart-page">
             <section className="cart__list-container">
-              <CartList
-                items={visibleItems}
-                meta={meta}
-                loading={loading}
-                error={error}
-                refresh={refresh}
-                onRequestDelete={onRequestDelete}
-                deleting={deleting}
-                onQuantityChange={onQuantityChange}
-                onItemsCountChange={(count) => setNumOfItems(Number(count) || 0)}
-              />
+              {(!loading && !error && (visibleItems?.length ?? 0) === 0) ? (
+                <div className="cart-empty-authed">
+                  <img
+                    className="cart-empty-authed__illustration"
+                    src="/illustrations/Shopping bag-rafiki 1.svg"
+                    alt="Empty cart"
+                  />
+                  <p className="cart-empty-authed__message">
+                    Your shopping bag is empty — add some clothes to get started.
+                  </p>
+                </div>
+              ) : (
+                <CartList
+                  items={visibleItems}
+                  meta={meta}
+                  loading={loading}
+                  error={error}
+                  refresh={refresh}
+                  onRequestDelete={onRequestDelete}
+                  deleting={deleting}
+                  onQuantityChange={onQuantityChange}
+                  onItemsCountChange={(count) => setNumOfItems(Number(count) || 0)}
+                />
+              )}
             </section>
 
             <aside className="cart_details-container" aria-label="Cart details and shipping">
