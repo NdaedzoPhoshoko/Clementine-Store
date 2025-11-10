@@ -7,6 +7,7 @@ import useUpdateCartItemQuantity from '../../hooks/for_cart/useUpdateCartItemQua
 import { useCart } from '../../hooks/for_cart/CartContext.jsx';
 import { createPortal } from 'react-dom'
 import authStorage from '../../hooks/use_auth/authStorage.js'
+import { Link } from 'react-router-dom'
 
 const toNumber = (v) => (typeof v === 'string' ? parseFloat(v) : Number(v));
 const formatPrice = (v) => {
@@ -163,15 +164,17 @@ export default function Cart() {
           <h3 className="cart-title">Your Shopping Bag</h3>
         </header>
 
+        {/* // Replace logical-AND with ternary so the trailing ':' remains valid */}
         {!isAuthed ? (
-          <div className="cart-empty" role="region" aria-label="Empty cart prompt">
+          <div className="cart-empty">
             <img
-              src="/illustrations/Shopping bag-rafiki 1.svg"
-              alt="Shopping bags illustration"
               className="cart-empty__illustration"
+              src="/illustrations/Shopping bag-rafiki 1.svg"
+              alt="Empty cart"
             />
             <p className="cart-empty__message">
-              Log in to fill your shopping bags with amazing finds.
+              <Link to="/auth/login" className="cart-empty__login-link">Log in</Link>
+              {' '}to fill your shopping bags with amazing finds.
             </p>
           </div>
         ) : (

@@ -201,3 +201,10 @@
   color: var(--color-text);
   font-weight: 600;
 }
+.cart-empty__login-link {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--palette-primary, #ff4d4f);
+  text-decoration: underline;
+  margin-right: 6px;
+}
