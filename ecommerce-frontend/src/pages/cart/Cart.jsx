@@ -6,6 +6,7 @@ import useDeleteCartItem from '../../hooks/for_cart/useDeleteCartItem.js';
 import useUpdateCartItemQuantity from '../../hooks/for_cart/useUpdateCartItemQuantity.js';
 import { useCart } from '../../hooks/for_cart/CartContext.jsx';
 import { createPortal } from 'react-dom'
+import authStorage from '../../hooks/use_auth/authStorage.js'
 
 const toNumber = (v) => (typeof v === 'string' ? parseFloat(v) : Number(v));
 const formatPrice = (v) => {
@@ -15,7 +16,8 @@ const formatPrice = (v) => {
 };
 
 export default function Cart() {
-  const { cart, items, meta, loading, error, refresh } = useFetchCart({ enabled: true });
+  const isAuthed = authStorage.isAuthenticated();
+  const { cart, items, meta, loading, error, refresh } = useFetchCart({ enabled: isAuthed });
   const { deleteItem, loading: deleting } = useDeleteCartItem();
   const { updateQuantity } = useUpdateCartItemQuantity();
   const qtyTimersRef = useRef({});
@@ -43,7 +45,7 @@ export default function Cart() {
     borderRadius: '12px',
     boxShadow: '0 10px 30px rgba(0,0,0,0.25)',
     padding: '16px',
-    width: 'min(92vw, 460px)',
+    width: 'min(84vw, 460px)',
     zIndex: 10001,
   };
   
@@ -157,60 +159,73 @@ export default function Cart() {
   return (
     <>
       <div className="cart-container">
-      <header className="cart-header">
-        <h3 className="cart-title">Your Shopping Bag</h3>
-      </header>
+        <header className="cart-header">
+          <h3 className="cart-title">Your Shopping Bag</h3>
+        </header>
 
-      <div className="cart-page">
-        <section className="cart__list-container">
-          <CartList
-            items={visibleItems}
-            meta={meta}
-            loading={loading}
-            error={error}
-            refresh={refresh}
-            onRequestDelete={onRequestDelete}
-            deleting={deleting}
-            onQuantityChange={onQuantityChange}
-            onItemsCountChange={(count) => setNumOfItems(Number(count) || 0)}
-          />
-        </section>
-
-        <aside className="cart_details-container" aria-label="Cart details and shipping">
-          <div className="details-card">
-            <h4 className="details-title">Order Summary</h4>
-
-            <div className="details-row">
-              <span className="label">Items</span>
-              <span className="value">{itemsCountLocal}</span>
-            </div>
-
-            <div className="details-row">
-              <span className="label">Subtotal</span>
-              <span className="value">R{subtotalLocal}</span>
-            </div>
-
-            <div className="details-row">
-              <span className="label">Shipping</span>
-              <span className="value text-muted">Calculated at checkout</span>
-            </div>
-
-            <div className="details-row">
-              <span className="label">Est. Delivery</span>
-              <span className="value text-muted">Within the next 5-7 business days</span>
-            </div>
-
-            <div className="details-cta">
-              <button className="checkout-btn" disabled={!canCheckout} onClick={onCheckout}>
-                Checkout
-              </button>
-            </div>
+        {!isAuthed ? (
+          <div className="cart-empty" role="region" aria-label="Empty cart prompt">
+            <img
+              src="/illustrations/Shopping bag-rafiki 1.svg"
+              alt="Shopping bags illustration"
+              className="cart-empty__illustration"
+            />
+            <p className="cart-empty__message">
+              Log in to fill your shopping bags with amazing finds.
+            </p>
           </div>
-        </aside>
-      </div>
-    </div>
+        ) : (
+          <div className="cart-page">
+            <section className="cart__list-container">
+              <CartList
+                items={visibleItems}
+                meta={meta}
+                loading={loading}
+                error={error}
+                refresh={refresh}
+                onRequestDelete={onRequestDelete}
+                deleting={deleting}
+                onQuantityChange={onQuantityChange}
+                onItemsCountChange={(count) => setNumOfItems(Number(count) || 0)}
+              />
+            </section>
 
-      {showConfirm && (
+            <aside className="cart_details-container" aria-label="Cart details and shipping">
+              <div className="details-card">
+                <h4 className="details-title">Order Summary</h4>
+
+                <div className="details-row">
+                  <span className="label">Items</span>
+                  <span className="value">{itemsCountLocal}</span>
+                </div>
+
+                <div className="details-row">
+                  <span className="label">Subtotal</span>
+                  <span className="value">R{subtotalLocal}</span>
+                </div>
+
+                <div className="details-row">
+                  <span className="label">Shipping</span>
+                  <span className="value text-muted">Calculated at checkout</span>
+                </div>
+
+                <div className="details-row">
+                  <span className="label">Est. Delivery</span>
+                  <span className="value text-muted">Within the next 5-7 business days</span>
+                </div>
+
+                <div className="details-cta">
+                  <button className="checkout-btn" disabled={!canCheckout} onClick={onCheckout}>
+                    Checkout
+                  </button>
+                </div>
+              </div>
+            </aside>
+          </div>
+        )}
+      </div>
+
+      {isAuthed && showConfirm && (
         createPortal(
           <>
             <div className="confirm-overlay" onClick={closeConfirm} style={overlayStyle} />
