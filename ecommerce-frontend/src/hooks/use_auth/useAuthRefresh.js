@@ -12,7 +12,7 @@ export default function useAuthRefresh() {
   const [data, setData] = useState(null);
 
   const refresh = useCallback(async (options = {}) => {
-    const { silent = false } = options;
+    const { silent = false, emitEvent = !silent } = options;
     
     if (!silent) {
       setLoading(true);
@@ -29,8 +29,10 @@ export default function useAuthRefresh() {
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) {
         const message = payload?.message || payload?.error || 'Session expired, please sign in again.';
-        // Dispatch session expired event with message
-        window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT, { detail: { message } }));
+        // Dispatch session expired event with message unless suppressed
+        if (emitEvent) {
+          window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT, { detail: { message } }));
+        }
         throw new Error(message);
       }
       // If server returns new tokens, persist them; otherwise just store the message
