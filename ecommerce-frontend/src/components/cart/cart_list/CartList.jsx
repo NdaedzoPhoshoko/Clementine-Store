@@ -9,7 +9,7 @@ const formatPrice = (v) => {
   return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
-export default function CartList({ items = [], meta = {}, loading = false, error = null, refresh, onRequestDelete, deleting = false }) {
+export default function CartList({ items = [], meta = {}, loading = false, error = null, refresh, onRequestDelete, deleting = false, onQuantityChange, onItemsCountChange }) {
   // Local display state to support optimistic removal
   const [displayItems, setDisplayItems] = useState(items);
 
@@ -17,15 +17,22 @@ export default function CartList({ items = [], meta = {}, loading = false, error
     setDisplayItems(items);
   }, [items]);
 
-  // Compute totals from local displayItems to reflect optimistic updates instantly
-  const { totalItems, subtotal } = useMemo(() => {
-    const total = displayItems.reduce((s, it) => s + Number(it.quantity || 0), 0);
+  // Compute distinct item count and subtotal from local displayItems
+  const { numOfItems, subtotal } = useMemo(() => {
+    const count = displayItems.length;
     const sub = displayItems.reduce((s, it) => s + (toNumber(it.price) * Number(it.quantity || 0)), 0);
     return {
-      totalItems: Number.isFinite(Number(meta?.totalItems)) ? Number(meta.totalItems) : total,
+      numOfItems: count,
       subtotal: formatPrice(Number.isFinite(Number(meta?.subtotal)) ? Number(meta.subtotal) : sub),
     };
   }, [displayItems, meta]);
+
+  // Notify parent when the number of items changes
+  useEffect(() => {
+    if (typeof onItemsCountChange === 'function') {
+      onItemsCountChange(displayItems.length);
+    }
+  }, [displayItems, onItemsCountChange]);
 
   if (error) {
     return (
@@ -62,7 +69,6 @@ export default function CartList({ items = [], meta = {}, loading = false, error
     );
   }
 
-
   const handleRemoveImmediate = (item) => {
     const id = item?.cart_item_id;
     setDisplayItems((prev) => prev.filter((it) => Number(it.cart_item_id) !== Number(id)));
@@ -77,10 +83,21 @@ export default function CartList({ items = [], meta = {}, loading = false, error
     });
   };
 
+  const handleQuantityChangeLocal = (cartItemId, nextQty) => {
+    // Update local display immediately for snappy feedback
+    setDisplayItems((prev) => prev.map((it) => (
+      Number(it.cart_item_id) === Number(cartItemId)
+        ? { ...it, quantity: Number(nextQty) }
+        : it
+    )));
+    // Bubble up to page-level if provided
+    if (typeof onQuantityChange === 'function') onQuantityChange(cartItemId, nextQty);
+  };
+
   return (
     <div className="cart-list cart-list--interactive">
       <div className="cart-list__meta">
-        <span className="cart-list__count">Items: {totalItems}</span>
+        <span className="cart-list__count">Items: {numOfItems}</span>
         <span className="cart-list__subtotal">Subtotal: R{subtotal}</span>
       </div>
 
@@ -99,6 +116,7 @@ export default function CartList({ items = [], meta = {}, loading = false, error
               onRestore={handleRestoreItem}
               onRequestDelete={onRequestDelete}
               deleting={deleting}
+              onQuantityChange={handleQuantityChangeLocal}
             />
           ))}
         </div>

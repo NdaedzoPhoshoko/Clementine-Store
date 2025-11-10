@@ -1,7 +1,7 @@
 import './CartListItem.css';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import useUpdateCartItemQuantity from '../../../hooks/for_cart/useUpdateCartItemQuantity.js';
+
 
 const toNumber = (v) => (typeof v === 'string' ? parseFloat(v) : Number(v));
 const formatPrice = (v) => {
@@ -12,9 +12,9 @@ const formatPrice = (v) => {
 
 const isHexColor = (hex) => typeof hex === 'string' && /^#?[0-9A-Fa-f]{3,8}$/.test(hex);
 
-export default function CartListItem({ item = {}, onRemove, onRestore, refresh, onRequestDelete, deleting = false }) {
+export default function CartListItem({ item = {}, onRemove, onRestore, refresh, onRequestDelete, deleting = false, onQuantityChange }) {
   const navigate = useNavigate();
-  const { updateQuantity, loading: updating } = useUpdateCartItemQuantity();
+  // const { updateQuantity, loading: updating } = useUpdateCartItemQuantity();
   const {
     image_url,
     name,
@@ -34,10 +34,7 @@ export default function CartListItem({ item = {}, onRemove, onRestore, refresh, 
   const inStock = Number(stock) > 0;
   const productIdResolved = product_id ?? productId ?? id ?? product?.id;
   const [qty, setQty] = useState(Number(quantity || 0));
-
-  useEffect(() => {
-    setQty(Number(quantity || 0));
-  }, [quantity]);
+  // Removed local debounceRef and cleanup; page handles debouncing and backend updates
 
   const handleView = () => {
     if (productIdResolved) {
@@ -52,36 +49,28 @@ export default function CartListItem({ item = {}, onRemove, onRestore, refresh, 
     }
   };
 
-  const handleDecrease = async (e) => {
+  const commitLocalQty = (next) => {
+    setQty(next);
+    if (typeof onQuantityChange === 'function') {
+      onQuantityChange(item.cart_item_id, next);
+    }
+    // Removed scheduleUpdate; backend updates are handled at page level
+  };
+
+  const handleDecrease = (e) => {
     e.stopPropagation();
     const min = 1;
     const next = Math.max(min, qty - 1);
     if (next === qty) return;
-    const prev = qty;
-    setQty(next);
-    try {
-      await updateQuantity(item.cart_item_id, next);
-      await refresh?.();
-    } catch (err) {
-      setQty(prev);
-      alert(`Failed to update quantity: ${err?.message || err}`);
-    }
+    commitLocalQty(next);
   };
 
-  const handleIncrease = async (e) => {
+  const handleIncrease = (e) => {
     e.stopPropagation();
     const max = Number.isFinite(Number(stock)) && Number(stock) > 0 ? Number(stock) : undefined;
     const next = max ? Math.min(max, qty + 1) : qty + 1;
     if (next === qty) return;
-    const prev = qty;
-    setQty(next);
-    try {
-      await updateQuantity(item.cart_item_id, next);
-      await refresh?.();
-    } catch (err) {
-      setQty(prev);
-      alert(`Failed to update quantity: ${err?.message || err}`);
-    }
+    commitLocalQty(next);
   };
 
   const requestDelete = (e) => {
@@ -158,7 +147,7 @@ export default function CartListItem({ item = {}, onRemove, onRestore, refresh, 
               className="qty-btn qty-btn--minus"
               type="button"
               onClick={handleDecrease}
-              disabled={updating}
+              disabled={false}
               aria-label="Decrease quantity"
             >
               −
@@ -168,7 +157,7 @@ export default function CartListItem({ item = {}, onRemove, onRestore, refresh, 
               className="qty-btn qty-btn--plus"
               type="button"
               onClick={handleIncrease}
-              disabled={updating}
+              disabled={false}
               aria-label="Increase quantity"
             >
               +
