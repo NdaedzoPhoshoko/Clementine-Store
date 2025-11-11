@@ -10,6 +10,7 @@ import useAccordionData from '../../hooks/useAccordionData.jsx'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import useAddCartItem from '../../hooks/for_cart/useAddCartItem.js'
+import { useCart } from '../../hooks/for_cart/CartContext.jsx'
 
 function useInView(options = { rootMargin: '200px', threshold: 0.1 }) {
   const ref = useRef(null)
@@ -156,22 +157,10 @@ export default function ProductPage() {
   // Initialize state values after product data is loaded
   useEffect(() => {
     if (product) {
-      // Prefer color variants for default selection
-      const variants = Array.isArray(colorVariants) ? colorVariants : [];
-      if (variants.length > 0) {
-        setSelectedColor(variants[0]?.name || variants[0]?.hex || '')
-      } else if (details?.color) {
-        // Fallback to single color from details
-        setSelectedColor(details.color)
-      }
-      
-      // Set available sizes from size chart if available
+      // Populate available sizes from size chart if available (no preselection)
       if (sizeChart && typeof sizeChart === 'object') {
         const sizes = Object.keys(sizeChart)
         setAvailableSizes(sizes)
-        if (sizes.length > 0) {
-          setSelectedSize(sizes[0])
-        }
       }
       
       // Format images (filter out empty/invalid URLs)
@@ -225,25 +214,26 @@ export default function ProductPage() {
   }, [formattedImages])
 
   const { addItem, loading: addLoading, error: addError } = useAddCartItem()
+  const { hydrate } = useCart()
 
   const resolveColorHex = () => {
     const val = typeof selectedColor === 'string' ? selectedColor : ''
     if (val && val.trim().startsWith('#')) return val.trim()
     const match = (Array.isArray(colorVariants) ? colorVariants : []).find(cv => cv.name === val)
     if (match && typeof match.hex === 'string') return match.hex
-    const det = typeof (details?.color) === 'string' ? details.color : ''
-    return det && det.trim().startsWith('#') ? det.trim() : ''
+    return '' // no implicit fallback; require explicit user selection
   }
 
   // Handlers
   const handleAddToCart = async () => {
     try {
-      await addItem({
+      const payload = await addItem({
         productId: productId,
         quantity: 1,
         size: selectedSize || '',
         colorHex: resolveColorHex(),
       })
+      hydrate({ items: payload?.items, meta: payload?.meta })
     } catch (_) {}
   }
   
@@ -472,10 +462,12 @@ export default function ProductPage() {
                       <div className="option-label">Color: <span className="selected-value">{selectedColor}</span></div>
                       <div className="color-options">
                         <button
-                          className="color-option selected"
-                          style={{ backgroundColor: (typeof selectedColor === 'string' && selectedColor.startsWith('#')) ? selectedColor : 'var(--color-bg)' }}
-                          aria-label={`Color: ${selectedColor}`}
-                          aria-pressed={true}
+                          className={`color-option ${selectedColor === details.color ? 'selected' : ''}`}
+                          style={{ backgroundColor: (typeof details.color === 'string' && details.color) ? details.color : 'var(--color-bg)' }}
+                          aria-label={`Color: ${details.color}`}
+                          aria-pressed={selectedColor === details.color}
+                          onClick={() => setSelectedColor(details.color)}
+                          title={details.color}
                         />
                       </div>
                     </div>
@@ -538,7 +530,13 @@ export default function ProductPage() {
               </span>
             </div>
             <div className="product-actions">
-              <button className="add-to-cart-button" onClick={handleAddToCart} disabled={addLoading || !inStock} aria-busy={addLoading}>
+              <button
+                className="add-to-cart-button"
+                onClick={handleAddToCart}
+                disabled={addLoading || !inStock || !selectedSize || !resolveColorHex()}
+                aria-busy={addLoading}
+                title={!selectedSize || !resolveColorHex() ? 'Choose color and size' : ''}
+              >
                 {addLoading ? 'Adding…' : 'Add To Cart'}
                 <svg className="btn-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M3 3h2l3.6 7.59a2 2 0 0 0 1.8 1.18H17a2 2 0 0 0 1.94-1.5L21 6H6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
