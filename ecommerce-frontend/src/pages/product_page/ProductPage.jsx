@@ -9,6 +9,7 @@ import ZoomImage from '../../components/image_zoom/ZoomImage.jsx'
 import useAccordionData from '../../hooks/useAccordionData.jsx'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
+import useAddCartItem from '../../hooks/for_cart/useAddCartItem.js'
 
 function useInView(options = { rootMargin: '200px', threshold: 0.1 }) {
   const ref = useRef(null)
@@ -223,13 +224,27 @@ export default function ProductPage() {
     })
   }, [formattedImages])
 
+  const { addItem, loading: addLoading, error: addError } = useAddCartItem()
+
+  const resolveColorHex = () => {
+    const val = typeof selectedColor === 'string' ? selectedColor : ''
+    if (val && val.trim().startsWith('#')) return val.trim()
+    const match = (Array.isArray(colorVariants) ? colorVariants : []).find(cv => cv.name === val)
+    if (match && typeof match.hex === 'string') return match.hex
+    const det = typeof (details?.color) === 'string' ? details.color : ''
+    return det && det.trim().startsWith('#') ? det.trim() : ''
+  }
+
   // Handlers
-  const handleAddToCart = () => {
-    console.log('Add to cart', { 
-      product: product?.name, 
-      color: selectedColor, 
-      size: selectedSize 
-    })
+  const handleAddToCart = async () => {
+    try {
+      await addItem({
+        productId: productId,
+        quantity: 1,
+        size: selectedSize || '',
+        colorHex: resolveColorHex(),
+      })
+    } catch (_) {}
   }
   
   const handleCheckout = () => {
@@ -523,8 +538,8 @@ export default function ProductPage() {
               </span>
             </div>
             <div className="product-actions">
-              <button className="add-to-cart-button" onClick={handleAddToCart}>
-                Add To Cart
+              <button className="add-to-cart-button" onClick={handleAddToCart} disabled={addLoading || !inStock} aria-busy={addLoading}>
+                {addLoading ? 'Adding…' : 'Add To Cart'}
                 <svg className="btn-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M3 3h2l3.6 7.59a2 2 0 0 0 1.8 1.18H17a2 2 0 0 0 1.94-1.5L21 6H6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   <circle cx="9" cy="20" r="1" fill="currentColor" />
