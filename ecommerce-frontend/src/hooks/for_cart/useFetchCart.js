@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import authStorage from '../use_auth/authStorage.js';
-import useAuthRefresh from '../use_auth/useAuthRefresh.js';
+import apiFetch from '../../utils/apiFetch.js';
 
 // Cart data changes frequently; use a shorter TTL than product listings
 const CACHE_TTL_MS = 60 * 1000; // 1 minute
@@ -21,7 +21,6 @@ export default function useFetchCart({ enabled = true } = {}) {
 
   const user = authStorage.getUser();
   const accessToken = authStorage.getAccessToken();
-  const { refresh: refreshAuth } = useAuthRefresh();
   const signature = useMemo(() => String(user?.id ?? 'unknown'), [user?.id]);
 
   useEffect(() => {
@@ -61,42 +60,14 @@ export default function useFetchCart({ enabled = true } = {}) {
       setError(null);
       setLoading(!usedCache);
 
-      const base = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:5000';
-      const attempts = [
-        '/api/cart', // Vite proxy
-        `${base}/api/cart`, // Absolute fallback
-      ];
-
-      for (let i = 0; i < attempts.length; i++) {
-        const url = attempts[i];
-        try {
-          let headers = { accept: 'application/json' };
-          if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
-
-          let res = await fetch(url, { headers, signal: controller.signal });
-
-          // If unauthorized, attempt silent refresh and retry once
-          if (res.status === 401) {
-            try {
-              await refreshAuth({ silent: true });
-              const newToken = authStorage.getAccessToken();
-              if (newToken) {
-                headers = { ...headers, Authorization: `Bearer ${newToken}` };
-                res = await fetch(url, { headers, signal: controller.signal });
-              }
-            } catch (_) {
-              // fall through and handle as unauthorized
-            }
-          }
-
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-          const ct = res.headers.get('content-type') || '';
-          if (!ct.includes('application/json')) {
-            throw new Error(`Unexpected content-type: ${ct}`);
-          }
-
-          const data = await res.json();
+      try {
+        const res = await apiFetch('/api/cart', { headers: { accept: 'application/json' }, signal: controller.signal });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const ct = res.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) {
+          throw new Error(`Unexpected content-type: ${ct}`);
+        }
+        const data = await res.json();
 
           const itemsNorm = Array.isArray(data?.items)
             ? data.items.map((it) => ({
@@ -132,15 +103,12 @@ export default function useFetchCart({ enabled = true } = {}) {
             console.warn('[useFetchCart] Cache write failed:', e);
           }
 
-          setLoading(false);
-          return; // success
-        } catch (err) {
-          if (controller.signal.aborted) return;
-          if (i === attempts.length - 1) {
-            setError(err?.message || 'Failed to fetch cart');
-            setLoading(false);
-          }
-        }
+        setLoading(false);
+        return; // success
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        setError(err?.message || 'Failed to fetch cart');
+        setLoading(false);
       }
     };
 

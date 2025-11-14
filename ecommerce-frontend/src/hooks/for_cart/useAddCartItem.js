@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
+import { useCart } from './CartContext.jsx';
 import authStorage from '../use_auth/authStorage.js';
-import useAuthRefresh from '../use_auth/useAuthRefresh.js';
+import apiFetch from '../../utils/apiFetch.js';
 
 // Prefer Vite proxy (relative) and fall back to absolute base URL
 const API_BASE_URL = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:5000';
@@ -12,10 +13,10 @@ const toNumber = (v) => (typeof v === 'string' ? parseFloat(v) : Number(v));
 export default function useAddCartItem() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const { hydrate, setMeta } = useCart();
 
   const user = authStorage.getUser();
   const accessToken = authStorage.getAccessToken();
-  const { refresh: refreshAuth } = useAuthRefresh();
 
   const writeCache = (data) => {
     try {
@@ -41,28 +42,24 @@ export default function useAddCartItem() {
         const metaNorm = data?.meta && typeof data.meta === 'object'
           ? { totalItems: Number(data.meta.totalItems ?? itemsNorm.length), subtotal: toNumber(data.meta.subtotal ?? itemsNorm.reduce((s, it) => s + (it.price * it.quantity), 0)) }
           : { totalItems: itemsNorm.length, subtotal: itemsNorm.reduce((s, it) => s + (it.price * it.quantity), 0) };
-
+        const normalized = { items: itemsNorm, meta: metaNorm };
         localStorage.setItem(
           KEY,
-          JSON.stringify({ ts: Date.now(), cart: data?.cart || null, items: itemsNorm, meta: metaNorm })
+          JSON.stringify({ ts: Date.now(), cart: data?.cart || null, ...normalized })
         );
+        return normalized;
       }
     } catch (e) {
       console.warn('[useAddCartItem] Cache write failed:', e);
     }
+    return null;
   };
 
   const addItem = useCallback(async ({ productId, quantity = 1, size = '', colorHex = '' }) => {
     setLoading(true);
     setError(null);
 
-    const attempts = [
-      '/api/cart-items',
-      `${API_BASE_URL}/api/cart-items`,
-    ];
-
-    let headers = { accept: 'application/json', 'Content-Type': 'application/json' };
-    if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+    const headers = { accept: 'application/json', 'Content-Type': 'application/json' };
 
     const body = {
       product_id: Number(productId),
@@ -71,49 +68,47 @@ export default function useAddCartItem() {
       color_hex: typeof colorHex === 'string' ? colorHex : '',
     };
 
-    let lastErr = null;
-    for (let i = 0; i < attempts.length; i++) {
-      const url = attempts[i];
-      try {
-        let res = await fetch(url, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(body),
-        });
-
-        // If unauthorized, attempt silent refresh and retry once
-        if (res.status === 401) {
-          try {
-            await refreshAuth({ silent: true });
-            const newToken = authStorage.getAccessToken();
-            if (newToken) {
-              headers = { ...headers, Authorization: `Bearer ${newToken}` };
-              res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
-            }
-          } catch (_) {
-            // fall through and handle as unauthorized
-          }
-        }
-
-        const payload = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          const msg = payload?.message || payload?.error || `HTTP ${res.status}`;
-          throw new Error(msg);
-        }
-
-        // Write full response to cart cache for immediate UI sync
-        writeCache(payload);
-        setLoading(false);
-        return payload;
-      } catch (e) {
-        lastErr = e;
+    try {
+      const res = await apiFetch('/api/cart-items', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = payload?.message || payload?.error || `HTTP ${res.status}`;
+        throw new Error(msg);
       }
+      // Write full response to cart cache and hydrate context for instant navbar update
+      const normalized = writeCache(payload);
+      if (normalized) {
+        hydrate(normalized);
+      } else {
+        // Optimistic fallback: bump meta.totalItems when server payload lacks full cart
+        try {
+          const KEY = cacheKey(user?.id);
+          const raw = typeof window !== 'undefined' && window.localStorage ? localStorage.getItem(KEY) : null;
+          const cached = raw ? JSON.parse(raw) : null;
+          const priorItems = Array.isArray(cached?.items) ? cached.items : [];
+          const priorTotal = priorItems.reduce((s, it) => s + Number(it.quantity || 0), 0);
+          const nextMeta = {
+            totalItems: priorTotal + Number(quantity || 1),
+            subtotal: cached?.meta?.subtotal ?? priorItems.reduce((s, it) => s + (Number(it.price) * Number(it.quantity || 0)), 0),
+          };
+          if (typeof window !== 'undefined' && window.localStorage) {
+            localStorage.setItem(KEY, JSON.stringify({ ts: Date.now(), cart: cached?.cart || null, items: priorItems, meta: nextMeta }));
+          }
+          setMeta(nextMeta);
+        } catch {}
+      }
+      setLoading(false);
+      return payload;
+    } catch (e) {
+      setError(e?.message || 'Failed to add item to cart');
+      setLoading(false);
+      throw e;
     }
-
-    setError(lastErr?.message || 'Failed to add item to cart');
-    setLoading(false);
-    throw lastErr;
-  }, [accessToken, user?.id, refreshAuth]);
+  }, [accessToken, user?.id]);
 
   return { addItem, loading, error };
 }

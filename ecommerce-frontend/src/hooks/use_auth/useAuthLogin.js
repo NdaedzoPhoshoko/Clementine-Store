@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useCart } from '../for_cart/CartContext.jsx';
 import { authStorage } from './authStorage';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000';
@@ -7,6 +8,7 @@ export default function useAuthLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
+  const { refresh: refreshCart } = useCart();
 
   const login = useCallback(async ({ email, password }) => {
     setLoading(true);
@@ -28,6 +30,8 @@ export default function useAuthLogin() {
       if (payload?.user || payload?.token || payload?.accessToken) {
         authStorage.setAuth({ user: payload.user, token: payload.token, accessToken: payload.accessToken });
       }
+      // Immediately refresh cart in context so navbar counter updates
+      try { await refreshCart(); } catch {}
       setData(payload);
       return payload;
     } catch (e) {

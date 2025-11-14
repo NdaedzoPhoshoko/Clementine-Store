@@ -9,11 +9,13 @@ import { useNavigate, Link } from "react-router-dom";
 import { useCart } from "../../hooks/for_cart/CartContext.jsx";
 
 const Navbar = () => {
-  const { items, clearCart } = useCart();
+  const { items, meta, clearCart } = useCart();
   const cartCount = useMemo(() => {
+    const m = meta?.totalItems;
+    if (typeof m === 'number' && !Number.isNaN(m)) return m;
     const list = Array.isArray(items) ? items : [];
     return list.reduce((sum, it) => sum + Number(it.quantity || 0), 0);
-  }, [items]);
+  }, [meta?.totalItems, items]);
   const [activeMenu, setActiveMenu] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
