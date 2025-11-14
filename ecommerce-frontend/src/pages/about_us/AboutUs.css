@@ -1,0 +1,218 @@
+/* About Us page styles – inherit global variables from index.css */
+
+.about-page {
+  display: grid;
+  gap: 32px;
+  padding: 24px;
+}
+
+/* Feature bar */
+.features {
+  background: var(--color-bg);
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 60px;
+}
+
+.feature-card {
+  display: flex;
+  flex-direction: column; /* stack icon, title, text vertically */
+  align-items: center;
+  gap: 8px;
+  padding: 18px 16px;
+  /* border: 1px solid var(--color-border);
+  background: var(--color-surface); */
+  border-radius: 12px;
+  box-shadow: var(--shadow-soft);
+  text-align: center;
+  width: 80%; /* reduce width by 10% */
+  margin: 0 auto; /* center within grid cell */
+}
+
+.feature-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px; /* circular icon container */
+  color: var(--color-primary);
+  background: #fff;
+  border: 1px solid var(--color-border);
+}
+
+.feature-title {
+  margin: 0;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--color-text);
+}
+
+.feature-text {
+  margin: 2px 0 0 0;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+/* Divider between sections */
+.about-divider {
+  border: none;
+  border-top: 2px solid var(--color-primary);
+  width: 90%;
+  margin: 24px auto;
+}
+
+/* Our Story section */
+.story {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+}
+
+.story-title {
+  margin: 0 0 12px 0;
+  font-size: 24px;
+  color: var(--color-heading);
+}
+
+.story-text {
+  margin: 0 auto 16px auto;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--color-text);
+  max-width: 70ch;
+}
+
+@media (max-width: 768px) {
+  .story-text {
+    max-width: 100%;
+  }
+}
+
+/* Vision section */
+.vision-grid {
+  display: grid;
+  grid-template-columns: max-content 1fr; /* shrink left column to image width */
+  gap: 12px; /* tighter spacing */
+  align-items: center;
+}
+
+.vision-media {
+  width: 360px; /* fix column width to image */
+  max-width: 360px; /* ensure it doesn’t exceed */
+  justify-self: start;
+}
+
+.vision-media img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 4; /* make image slightly taller */
+  border-radius: 12px;
+  /* border: 1px solid var(--color-border); */
+  /* box-shadow: var(--shadow-soft); */
+  object-fit: contain;
+}
+
+.vision-title {
+  margin: 0 0 8px 0;
+  font-family: var(--font-heading);
+  font-size: 28px;
+  color: var(--color-text);
+}
+
+.vision-text {
+  margin: 0 0px 16px 0;
+  font-size: 14px;
+  color: var(--color-muted);
+  max-width: 60%;
+}
+
+/* Mission-specific typography (kept separate from Vision to avoid conflicts) */
+.mission-title {
+  margin: 0 0 8px 0;
+  font-family: var(--font-heading);
+  font-size: 28px;
+  color: var(--color-text);
+}
+
+.mission-text {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  color: var(--color-muted);
+  max-width: 60%;
+  text-align: right;
+}
+
+.btn {
+  appearance: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-weight: 600;
+  border: 1px solid var(--color-border);
+  transition: background 160ms ease, box-shadow 160ms ease, color 160ms ease;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 10px 18px var(--shadow-primary-color);
+}
+
+.btn-primary:hover,
+.btn-primary:focus-visible {
+  background: var(--color-accent);
+}
+
+@media (max-width: 920px) {
+  .features-grid { grid-template-columns: repeat(2, 1fr); }
+  .vision-grid { grid-template-columns: 1fr; }
+  .vision-media { width: 100%; max-width: 100%; }
+}
+
+/* Mission section mirrors Vision but with media on the right */
+.mission-grid {
+  display: grid;
+  grid-template-columns: 1fr max-content; /* text left, image right */
+  gap: 24px; /* no space between text and image columns */
+  align-items: center;
+  /* remove extra paddings to avoid layout conflicts */
+  padding-right: 200px;
+}
+
+.mission-media {
+  width: 360px;
+  max-width: 360px;
+  justify-self: start; /* place image next to text within its column */
+}
+
+.mission-media img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 4;
+  border-radius: 12px;
+  /* box-shadow: var(--shadow-soft); */
+  object-fit: contain;
+}
+
+.mission-content {
+    width: 100%;
+    padding-left: 0;
+    display: grid;
+    justify-items: end; /* right-align title and paragraph inside the text column */
+}
+/* Remove previous shared About overrides to prevent cross-section conflicts */
+
+@media (max-width: 920px) {
+  .mission-grid { grid-template-columns: 1fr; }
+  .mission-media { width: 100%; max-width: 100%; justify-self: start; }
+}
+
+@media (max-width: 560px) {
+  .about-page { padding: 16px; }
+  .features-grid { grid-template-columns: 1fr; }
+}
+.feature-content { text-align: center; }

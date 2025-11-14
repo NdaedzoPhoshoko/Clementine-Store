@@ -12,6 +12,7 @@ import Signup from './pages/auth/Signup'
 import SessionExpiryHandler from './components/auth/SessionExpiryHandler'
 import Cart from './pages/cart/Cart'
 import { CartProvider } from './hooks/for_cart/CartContext.jsx'
+import AboutUs from './pages/about_us/AboutUs.jsx'
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
             {/* Routing scaffold; add real pages later */}
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/about" element={<AboutUs />} />
               <Route path="/shop-all" element={<ShopAll />} />
               {/* Product details route */}
               <Route path="/product/:id" element={<ProductPage />} />
