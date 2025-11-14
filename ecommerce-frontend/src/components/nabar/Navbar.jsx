@@ -418,12 +418,9 @@ const Navbar = () => {
                   <p>We craft quality products with care and purpose. Learn about our mission, the team behind Clementine, and the practices that guide our design, sourcing, and sustainability commitments.</p>
                 </div>
                 <div className="mega-right">
-                  <Link to="/about/mission" className="mega-tag">Mission</Link>
-                  <Link to="/about/team" className="mega-tag">Team</Link>
-                  <Link to="/about/sustainability" className="mega-tag">Sustainability</Link>
-                  <Link to="/about/careers" className="mega-tag">Careers</Link>
-                  <Link to="/about/press" className="mega-tag">Press</Link>
-                  <Link to="/about/contact" className="mega-tag">Contact</Link>
+                  <Link to="/about#mission" className="mega-tag" onClick={() => setActiveMenu(null)}>Mission</Link>
+                  <Link to="/about#vision" className="mega-tag" onClick={() => setActiveMenu(null)}>Vision</Link>
+                  <Link to="/about#story" className="mega-tag" onClick={() => setActiveMenu(null)}>Our Story</Link>
                 </div>
               </div>
               )}

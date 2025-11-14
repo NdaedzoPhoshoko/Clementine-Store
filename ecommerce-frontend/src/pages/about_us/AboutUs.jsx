@@ -1,6 +1,25 @@
 import './AboutUs.css';
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 
 export default function AboutUs() {
+  const location = useLocation();
+
+  // Scroll to hash targets when navigating via /about#section
+  useEffect(() => {
+    if (location && location.hash) {
+      const target = document.querySelector(location.hash);
+      if (target) {
+        try {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } catch (e) {
+          // Fallback for older browsers
+          const y = target.getBoundingClientRect().top + window.scrollY;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+      }
+    }
+  }, [location.hash]);
   return (
     <main className="about-page" aria-labelledby="about-heading">
       {/* Feature bar */}
@@ -30,7 +49,7 @@ export default function AboutUs() {
       </section>
 
       {/* Mission section */}
-      <section className="mission" aria-labelledby="mission-heading">
+      <section className="mission" id="mission" aria-labelledby="mission-heading">
         <div className="mission-grid">
           <div className="mission-content">
             <h2 id="mission-heading" className="mission-title">Our Mission</h2>
@@ -55,7 +74,7 @@ export default function AboutUs() {
       {/* Divider between Mission and Vision */}
       <hr className="about-divider" aria-hidden="true" />
       {/* Vision section */}
-      <section className="vision" aria-labelledby="vision-heading">
+      <section className="vision" id="vision" aria-labelledby="vision-heading">
         <div className="vision-grid">
           <div className="vision-media">
             <img
@@ -82,7 +101,7 @@ export default function AboutUs() {
       <hr className="about-divider" aria-hidden="true" />
 
       {/* Our Story section */}
-      <section className="story" aria-labelledby="story-heading">
+      <section className="story" id="story" aria-labelledby="story-heading">
         <h2 id="story-heading" className="story-title">Our Story</h2>
         <p className="story-text">
           Clementine Store began as a weekend ritual—early morning walks through local markets,

@@ -1,6 +1,7 @@
 
 import './App.css'
 import Navbar from './components/nabar/Navbar'
+import ScrollToTop from './components/ScrollToTop'
 import Footer from './components/footer/Footer'
 import Home from './pages/home/Home'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
@@ -20,6 +21,7 @@ function App() {
       <BrowserRouter>
         <div className="app-shell">
           <Navbar />
+          <ScrollToTop />
           <main className="app-content">
            <Breadcrumbs />
             {/* Routing scaffold; add real pages later */}
