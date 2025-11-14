@@ -415,7 +415,7 @@ const Navbar = () => {
               <div className="nav-mega open" role="menu" aria-label="About Us menu" id="menu-us" onMouseLeave={() => setActiveMenu(null)}>
                 <div className="mega-left">
                   <h4>Our Story</h4>
-                  <p>We craft quality products with care and purpose. Learn about our mission, the team behind Clementine, and the practices that guide our design, sourcing, and sustainability commitments.</p>
+                  <p>We craft quality essentials with care and purpose, pieces that fit, last, and make everyday dressing effortless. Explore our mission to deliver modern, wearable fashion; our vision for transparent, joyful shopping; and our story about the small‑maker roots that shaped Clementine Store.</p>
                 </div>
                 <div className="mega-right">
                   <Link to="/about#mission" className="mega-tag" onClick={() => setActiveMenu(null)}>Mission</Link>

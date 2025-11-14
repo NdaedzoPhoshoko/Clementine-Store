@@ -1,9 +1,12 @@
 import './AboutUs.css';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 
 export default function AboutUs() {
   const location = useLocation();
+  const missionRef = useRef(null);
+  const visionRef = useRef(null);
+  const storyRef = useRef(null);
 
   // Scroll to hash targets when navigating via /about#section
   useEffect(() => {
@@ -17,9 +20,36 @@ export default function AboutUs() {
           const y = target.getBoundingClientRect().top + window.scrollY;
           window.scrollTo({ top: y, behavior: 'smooth' });
         }
+
+        // Title highlight removed; retain smooth scroll to section only
       }
     }
   }, [location.hash]);
+
+  // Animate sections on scroll: mission from left, vision from right, story fades in
+  useEffect(() => {
+    const els = [missionRef.current, visionRef.current, storyRef.current].filter(Boolean);
+    if (!els.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries, obs) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in-view');
+            obs.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        root: null,
+        threshold: 0.2,
+        rootMargin: '0px 0px -10% 0px',
+      }
+    );
+
+    els.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
   return (
     <main className="about-page" aria-labelledby="about-heading">
       {/* Feature bar */}
@@ -49,7 +79,7 @@ export default function AboutUs() {
       </section>
 
       {/* Mission section */}
-      <section className="mission" id="mission" aria-labelledby="mission-heading">
+      <section className="mission" id="mission" aria-labelledby="mission-heading" ref={missionRef}>
         <div className="mission-grid">
           <div className="mission-content">
             <h2 id="mission-heading" className="mission-title">Our Mission</h2>
@@ -74,7 +104,7 @@ export default function AboutUs() {
       {/* Divider between Mission and Vision */}
       <hr className="about-divider" aria-hidden="true" />
       {/* Vision section */}
-      <section className="vision" id="vision" aria-labelledby="vision-heading">
+      <section className="vision" id="vision" aria-labelledby="vision-heading" ref={visionRef}>
         <div className="vision-grid">
           <div className="vision-media">
             <img
@@ -101,10 +131,10 @@ export default function AboutUs() {
       <hr className="about-divider" aria-hidden="true" />
 
       {/* Our Story section */}
-      <section className="story" id="story" aria-labelledby="story-heading">
+      <section className="story" id="story" aria-labelledby="story-heading" ref={storyRef}>
         <h2 id="story-heading" className="story-title">Our Story</h2>
         <p className="story-text">
-          Clementine Store began as a weekend ritual—early morning walks through local markets,
+          Clementine Store began as a weekend ritual early morning walks through local markets,
           talking with small makers, and collecting pieces that felt both practical and joyful.
           We loved how the right garment could brighten a day and how good materials could turn
           everyday wear into something you looked forward to. What started as a shared Pinterest
@@ -115,7 +145,7 @@ export default function AboutUs() {
           The name “Clementine” captures the spirit we want to bring to your wardrobe: warm,
           playful, and refreshingly simple. It reminds us of long afternoons, friendly conversations,
           and details that make you smile. From the beginning, we focused on fit, comfort, and
-          durability—pieces you reach for without thinking, because they always work. We collaborate
+          durability pieces you reach for without thinking, because they always work. We collaborate
           with partners who share our standards and values, prioritizing quality materials and
           responsible production.
         </p>
@@ -130,7 +160,7 @@ export default function AboutUs() {
           Clementine Store is still a small team, and we like it that way. It keeps us close to the
           craft, the community, and the promise we made at the start: make shopping for clothes
           effortless and enjoyable. Transparent pricing, reliable shipping, and easy returns are part
-          of that promise. We hope you feel the care that went into each piece—and that you find
+          of that promise. We hope you feel the care that went into each piece, and that you find
           something here that brightens your day.
         </p>
       </section>
