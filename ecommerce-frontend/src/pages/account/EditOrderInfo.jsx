@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import './EditOrderInfo.css';
 import useUpdateOrderShipping from '../../hooks/useUpdateOrderShipping.js';
 
-export default function EditOrderInfo({ open, onClose, orderId, shipping, onSuccess }) {
+export default function EditOrderInfo({ open, onClose, orderId, shipping, onSuccess, updateShipping }) {
   const { update, loading, error } = useUpdateOrderShipping();
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
   const [form, setForm] = useState({ name: '', phone_number: '', address: '', city: '', province: '', postal_code: '' });
   const [errors, setErrors] = useState({ name: '', phone_number: '', address: '', city: '', province: '', postal_code: '' });
   const [touched, setTouched] = useState({ name: false, phone_number: false, address: false, city: false, province: false, postal_code: false });
@@ -49,9 +51,22 @@ export default function EditOrderInfo({ open, onClose, orderId, shipping, onSucc
       setTouched({ name: true, phone_number: true, address: true, city: true, province: true, postal_code: true });
       return;
     }
-    const res = await update(orderId, form);
-    if (res) {
-      if (typeof onSuccess === 'function') await onSuccess(res);
+    setSaveError(null);
+    if (typeof updateShipping === 'function') {
+      try {
+        setSaving(true);
+        const res = await updateShipping(orderId, form);
+        if (res && typeof onSuccess === 'function') await onSuccess(res);
+      } catch (e) {
+        setSaveError(e);
+      } finally {
+        setSaving(false);
+      }
+    } else {
+      const res = await update(orderId, form);
+      if (res) {
+        if (typeof onSuccess === 'function') await onSuccess(res);
+      }
     }
   };
 
@@ -78,11 +93,11 @@ export default function EditOrderInfo({ open, onClose, orderId, shipping, onSucc
             <div className="kv"><div className="kv__label">Province</div><input className={`form-control ${errors.province && touched.province ? 'is-invalid' : ''}`} type="text" name="province" autoComplete="address-level1" placeholder="Province" value={form.province} onChange={(e) => onChangeField('province', e.target.value)} onBlur={() => onBlurField('province')} aria-invalid={Boolean(errors.province && touched.province)} disabled={loading} />{errors.province && touched.province ? (<div className="field-error">{errors.province}</div>) : null}</div>
             <div className="kv"><div className="kv__label">Postal Code</div><input className={`form-control ${errors.postal_code && touched.postal_code ? 'is-invalid' : ''}`} type="text" name="postal" autoComplete="postal-code" inputMode="numeric" placeholder="Postal code" value={form.postal_code} onChange={(e) => onChangeField('postal_code', e.target.value)} onBlur={() => onBlurField('postal_code')} aria-invalid={Boolean(errors.postal_code && touched.postal_code)} disabled={loading} />{errors.postal_code && touched.postal_code ? (<div className="field-error">{errors.postal_code}</div>) : null}</div>
           </div>
-          {error && <div className="edit-modal__error">Could not update shipping</div>}
+          {(error || saveError) && <div className="edit-modal__error">Could not update shipping</div>}
         </div>
         <div className="modal__footer edit-modal__actions">
-          <button className="account-btn account-btn--dark" onClick={save} disabled={loading || Object.values(errors).some((m) => Boolean(m))}>Save</button>
-          <button className="account-btn account-btn--light" onClick={onClose} disabled={loading}>Cancel</button>
+          <button className="account-btn account-btn--dark" onClick={save} disabled={(loading || saving) || Object.values(errors).some((m) => Boolean(m))}>Save</button>
+          <button className="account-btn account-btn--light" onClick={onClose} disabled={loading || saving}>Cancel</button>
         </div>
       </div>
     </div>

@@ -91,3 +91,12 @@
 .order-card__main { display: grid; gap: 6px; }
 .order-card__timeline { flex: 0 0 auto; }
 .is-hidden { display: none; }
+
+.order-card__actions { display: inline-flex; gap: 8px; align-self: start; }
+.icon-btn { width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--color-border); border-radius: 999px; background: var(--color-surface); color: var(--color-muted); cursor: pointer; }
+.icon-btn:hover { filter: brightness(1.06); }
+
+/* Horizontal key-value layout scoped to addresses list */
+.addresses-list .kv { display: inline-flex; align-items: baseline; gap: 8px; }
+.addresses-list .kv__label { min-width: 110px; }
+.addresses-list .kv__value { flex: 1; }

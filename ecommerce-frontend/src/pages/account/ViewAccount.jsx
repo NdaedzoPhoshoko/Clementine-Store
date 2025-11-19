@@ -6,17 +6,23 @@ import { useCart } from '../../hooks/for_cart/CartContext.jsx';
 import { useNavigate } from 'react-router-dom';
 import useFetchMyOrders from '../../hooks/useFetchMyOrders.js';
 import EditOrderInfo from './EditOrderInfo.jsx';
+import useFetchMyShippingDetails from '../../hooks/useFetchMyShippingDetails.js';
+import PaginationBar from '../../components/pagination/PaginationBar.jsx';
+import useUpdateOrderShipping from '../../hooks/useUpdateOrderShipping.js';
 
 export default function ViewAccount() {
   const [active, setActive] = useState('orders');
   const { logout, loading: logoutLoading } = useAuthLogOut();
   const { clearCart } = useCart();
   const navigate = useNavigate();
-  const { items: orders, loading: ordersLoading, error: ordersError, hasMore, loadNextPage, refresh } = useFetchMyOrders({ initialPage: 1, limit: 10, enabled: active === 'orders' });
+  const { items: orders, loading: ordersLoading, error: ordersError, hasMore: ordersHasMore, refresh, page: ordersPage, meta: ordersMeta, setPage: setOrdersPage } = useFetchMyOrders({ initialPage: 1, limit: 10, enabled: active === 'orders' });
+  const { items: shippingItems, loading: shippingLoading, error: shippingError, hasMore: shippingHasMore, page: shippingPage, meta: shippingMeta, setPage: setShippingPage, refresh: refreshShipping } = useFetchMyShippingDetails({ initialPage: 1, limit: 10, enabled: active === 'addresses' });
+  const { update: updateOrderShipping } = useUpdateOrderShipping();
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const selectedOrder = useMemo(() => orders.find((o) => Number(o.id) === Number(selectedOrderId)) || null, [orders, selectedOrderId]);
   const [detailMotion, setDetailMotion] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [addrEdit, setAddrEdit] = useState({ open: false, orderId: null, shipping: null });
   const orderStatusSteps = ['Pending', 'Shipped', 'Delivering', 'Delivered'];
   const statusIndex = useMemo(() => {
     const s = String(selectedOrder?.shipping?.delivery_status || selectedOrder?.payment_status || '').toLowerCase();
@@ -65,6 +71,8 @@ export default function ViewAccount() {
   };
 
   const openEditModal = () => { setShowEditModal(true); };
+  const openAddressEditModal = (s) => { setAddrEdit({ open: true, orderId: s.order_id, shipping: s }); };
+  const closeAddressEditModal = () => { setAddrEdit((x) => ({ ...x, open: false })); };
 
   const handleSelect = async (key) => {
     if (key === 'logout') {
@@ -138,11 +146,16 @@ export default function ViewAccount() {
                         {idx < orders.length - 1 && <div className="orders-divider" />}
                       </React.Fragment>
                     ))}
-                    {hasMore && (
-                      <div className="my_account-card">
-                        <button className="account-btn account-btn--light" onClick={loadNextPage} disabled={ordersLoading}>Load more</button>
-                      </div>
-                    )}
+                    <div className="my_account-card">
+                      <PaginationBar
+                        page={Number(ordersMeta?.page ?? ordersPage ?? 1)}
+                        totalPages={Number(ordersMeta?.pages ?? 1)}
+                        hasPrev={Boolean(ordersMeta?.hasPrev)}
+                        hasNext={Boolean(ordersMeta?.hasNext ?? ordersHasMore)}
+                        onPageChange={setOrdersPage}
+                        showHint={false}
+                      />
+                    </div>
                   </div>
                   {selectedOrder && (
                     <div className={`order-detail ${detailMotion ? `order-detail--${detailMotion}` : ''}`}>
@@ -220,21 +233,88 @@ export default function ViewAccount() {
               onClose={() => setShowEditModal(false)}
               orderId={selectedOrder.id}
               shipping={selectedOrder.shipping}
+              updateShipping={updateOrderShipping}
               onSuccess={async () => { await refresh(); setShowEditModal(false); }}
             />
           )}
           {active === 'addresses' && (
             <div className="account-section">
               <div className="my_section-header">
-                <div className="section-title">Shipping Address</div>
-                <div className="section-subtitle">This shipping address will be used when you make Clementine Store purchases.</div>
+                <div className="section-title">Shipping Addresses</div>
+                <div className="section-subtitle">Manage saved shipping details associated with your orders.</div>
               </div>
-              <div className="my_account-card">
-                <div className="account-card__title">No Delivery Address Set Up</div>
-                <div className="account-card__text">Add a shipping address to speed up checkout and ensure accurate delivery.</div>
-                <a className="account-card__link" href="#add-address">Add a shipping address</a>
-              </div>
+              {shippingError && (
+                <div className="my_account-card">
+                  <div className="account-card__title">Could not load shipping details</div>
+                  <div className="account-card__text">Please refresh or try again later.</div>
+                </div>
+              )}
+              {shippingLoading && shippingItems.length === 0 && (
+                <div className="my_account-card">
+                  <div className="account-card__title">Loading shipping details…</div>
+                  <div className="account-card__text">Fetching your saved shipping addresses.</div>
+                </div>
+              )}
+              {shippingItems.length === 0 && !shippingLoading && !shippingError && (
+                <div className="my_account-card">
+                  <div className="account-card__title">No Shipping Addresses</div>
+                  <div className="account-card__text">Add a shipping address during checkout to save it here.</div>
+                </div>
+              )}
+              {shippingItems.length > 0 && (
+                <div className="orders-layout">
+                  <div className="orders-list addresses-list">
+                    {shippingItems.map((s, idx) => (
+                      <React.Fragment key={`${s.id}-${s.order_id}`}>
+                        <div className="my_account-card order-card">
+                          <div className="order-card__main">
+                            <div className="account-card__title">Order #{s.order_id}</div>
+                            {/* <div className="account-card__text">{s.name}</div> */}
+                            <div className="kv-grid">
+                              <div className="kv"><div className="kv__label">Recipient</div><div className="kv__value">{s.name}</div></div>
+                              <div className="kv"><div className="kv__label">Phone</div><div className="kv__value">{s.phone_number || '—'}</div></div>
+                              <div className="kv kv--full"><div className="kv__label">Address</div><div className="kv__value">{s.address}</div></div>
+                              <div className="kv"><div className="kv__label">City</div><div className="kv__value">{s.city}</div></div>
+                              <div className="kv"><div className="kv__label">Province</div><div className="kv__value">{s.province || '—'}</div></div>
+                              <div className="kv"><div className="kv__label">Postal Code</div><div className="kv__value">{s.postal_code || '—'}</div></div>
+                            </div>
+                          </div>
+                          <div className="order-card__actions">
+                            <button type="button" className="icon-btn" onClick={() => openAddressEditModal(s)} aria-label="Edit address">
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <path d="M12 20h9" />
+                                <path d="M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4 12.5-12.5z" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                        {idx < shippingItems.length - 1 && <div className="orders-divider" />}
+                      </React.Fragment>
+                    ))}
+                    <div className="my_account-card">
+                      <PaginationBar
+                        page={Number(shippingMeta?.page ?? shippingPage ?? 1)}
+                        totalPages={Number(shippingMeta?.pages ?? 1)}
+                        hasPrev={Boolean(shippingMeta?.hasPrev)}
+                        hasNext={Boolean(shippingMeta?.hasNext ?? shippingHasMore)}
+                        onPageChange={setShippingPage}
+                        showHint={false}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
+          )}
+          {addrEdit.open && (
+            <EditOrderInfo
+              open={addrEdit.open}
+              onClose={closeAddressEditModal}
+              orderId={addrEdit.orderId}
+              shipping={addrEdit.shipping}
+              updateShipping={updateOrderShipping}
+              onSuccess={async () => { await refreshShipping(); closeAddressEditModal(); }}
+            />
           )}
           {active === 'payments' && (
             <div className="account-section">

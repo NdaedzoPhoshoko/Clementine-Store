@@ -1,5 +1,5 @@
 import express from "express";
-import { createOrUpdateShippingDetails, getShippingDetails } from "../controllers/shippingController.js";
+import { createOrUpdateShippingDetails, getShippingDetails, getMyShippingDetails } from "../controllers/shippingController.js";
 import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -67,6 +67,8 @@ router.post("/", protect, createOrUpdateShippingDetails);
  *     summary: Get shipping details
  *     description: If `order_id` is provided, returns a single shipping detail for that order. If only `user_id` is provided, returns a paginated list of that user's shipping details.
  *     tags: [Checkouts & Orders]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: order_id
@@ -148,5 +150,66 @@ router.post("/", protect, createOrUpdateShippingDetails);
  *         description: Server error while fetching shipping details
  */
 router.get("/", protect, getShippingDetails);
+
+/**
+ * @swagger
+ * /api/shipping-details/my:
+ *   get:
+ *     summary: Get shipping details for the signed-in user
+ *     description: Returns a paginated list of shipping details that belong to the authenticated user.
+ *     tags: [Checkouts & Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: Items per page (max 100)
+ *     responses:
+ *       200:
+ *         description: Paginated list of shipping details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 items:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: integer }
+ *                       order_id: { type: integer }
+ *                       user_id: { type: integer }
+ *                       name: { type: string }
+ *                       address: { type: string }
+ *                       city: { type: string }
+ *                       province: { type: string }
+ *                       postal_code: { type: string }
+ *                       phone_number: { type: string }
+ *                       delivery_status: { type: string }
+ *                 meta:
+ *                   type: object
+ *                   properties:
+ *                     page: { type: integer }
+ *                     limit: { type: integer }
+ *                     total: { type: integer }
+ *                     pages: { type: integer }
+ *                     hasNext: { type: boolean }
+ *                     hasPrev: { type: boolean }
+ *       401:
+ *         description: Not authorized
+ *       500:
+ *         description: Server error while fetching shipping details
+ */
+router.get("/my", protect, getMyShippingDetails);
 
 export default router;

@@ -130,6 +130,46 @@ export const getShippingDetails = async (req, res) => {
   }
 };
 
+export const getMyShippingDetails = async (req, res) => {
+  try {
+    const tokenUserId = parseInt(req.user?.id, 10);
+    if (!tokenUserId) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+    const { page = 1, limit = 20 } = req.query || {};
+    const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+    const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
+    const offset = (pageNum - 1) * limitNum;
+
+    const countRes = await pool.query(
+      `SELECT COUNT(*) AS total FROM shipping_details WHERE user_id=$1`,
+      [tokenUserId]
+    );
+    const total = parseInt(countRes.rows[0]?.total || 0, 10);
+
+    const itemsRes = await pool.query(
+      `SELECT id, order_id, user_id, name, address, city, province, postal_code, phone_number, delivery_status
+       FROM shipping_details
+       WHERE user_id=$1
+       ORDER BY id DESC
+       LIMIT $2 OFFSET $3`,
+      [tokenUserId, limitNum, offset]
+    );
+
+    const pages = Math.max(Math.ceil(total / limitNum), 1);
+    const hasNext = pageNum < pages;
+    const hasPrev = pageNum > 1;
+
+    return res.status(200).json({
+      items: itemsRes.rows,
+      meta: { page: pageNum, limit: limitNum, total, pages, hasNext, hasPrev },
+    });
+  } catch (err) {
+    console.error("Get my shipping details error:", err.message);
+    return res.status(500).json({ message: "Error fetching shipping details" });
+  }
+};
+
 // Helper: lightweight admin check leveraging middleware settings
 const isAdminUser = async (userId) => {
   try {

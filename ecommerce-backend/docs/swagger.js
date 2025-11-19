@@ -13,6 +13,11 @@ const options = {
       version: "1.0.0",
       description: "API documentation for the E-commerce backend",
     },
+    security: [
+      {
+        bearerAuth: [],
+      },
+    ],
     components: {
       securitySchemes: {
         bearerAuth: {
