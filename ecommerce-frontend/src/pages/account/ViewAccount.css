@@ -23,6 +23,8 @@
 .account-btn--light { background: var(--color-surface); color: var(--color-text); }
 .account-btn:disabled { opacity: 0.7; cursor: not-allowed; }
 
+.orders-divider { height: 1px; background: var(--color-border); margin: 12px 0; }
+
 @media (max-width: 900px) {
   .account-page { padding: 12px; }
   .account-layout { flex-direction: column; gap: 16px; }

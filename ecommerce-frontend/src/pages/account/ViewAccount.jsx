@@ -1,15 +1,26 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import './ViewAccount.css';
 import AccountSideBar from './AccountSideBar.jsx';
 import useAuthLogOut from '../../hooks/use_auth/useAuthLogOut.js';
 import { useCart } from '../../hooks/for_cart/CartContext.jsx';
 import { useNavigate } from 'react-router-dom';
+import useFetchMyOrders from '../../hooks/useFetchMyOrders.js';
 
 export default function ViewAccount() {
   const [active, setActive] = useState('orders');
   const { logout, loading: logoutLoading } = useAuthLogOut();
   const { clearCart } = useCart();
   const navigate = useNavigate();
+  const { items: orders, loading: ordersLoading, error: ordersError, hasMore, loadNextPage } = useFetchMyOrders({ initialPage: 1, limit: 10, enabled: active === 'orders' });
+
+  const fmtDate = (iso) => {
+    try { return new Date(iso).toLocaleString(); } catch { return String(iso || ''); }
+  };
+  const fmtPrice = (n) => {
+    const v = typeof n === 'number' ? n : parseFloat(n);
+    if (!Number.isFinite(v)) return 'R —';
+    return `R ${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
 
   const handleSelect = async (key) => {
     if (key === 'logout') {
@@ -32,29 +43,50 @@ export default function ViewAccount() {
                 <div className="section-title">Orders</div>
                 <div className="section-subtitle">Track and manage your recent and past orders.</div>
               </div>
-              <div className="my_account-card">
-                <div className="account-card__title">No Orders Yet</div>
-                <div className="account-card__text">Start by browsing products and placing your first order.</div>
-                <a className="account-card__link" href="/shop-all">
-                  
-                  Browse products
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    width="14"
-                    height="14"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    style={{ marginRight: 6 }}
-                    aria-hidden="true"
-                  >
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </a>
-              </div>
+              {ordersError && (
+                <div className="my_account-card">
+                  <div className="account-card__title">Could not load orders</div>
+                  <div className="account-card__text">Please refresh or try again later.</div>
+                </div>
+              )}
+              {ordersLoading && orders.length === 0 && (
+                <div className="my_account-card">
+                  <div className="account-card__title">Loading orders…</div>
+                  <div className="account-card__text">Please wait while we fetch your order history.</div>
+                </div>
+              )}
+              {orders.length === 0 && !ordersLoading && !ordersError && (
+                <div className="my_account-card">
+                  <div className="account-card__title">No Orders Yet</div>
+                  <div className="account-card__text">Start by browsing products and placing your first order.</div>
+                  <a className="account-card__link" href="/shop-all">
+                    Browse products
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 6 }} aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
+                  </a>
+                </div>
+              )}
+              {orders.length > 0 && (
+                <div className="orders-list">
+                  {orders.map((o, idx) => (
+                    <React.Fragment key={o.id}>
+                      <div className="my_account-card">
+                        <div className="account-card__title">Order #{o.id}</div>
+                        <div className="account-card__text">Placed on {fmtDate(o.created_at)} · {Number(o?.meta?.itemsCount ?? 0)} items · {fmtPrice(o?.meta?.total ?? o.total_price)}</div>
+                        {o.shipping && (
+                          <div className="account-card__text">Shipping to {o.shipping.city}{o.shipping.province ? `, ${o.shipping.province}` : ''}</div>
+                        )}
+                        <a className="account-card__link" href="#">View details</a>
+                      </div>
+                      {idx < orders.length - 1 && <div className="orders-divider" />}
+                    </React.Fragment>
+                  ))}
+                  {hasMore && (
+                    <div className="my_account-card">
+                      <button className="account-btn account-btn--light" onClick={loadNextPage} disabled={ordersLoading}>Load more</button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
           {active === 'addresses' && (
