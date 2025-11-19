@@ -1,0 +1,22 @@
+.account-page { padding: 24px; }
+.account-layout { display: flex; gap: 24px; align-items: stretch; }
+.account-content { flex: 1; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 20px; padding: 20px; }
+
+.account-section { display: grid; gap: 8px; }
+.account-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 16px; padding: 16px; }
+.account-card__empty { color: var(--color-muted); font-size: 14px; }
+
+.account-list { margin: 0; padding-left: 18px; }
+.account-list li { margin: 6px 0; }
+
+.account-support { display: flex; gap: 12px; }
+.account-btn { display: inline-flex; align-items: center; justify-content: center; height: var(--control-height); padding: 0 16px; border-radius: var(--control-radius); border: 1px solid var(--color-border); font-size: 14px; text-decoration: none; }
+.account-btn--dark { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+.account-btn--light { background: var(--color-surface); color: var(--color-text); }
+.account-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+@media (max-width: 900px) {
+  .account-page { padding: 12px; }
+  .account-layout { flex-direction: column; gap: 16px; }
+  .account-content { padding: 16px; }
+}

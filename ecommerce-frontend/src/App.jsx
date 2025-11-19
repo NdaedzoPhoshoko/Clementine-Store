@@ -4,6 +4,7 @@ import Navbar from './components/nabar/Navbar'
 import ScrollToTop from './components/ScrollToTop'
 import Footer from './components/footer/Footer'
 import Home from './pages/home/Home'
+import ViewAccount from './pages/account/ViewAccount.jsx'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import ShopAll from './pages/shopping/ShopAll'
 import Breadcrumbs from './components/breadcrumbs/Breadcrumbs'
@@ -36,6 +37,7 @@ function App() {
               {/* Auth routes */}
               <Route path="/auth/login" element={<Login />} />
               <Route path="/auth/signup" element={<Signup />} />
+              <Route path="/account" element={<ViewAccount />} />
               {/* Fallback to home */}
               <Route path="*" element={<Home />} />
             </Routes>

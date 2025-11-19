@@ -470,7 +470,13 @@ const Navbar = () => {
             onMouseEnter={() => { cancelClose(); setShowAccountDropdown(true); }}
             onMouseLeave={scheduleClose}
           >
-            <AccountAvatar />
+            <AccountAvatar
+              asLink={authStorage.isAuthenticated()}
+              onClick={() => {
+                cancelClose();
+                setShowAccountDropdown((v) => !v);
+              }}
+            />
             {showAccountDropdown && (
               <div className="account-dropdown" role="menu" aria-label="Account menu" onMouseEnter={cancelClose} onMouseLeave={scheduleClose}>
                 <div className="account-card">
