@@ -55,6 +55,8 @@ export default function useFetchMyOrders({ initialPage = 1, limit = 20, enabled 
                     product_id: it.product_id,
                     quantity: Number(it.quantity ?? 0),
                     price: toNumber(it.price),
+                    size: typeof it.size === 'string' ? it.size : String(it.size || ''),
+                    color_hex: typeof it.color_hex === 'string' ? it.color_hex : String(it.color_hex || ''),
                     name: typeof it.name === 'string' ? it.name : String(it.name || ''),
                     image_url: cleanImageUrl(it.image_url),
                   }))
@@ -105,6 +107,8 @@ export default function useFetchMyOrders({ initialPage = 1, limit = 20, enabled 
                 product_id: it.product_id,
                 quantity: Number(it.quantity ?? 0),
                 price: toNumber(it.price),
+                size: typeof it.size === 'string' ? it.size : String(it.size || ''),
+                color_hex: typeof it.color_hex === 'string' ? it.color_hex : String(it.color_hex || ''),
                 name: typeof it.name === 'string' ? it.name : String(it.name || ''),
                 image_url: cleanImageUrl(it.image_url),
               }))

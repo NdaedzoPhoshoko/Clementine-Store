@@ -12,6 +12,8 @@ export default function ViewAccount() {
   const { clearCart } = useCart();
   const navigate = useNavigate();
   const { items: orders, loading: ordersLoading, error: ordersError, hasMore, loadNextPage } = useFetchMyOrders({ initialPage: 1, limit: 10, enabled: active === 'orders' });
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
+  const selectedOrder = useMemo(() => orders.find((o) => Number(o.id) === Number(selectedOrderId)) || null, [orders, selectedOrderId]);
 
   const fmtDate = (iso) => {
     try { return new Date(iso).toLocaleString(); } catch { return String(iso || ''); }
@@ -66,23 +68,68 @@ export default function ViewAccount() {
                 </div>
               )}
               {orders.length > 0 && (
-                <div className="orders-list">
-                  {orders.map((o, idx) => (
-                    <React.Fragment key={o.id}>
+                <div className="orders-layout">
+                  <div className="orders-list">
+                    {orders.map((o, idx) => (
+                      <React.Fragment key={o.id}>
+                        <div className="my_account-card">
+                          <div className="account-card__title">Order #{o.id}</div>
+                          <div className="account-card__text">Placed on {fmtDate(o.created_at)} · {Number(o?.meta?.itemsCount ?? 0)} items · {fmtPrice(o?.meta?.total ?? o.total_price)}</div>
+                          {o.shipping && (
+                            <div className="account-card__text">Shipping to {o.shipping.city}{o.shipping.province ? `, ${o.shipping.province}` : ''}</div>
+                          )}
+                          <button className="account-btn account-btn--light" onClick={() => setSelectedOrderId(o.id)}>View order</button>
+                        </div>
+                        {idx < orders.length - 1 && <div className="orders-divider" />}
+                      </React.Fragment>
+                    ))}
+                    {hasMore && (
                       <div className="my_account-card">
-                        <div className="account-card__title">Order #{o.id}</div>
-                        <div className="account-card__text">Placed on {fmtDate(o.created_at)} · {Number(o?.meta?.itemsCount ?? 0)} items · {fmtPrice(o?.meta?.total ?? o.total_price)}</div>
-                        {o.shipping && (
-                          <div className="account-card__text">Shipping to {o.shipping.city}{o.shipping.province ? `, ${o.shipping.province}` : ''}</div>
-                        )}
-                        <a className="account-card__link" href="#">View details</a>
+                        <button className="account-btn account-btn--light" onClick={loadNextPage} disabled={ordersLoading}>Load more</button>
                       </div>
-                      {idx < orders.length - 1 && <div className="orders-divider" />}
-                    </React.Fragment>
-                  ))}
-                  {hasMore && (
-                    <div className="my_account-card">
-                      <button className="account-btn account-btn--light" onClick={loadNextPage} disabled={ordersLoading}>Load more</button>
+                    )}
+                  </div>
+                  {selectedOrder && (
+                    <div className="order-detail">
+                      <div className="order-detail__header">
+                        <div className="order-detail__title">Order #{selectedOrder.id}</div>
+                        <div className="order-detail__meta">Placed on {fmtDate(selectedOrder.created_at)} · {fmtPrice(selectedOrder?.meta?.total ?? selectedOrder.total_price)} · {selectedOrder.payment_status}</div>
+                      </div>
+                      {selectedOrder.shipping && (
+                        <div className="order-detail__section">
+                          <div className="order-detail__section-title">Shipping</div>
+                          <div className="order-detail__text">{selectedOrder.shipping.name}</div>
+                          <div className="order-detail__text">{selectedOrder.shipping.address}</div>
+                          <div className="order-detail__text">{selectedOrder.shipping.city}{selectedOrder.shipping.province ? `, ${selectedOrder.shipping.province}` : ''} {selectedOrder.shipping.postal_code || ''}</div>
+                          <div className="order-detail__text">{selectedOrder.shipping.phone_number || ''}</div>
+                          <div className="order-detail__badge">{selectedOrder.shipping.delivery_status}</div>
+                        </div>
+                      )}
+                      <div className="order-detail__section">
+                        <div className="order-detail__section-title">Items</div>
+                        <div className="order-items">
+                          {(selectedOrder.items || []).map((it) => (
+                            <div key={it.order_item_id} className="order-item">
+                              <div className="order-item__img-wrap">
+                                <img src={it.image_url} alt={it.name} className="order-item__img" loading="lazy" decoding="async" />
+                              </div>
+                              <div className="order-item__info">
+                                <div className="order-item__name">{it.name}</div>
+                                <div className="order-item__meta">Qty {Number(it.quantity)} · {fmtPrice(it.price)}</div>
+                                <div className="order-item__variants">
+                                  <span>Size {String(it.size || '').trim() || '—'}</span>
+                                  {String(it.color_hex || '').trim() && (
+                                    <span title={it.color_hex} className="order-item__swatch" style={{ backgroundColor: it.color_hex }} />
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="order-detail__footer">
+                        <button className="account-btn account-btn--light" onClick={() => setSelectedOrderId(null)}>Close</button>
+                      </div>
                     </div>
                   )}
                 </div>

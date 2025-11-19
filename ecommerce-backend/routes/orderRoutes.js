@@ -61,6 +61,8 @@ const router = express.Router();
  *                       product_id: { type: integer }
  *                       quantity: { type: integer }
  *                       price: { type: number }
+ *                       size: { type: string }
+ *                       color_hex: { type: string }
  *                       name: { type: string }
  *                       image_url: { type: string }
  *                 shipping:
@@ -134,6 +136,8 @@ router.post("/", protect, createOrder);
  *                             product_id: { type: integer }
  *                             quantity: { type: integer }
  *                             price: { type: number }
+ *                             size: { type: string }
+ *                             color_hex: { type: string }
  *                             name: { type: string }
  *                             image_url: { type: string }
  *                       shipping:

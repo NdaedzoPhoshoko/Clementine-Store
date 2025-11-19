@@ -250,3 +250,9 @@ BEGIN
 END $$;
 
 COMMIT;
+-- Add variant columns to order_items to snapshot size and color at checkout
+ALTER TABLE order_items
+  ADD COLUMN IF NOT EXISTS size VARCHAR(50) NOT NULL DEFAULT '';
+
+ALTER TABLE order_items
+  ADD COLUMN IF NOT EXISTS color_hex VARCHAR(12) NOT NULL DEFAULT '';

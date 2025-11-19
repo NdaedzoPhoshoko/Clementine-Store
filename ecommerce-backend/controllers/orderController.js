@@ -54,8 +54,8 @@ export const createOrder = async (req, res) => {
 
     // Copy items from cart to order_items with price snapshot
     await client.query(
-      `INSERT INTO order_items (order_id, product_id, quantity, price)
-       SELECT $1, ci.product_id, ci.quantity, p.price
+      `INSERT INTO order_items (order_id, product_id, quantity, price, size, color_hex)
+       SELECT $1, ci.product_id, ci.quantity, p.price, ci.size, ci.color_hex
        FROM cart_items ci
        JOIN products p ON p.id = ci.product_id
        WHERE ci.cart_id = $2`,
@@ -87,7 +87,7 @@ export const createOrder = async (req, res) => {
 
     // Fetch order items and shipping for response
     const orderItemsRes = await pool.query(
-      `SELECT oi.id AS order_item_id, oi.product_id, oi.quantity, oi.price,
+      `SELECT oi.id AS order_item_id, oi.product_id, oi.quantity, oi.price, oi.size, oi.color_hex,
               p.name, p.image_url
        FROM order_items oi
        JOIN products p ON p.id = oi.product_id
@@ -156,7 +156,7 @@ export const getUserOrders = async (req, res) => {
 
     if (orderIds.length > 0) {
       const itemsRes = await pool.query(
-        `SELECT oi.id AS order_item_id, oi.order_id, oi.product_id, oi.quantity, oi.price,
+        `SELECT oi.id AS order_item_id, oi.order_id, oi.product_id, oi.quantity, oi.price, oi.size, oi.color_hex,
                 p.name, p.image_url
          FROM order_items oi
          JOIN products p ON p.id = oi.product_id
@@ -165,16 +165,18 @@ export const getUserOrders = async (req, res) => {
         [orderIds]
       );
       itemsByOrder = itemsRes.rows.reduce((acc, row) => {
-        (acc[row.order_id] ||= []).push({
-          order_item_id: row.order_item_id,
-          product_id: row.product_id,
-          quantity: Number(row.quantity),
-          price: Number(row.price),
-          name: row.name,
-          image_url: row.image_url,
-        });
-        return acc;
-      }, {});
+                (acc[row.order_id] ||= []).push({
+                  order_item_id: row.order_item_id,
+                  product_id: row.product_id,
+                  quantity: Number(row.quantity),
+                  price: Number(row.price),
+                  size: row.size,
+                  color_hex: row.color_hex,
+                  name: row.name,
+                  image_url: row.image_url,
+                });
+                return acc;
+              }, {});
 
       const shipRes = await pool.query(
         `SELECT order_id, id, name, address, city, province, postal_code, phone_number, delivery_status
