@@ -14,6 +14,26 @@ export default function ViewAccount() {
   const { items: orders, loading: ordersLoading, error: ordersError, hasMore, loadNextPage } = useFetchMyOrders({ initialPage: 1, limit: 10, enabled: active === 'orders' });
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const selectedOrder = useMemo(() => orders.find((o) => Number(o.id) === Number(selectedOrderId)) || null, [orders, selectedOrderId]);
+  const [detailMotion, setDetailMotion] = useState(null);
+  const orderStatusSteps = ['Pending', 'Shipped', 'Delivering', 'Delivered'];
+  const statusIndex = useMemo(() => {
+    const s = String(selectedOrder?.shipping?.delivery_status || selectedOrder?.payment_status || '').toLowerCase();
+    if (s.includes('deliver') && s.includes('ed')) return 3;
+    if (s.includes('deliver')) return 2;
+    if (s.includes('ship')) return 1;
+    if (s.includes('pend')) return 0;
+    if (s.includes('paid')) return 0;
+    return 0;
+  }, [selectedOrder?.shipping?.delivery_status, selectedOrder?.payment_status]);
+  const getStatusIndex = (order) => {
+    const s = String(order?.shipping?.delivery_status || order?.payment_status || '').toLowerCase();
+    if (s.includes('deliver') && s.includes('ed')) return 3;
+    if (s.includes('deliver')) return 2;
+    if (s.includes('ship')) return 1;
+    if (s.includes('pend')) return 0;
+    if (s.includes('paid')) return 0;
+    return 0;
+  };
 
   const fmtDate = (iso) => {
     try { return new Date(iso).toLocaleString(); } catch { return String(iso || ''); }
@@ -72,13 +92,26 @@ export default function ViewAccount() {
                   <div className="orders-list">
                     {orders.map((o, idx) => (
                       <React.Fragment key={o.id}>
-                        <div className="my_account-card">
-                          <div className="account-card__title">Order #{o.id}</div>
-                          <div className="account-card__text">Placed on {fmtDate(o.created_at)} · {Number(o?.meta?.itemsCount ?? 0)} items · {fmtPrice(o?.meta?.total ?? o.total_price)}</div>
-                          {o.shipping && (
-                            <div className="account-card__text">Shipping to {o.shipping.city}{o.shipping.province ? `, ${o.shipping.province}` : ''}</div>
-                          )}
-                          <button className="account-btn account-btn--light" onClick={() => setSelectedOrderId(o.id)}>View order</button>
+                        <div className="my_account-card order-card">
+                          <div className="order-card__main">
+                            <div className="account-card__title">Order #{o.id}</div>
+                            <div className="account-card__text">Placed on {fmtDate(o.created_at)} · {Number(o?.meta?.itemsCount ?? 0)} items · {fmtPrice(o?.meta?.total ?? o.total_price)}</div>
+                            {o.shipping && (
+                              <div className="account-card__text">Shipping to {o.shipping.city}{o.shipping.province ? `, ${o.shipping.province}` : ''}</div>
+                            )}
+                            <button type="button" className="account-card__link account-card__link--btn" onClick={() => setSelectedOrderId(o.id)}>View order</button>
+                          </div>
+                          <div className={`status-timeline order-card__timeline ${selectedOrder ? 'is-hidden' : ''}`} role="list">
+                            {orderStatusSteps.map((label, i) => (
+                              <React.Fragment key={label}>
+                                <div className={`timeline-step ${i < getStatusIndex(o) ? 'timeline-step--done' : ''} ${i === getStatusIndex(o) ? 'timeline-step--current' : ''}`} role="listitem">
+                                  <div className="timeline-node" />
+                                  <div className="timeline-label">{label}</div>
+                                </div>
+                                {i < orderStatusSteps.length - 1 && <div className="timeline-connector" />}
+                              </React.Fragment>
+                            ))}
+                          </div>
                         </div>
                         {idx < orders.length - 1 && <div className="orders-divider" />}
                       </React.Fragment>
@@ -90,19 +123,46 @@ export default function ViewAccount() {
                     )}
                   </div>
                   {selectedOrder && (
-                    <div className="order-detail">
+                    <div className={`order-detail ${detailMotion ? `order-detail--${detailMotion}` : ''}`}>
                       <div className="order-detail__header">
                         <div className="order-detail__title">Order #{selectedOrder.id}</div>
-                        <div className="order-detail__meta">Placed on {fmtDate(selectedOrder.created_at)} · {fmtPrice(selectedOrder?.meta?.total ?? selectedOrder.total_price)} · {selectedOrder.payment_status}</div>
+                        <button className="order-detail__close" onClick={closeDetail} aria-label="Close order details">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                          </svg>
+                        </button>
+                        <div className="order-detail__summary">
+                          <div className="kv"><div className="kv__label">Order Number</div><div className="kv__value">{selectedOrder.id}</div></div>
+                          <div className="kv"><div className="kv__label">Placed On</div><div className="kv__value">{fmtDate(selectedOrder.created_at)}</div></div>
+                          <div className="kv"><div className="kv__label">Current Status</div><div className="kv__value">{selectedOrder.payment_status}</div></div>
+                          <div className="kv"><div className="kv__label">Order Total</div><div className="kv__value">{fmtPrice(selectedOrder?.meta?.total ?? selectedOrder.total_price)}</div></div>
+                          <div className="kv"><div className="kv__label">Items</div><div className="kv__value">{Number(selectedOrder?.meta?.itemsCount ?? (Array.isArray(selectedOrder.items) ? selectedOrder.items.reduce((s, it) => s + Number(it.quantity || 0), 0) : 0))}</div></div>
+                        </div>
                       </div>
                       {selectedOrder.shipping && (
                         <div className="order-detail__section">
                           <div className="order-detail__section-title">Shipping</div>
-                          <div className="order-detail__text">{selectedOrder.shipping.name}</div>
-                          <div className="order-detail__text">{selectedOrder.shipping.address}</div>
-                          <div className="order-detail__text">{selectedOrder.shipping.city}{selectedOrder.shipping.province ? `, ${selectedOrder.shipping.province}` : ''} {selectedOrder.shipping.postal_code || ''}</div>
-                          <div className="order-detail__text">{selectedOrder.shipping.phone_number || ''}</div>
-                          <div className="order-detail__badge">{selectedOrder.shipping.delivery_status}</div>
+                          <div className="kv-grid">
+                            <div className="kv"><div className="kv__label">Recipient</div><div className="kv__value">{selectedOrder.shipping.name}</div></div>
+                            <div className="kv"><div className="kv__label">Phone</div><div className="kv__value">{selectedOrder.shipping.phone_number || '—'}</div></div>
+                            <div className="kv kv--full"><div className="kv__label">Address</div><div className="kv__value">{selectedOrder.shipping.address}</div></div>
+                            <div className="kv"><div className="kv__label">City</div><div className="kv__value">{selectedOrder.shipping.city}</div></div>
+                            <div className="kv"><div className="kv__label">Province</div><div className="kv__value">{selectedOrder.shipping.province || '—'}</div></div>
+                            <div className="kv"><div className="kv__label">Postal Code</div><div className="kv__value">{selectedOrder.shipping.postal_code || '—'}</div></div>
+                          </div>
+                          <div className="order-detail__section-title">Tracking Order</div>
+                          <div className="status-timeline" role="list">
+                            {orderStatusSteps.map((label, i) => (
+                              <React.Fragment key={label}>
+                                <div className={`timeline-step ${i < statusIndex ? 'timeline-step--done' : ''} ${i === statusIndex ? 'timeline-step--current' : ''}`} role="listitem">
+                                  <div className="timeline-node" />
+                                  <div className="timeline-label">{label}</div>
+                                </div>
+                                {i < orderStatusSteps.length - 1 && <div className="timeline-connector" />}
+                              </React.Fragment>
+                            ))}
+                          </div>
                         </div>
                       )}
                       <div className="order-detail__section">
@@ -116,19 +176,14 @@ export default function ViewAccount() {
                               <div className="order-item__info">
                                 <div className="order-item__name">{it.name}</div>
                                 <div className="order-item__meta">Qty {Number(it.quantity)} · {fmtPrice(it.price)}</div>
-                                <div className="order-item__variants">
-                                  <span>Size {String(it.size || '').trim() || '—'}</span>
-                                  {String(it.color_hex || '').trim() && (
-                                    <span title={it.color_hex} className="order-item__swatch" style={{ backgroundColor: it.color_hex }} />
-                                  )}
+                                <div className="order-item__variants-row">
+                                  <div className="variant-chip"><span className="variant-chip__label">Size</span><span className="variant-chip__value">{String(it.size || '').trim() || '—'}</span></div>
+                                  <div className="variant-chip"><span className="variant-chip__label">Color</span>{String(it.color_hex || '').trim() && (<span className="variant-chip__swatch" style={{ backgroundColor: it.color_hex }} />)}<span className="variant-chip__value">{String(it.color_hex || '').trim() || '—'}</span></div>
                                 </div>
                               </div>
                             </div>
                           ))}
                         </div>
-                      </div>
-                      <div className="order-detail__footer">
-                        <button className="account-btn account-btn--light" onClick={() => setSelectedOrderId(null)}>Close</button>
                       </div>
                     </div>
                   )}
@@ -207,3 +262,20 @@ export default function ViewAccount() {
     </div>
   );
 }
+  React.useEffect(() => {
+    if (selectedOrderId) {
+      setDetailMotion('entering');
+      const t = setTimeout(() => setDetailMotion('open'), 20);
+      return () => clearTimeout(t);
+    } else {
+      setDetailMotion(null);
+    }
+  }, [selectedOrderId]);
+
+  const closeDetail = () => {
+    setDetailMotion('exiting');
+    setTimeout(() => {
+      setSelectedOrderId(null);
+      setDetailMotion(null);
+    }, 200);
+  };
