@@ -1,0 +1,11 @@
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.22); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+.modal { width: min(720px, calc(100% - 40px)); background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 16px; box-shadow: var(--shadow-soft); display: grid; grid-template-rows: auto 1fr auto; }
+.modal__header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--color-border); }
+.modal__title { font-weight: 700; font-size: 16px; }
+.modal__close { width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; background: var(--color-surface); color: var(--color-muted); border: 1px solid var(--color-border); cursor: pointer; }
+.modal__close:hover { filter: brightness(1.06); }
+.modal__body { padding: 16px; }
+.modal__footer { padding: 12px 16px; border-top: 1px solid var(--color-border); }
+
+.edit-modal__actions { display: flex; gap: 8px; }
+.edit-modal__error { color: var(--palette-deep); font-size: 13px; margin-top: 8px; }

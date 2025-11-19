@@ -18,6 +18,7 @@ export default function useFetchMyOrders({ initialPage = 1, limit = 20, enabled 
   const [error, setError] = useState(null);
   const [meta, setMeta] = useState(null);
   const [hasMore, setHasMore] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const controllerRef = useRef(null);
   const user = authStorage.getUser();
@@ -146,7 +147,7 @@ export default function useFetchMyOrders({ initialPage = 1, limit = 20, enabled 
     }
 
     return () => controller.abort();
-  }, [enabled, signature, page, limit]);
+  }, [enabled, signature, page, limit, refreshKey]);
 
   const loadNextPage = () => {
     if (loading || loadingMore || !hasMore) return;
@@ -160,8 +161,7 @@ export default function useFetchMyOrders({ initialPage = 1, limit = 20, enabled 
         localStorage.removeItem(KEY);
       }
     } catch (_) {}
-    setLoading((l) => !l);
-    setLoading((l) => !l);
+    setRefreshKey((k) => k + 1);
   };
 
   const clearCache = () => {

@@ -5,16 +5,18 @@ import useAuthLogOut from '../../hooks/use_auth/useAuthLogOut.js';
 import { useCart } from '../../hooks/for_cart/CartContext.jsx';
 import { useNavigate } from 'react-router-dom';
 import useFetchMyOrders from '../../hooks/useFetchMyOrders.js';
+import EditOrderInfo from './EditOrderInfo.jsx';
 
 export default function ViewAccount() {
   const [active, setActive] = useState('orders');
   const { logout, loading: logoutLoading } = useAuthLogOut();
   const { clearCart } = useCart();
   const navigate = useNavigate();
-  const { items: orders, loading: ordersLoading, error: ordersError, hasMore, loadNextPage } = useFetchMyOrders({ initialPage: 1, limit: 10, enabled: active === 'orders' });
+  const { items: orders, loading: ordersLoading, error: ordersError, hasMore, loadNextPage, refresh } = useFetchMyOrders({ initialPage: 1, limit: 10, enabled: active === 'orders' });
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const selectedOrder = useMemo(() => orders.find((o) => Number(o.id) === Number(selectedOrderId)) || null, [orders, selectedOrderId]);
   const [detailMotion, setDetailMotion] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
   const orderStatusSteps = ['Pending', 'Shipped', 'Delivering', 'Delivered'];
   const statusIndex = useMemo(() => {
     const s = String(selectedOrder?.shipping?.delivery_status || selectedOrder?.payment_status || '').toLowerCase();
@@ -61,6 +63,8 @@ export default function ViewAccount() {
       setDetailMotion(null);
     }, 200);
   };
+
+  const openEditModal = () => { setShowEditModal(true); };
 
   const handleSelect = async (key) => {
     if (key === 'logout') {
@@ -169,6 +173,7 @@ export default function ViewAccount() {
                             <div className="kv"><div className="kv__label">Province</div><div className="kv__value">{selectedOrder.shipping.province || '—'}</div></div>
                             <div className="kv"><div className="kv__label">Postal Code</div><div className="kv__value">{selectedOrder.shipping.postal_code || '—'}</div></div>
                           </div>
+                          <button type="button" className="account-card__link account-card__link--btn" onClick={openEditModal}>Edit shipping</button>
                           <div className="order-detail__section-title">Tracking Order</div>
                           <div className="status-timeline" role="list">
                             {orderStatusSteps.map((label, i) => (
@@ -208,6 +213,15 @@ export default function ViewAccount() {
                 </div>
               )}
             </div>
+          )}
+          {selectedOrder && (
+            <EditOrderInfo
+              open={showEditModal}
+              onClose={() => setShowEditModal(false)}
+              orderId={selectedOrder.id}
+              shipping={selectedOrder.shipping}
+              onSuccess={async () => { await refresh(); setShowEditModal(false); }}
+            />
           )}
           {active === 'addresses' && (
             <div className="account-section">
