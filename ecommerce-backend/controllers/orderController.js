@@ -227,3 +227,96 @@ export const getUserOrders = async (req, res) => {
     return res.status(500).json({ message: "Error fetching orders" });
   }
 };
+
+export const updateOrderShipping = async (req, res) => {
+  try {
+    const orderId = parseInt(req.params.id, 10);
+    const userId = parseInt(req.user?.id, 10);
+    if (!userId || userId <= 0) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+    if (!orderId || orderId <= 0) {
+      return res.status(400).json({ message: "Invalid order id" });
+    }
+
+    const ordRes = await pool.query(
+      "SELECT id, user_id, total_price, payment_status, created_at FROM orders WHERE id=$1 AND user_id=$2",
+      [orderId, userId]
+    );
+    if (ordRes.rows.length === 0) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+    const order = ordRes.rows[0];
+
+    const {
+      name,
+      address,
+      city,
+      province,
+      postal_code,
+      phone_number,
+      delivery_status,
+    } = req.body || {};
+
+    const shipExistsRes = await pool.query(
+      "SELECT id FROM shipping_details WHERE order_id=$1",
+      [orderId]
+    );
+
+    if (shipExistsRes.rows.length === 0) {
+      if (!name || !address || !city) {
+        return res.status(400).json({ message: "Missing required fields: name, address, city" });
+      }
+      const insRes = await pool.query(
+        `INSERT INTO shipping_details (order_id, user_id, name, address, city, province, postal_code, phone_number, delivery_status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING id, name, address, city, province, postal_code, phone_number, delivery_status`,
+        [
+          orderId,
+          userId,
+          name,
+          address,
+          city,
+          province || null,
+          postal_code || null,
+          phone_number || null,
+          delivery_status || "Pending",
+        ]
+      );
+      const shipping = insRes.rows[0];
+      return res.status(200).json({ order, shipping });
+    }
+
+    const allowed = {
+      name,
+      address,
+      city,
+      province,
+      postal_code,
+      phone_number,
+      delivery_status,
+    };
+    const sets = [];
+    const vals = [];
+    let idx = 1;
+    Object.entries(allowed).forEach(([k, v]) => {
+      if (typeof v !== "undefined") {
+        sets.push(`${k}=$${idx++}`);
+        vals.push(v);
+      }
+    });
+    if (sets.length === 0) {
+      return res.status(400).json({ message: "No fields to update" });
+    }
+    vals.push(orderId);
+    const updRes = await pool.query(
+      `UPDATE shipping_details SET ${sets.join(", ")} WHERE order_id=$${idx} RETURNING id, name, address, city, province, postal_code, phone_number, delivery_status`,
+      vals
+    );
+    const shipping = updRes.rows[0];
+    return res.status(200).json({ order, shipping });
+  } catch (err) {
+    console.error("Update order shipping error:", err.message);
+    return res.status(500).json({ message: "Error updating shipping" });
+  }
+};

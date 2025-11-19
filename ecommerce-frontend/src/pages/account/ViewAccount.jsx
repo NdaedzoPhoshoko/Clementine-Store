@@ -44,6 +44,24 @@ export default function ViewAccount() {
     return `R ${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
+  React.useEffect(() => {
+    if (selectedOrderId) {
+      setDetailMotion('entering');
+      const t = setTimeout(() => setDetailMotion('open'), 20);
+      return () => clearTimeout(t);
+    } else {
+      setDetailMotion(null);
+    }
+  }, [selectedOrderId]);
+
+  const closeDetail = () => {
+    setDetailMotion('exiting');
+    setTimeout(() => {
+      setSelectedOrderId(null);
+      setDetailMotion(null);
+    }, 200);
+  };
+
   const handleSelect = async (key) => {
     if (key === 'logout') {
       try { await logout(); } catch {}
@@ -262,20 +280,3 @@ export default function ViewAccount() {
     </div>
   );
 }
-  React.useEffect(() => {
-    if (selectedOrderId) {
-      setDetailMotion('entering');
-      const t = setTimeout(() => setDetailMotion('open'), 20);
-      return () => clearTimeout(t);
-    } else {
-      setDetailMotion(null);
-    }
-  }, [selectedOrderId]);
-
-  const closeDetail = () => {
-    setDetailMotion('exiting');
-    setTimeout(() => {
-      setSelectedOrderId(null);
-      setDetailMotion(null);
-    }, 200);
-  };

@@ -1,5 +1,5 @@
 import express from "express";
-import { createOrder, getUserOrders } from "../controllers/orderController.js";
+import { createOrder, getUserOrders, updateOrderShipping } from "../controllers/orderController.js";
 import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -167,5 +167,72 @@ router.post("/", protect, createOrder);
  *         description: Server error while fetching orders
  */
 router.get("/my", protect, getUserOrders);
+
+/**
+ * @swagger
+ * /api/orders/{id}/shipping:
+ *   patch:
+ *     summary: Update shipping information for an order
+ *     description: Partially update name, address, city, province, postal_code, phone_number, or delivery_status for the user's order.
+ *     tags: [Checkouts & Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name: { type: string }
+ *               address: { type: string }
+ *               city: { type: string }
+ *               province: { type: string }
+ *               postal_code: { type: string }
+ *               phone_number: { type: string }
+ *               delivery_status: { type: string }
+ *     responses:
+ *       200:
+ *         description: Shipping updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 order:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: integer }
+ *                     user_id: { type: integer }
+ *                     total_price: { type: number }
+ *                     payment_status: { type: string }
+ *                     created_at: { type: string, format: date-time }
+ *                 shipping:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: integer }
+ *                     name: { type: string }
+ *                     address: { type: string }
+ *                     city: { type: string }
+ *                     province: { type: string }
+ *                     postal_code: { type: string }
+ *                     phone_number: { type: string }
+ *                     delivery_status: { type: string }
+ *       400:
+ *         description: Invalid input or no fields to update
+ *       401:
+ *         description: Not authorized
+ *       404:
+ *         description: Order not found
+ *       500:
+ *         description: Server error while updating shipping
+ */
+router.patch("/:id/shipping", protect, updateOrderShipping);
 
 export default router;
