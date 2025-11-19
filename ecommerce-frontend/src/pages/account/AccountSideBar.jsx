@@ -26,7 +26,7 @@ export default function AccountSideBar({ active, onSelect }) {
         }
       }}
     >
-      <span className="account-sidebar__label">{label}</span>
+      <span className={`account-sidebar__label ${k === 'logout' ? 'account-sidebar__label--danger' : ''}`}>{label}</span>
     </li>
   );
 
