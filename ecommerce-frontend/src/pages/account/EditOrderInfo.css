@@ -9,3 +9,8 @@
 
 .edit-modal__actions { display: flex; gap: 8px; }
 .edit-modal__error { color: var(--palette-deep); font-size: 13px; margin-top: 8px; }
+
+.form-control.is-invalid { border-color: var(--palette-deep); box-shadow: 0 0 0 3px rgba(190, 24, 93, 0.16); background: var(--color-bg); }
+.field-error { margin-top: 4px; font-size: 12px; color: var(--palette-deep); }
+
+/* .kv--address .kv__label { line-height: 1.5; min-height: calc(3 * 1.5em); } */
