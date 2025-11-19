@@ -1,7 +1,18 @@
 import React from 'react';
 import './AccountSideBar.css';
+import { authStorage } from '../../hooks/use_auth/authStorage.js';
 
 export default function AccountSideBar({ active, onSelect }) {
+  const user = authStorage.getUser();
+  const displayName = user?.name || user?.fullName || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Guest';
+  const initials = (() => {
+    const parts = String(displayName).trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '';
+    if (parts.length === 1) return (parts[0][0] || '').toUpperCase();
+    const first = parts[0][0] || '';
+    const last = parts[parts.length - 1][0] || '';
+    return `${first}${last}`.toUpperCase();
+  })();
   const Item = ({ k, label }) => (
     <li
       className={`account-sidebar__item ${active === k ? 'is-active' : ''}`}
@@ -21,6 +32,14 @@ export default function AccountSideBar({ active, onSelect }) {
 
   return (
     <aside className="account-sidebar" aria-label="Account navigation">
+      <div className="account-sidebar__user">
+        <span className="sidebar-avatar__circle" aria-hidden="true">
+          <span className="sidebar-avatar__initials">{initials}</span>
+        </span>
+        <div className="account-sidebar__identity">
+          <div className="account-sidebar__name">{displayName}</div>
+        </div>
+      </div>
       <div className="account-sidebar__section">
         <div className="account-sidebar__title">My account</div>
         <ul className="account-sidebar__list" role="menu">
