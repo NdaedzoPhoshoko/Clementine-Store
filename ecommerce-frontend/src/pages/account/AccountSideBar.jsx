@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import './AccountSideBar.css';
 import { authStorage } from '../../hooks/use_auth/authStorage.js';
 
 export default function AccountSideBar({ active, onSelect }) {
+  const [initialSkeleton, setInitialSkeleton] = useState(true);
   const user = authStorage.getUser();
   const displayName = user?.name || user?.fullName || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Guest';
   const initials = (() => {
@@ -13,6 +14,10 @@ export default function AccountSideBar({ active, onSelect }) {
     const last = parts[parts.length - 1][0] || '';
     return `${first}${last}`.toUpperCase();
   })();
+  useEffect(() => {
+    const t = setTimeout(() => setInitialSkeleton(false), 450);
+    return () => clearTimeout(t);
+  }, []);
   const Item = ({ k, label }) => (
     <li
       className={`account-sidebar__item ${active === k ? 'is-active' : ''}`}
@@ -33,12 +38,23 @@ export default function AccountSideBar({ active, onSelect }) {
   return (
     <aside className="account-sidebar" aria-label="Account navigation">
       <div className="account-sidebar__user">
-        <span className="sidebar-avatar__circle" aria-hidden="true">
-          <span className="sidebar-avatar__initials">{initials}</span>
-        </span>
-        <div className="account-sidebar__identity">
-          <div className="account-sidebar__name">{displayName}</div>
-        </div>
+        {initialSkeleton ? (
+          <>
+            <span className="sidebar-avatar__circle skeleton-avatar" aria-hidden="true" />
+            <div className="account-sidebar__identity">
+              <div className="account-sidebar__name"><span className="skeleton-line skeleton-name" /></div>
+            </div>
+          </>
+        ) : (
+          <>
+            <span className="sidebar-avatar__circle" aria-hidden="true">
+              <span className="sidebar-avatar__initials">{initials}</span>
+            </span>
+            <div className="account-sidebar__identity">
+              <div className="account-sidebar__name">{displayName}</div>
+            </div>
+          </>
+        )}
       </div>
       <div className="account-sidebar__section">
         <div className="account-sidebar__title">My account</div>
