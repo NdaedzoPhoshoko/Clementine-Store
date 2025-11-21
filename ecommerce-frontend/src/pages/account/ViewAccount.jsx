@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import './ViewAccount.css';
 import AccountSideBar from './AccountSideBar.jsx';
 import useAuthLogOut from '../../hooks/use_auth/useAuthLogOut.js';
@@ -9,6 +9,7 @@ import EditOrderInfo from './EditOrderInfo.jsx';
 import useFetchMyShippingDetails from '../../hooks/useFetchMyShippingDetails.js';
 import PaginationBar from '../../components/pagination/PaginationBar.jsx';
 import useUpdateOrderShipping from '../../hooks/useUpdateOrderShipping.js';
+import ErrorModal from '../../components/modals/ErrorModal.jsx';
 
 export default function ViewAccount() {
   const [active, setActive] = useState('orders');
@@ -26,6 +27,20 @@ export default function ViewAccount() {
   const [initialOrdersSkeleton, setInitialOrdersSkeleton] = useState(true);
   const [initialAddressesSkeleton, setInitialAddressesSkeleton] = useState(false);
   const [detailInitialSkeleton, setDetailInitialSkeleton] = useState(false);
+  const [errorModalMsg, setErrorModalMsg] = useState('');
+  const formatUiError = (err, ctx) => {
+    if (!err) return '';
+    const raw = typeof err === 'string' ? err : (err?.message || 'Unexpected error');
+    const offline = typeof navigator !== 'undefined' && navigator && navigator.onLine === false;
+    if (offline) return `${ctx}: Network is offline — check your connection and refresh the page.`;
+    const m = String(raw).toLowerCase();
+    if (m.includes('failed to fetch')) return `${ctx}: Network error — please check your connection and refresh the page.`;
+    if (m.startsWith('http 5') || m.includes('http 5')) return `${ctx}: Server error — please try again later.`;
+    if (m.startsWith('http 4') || m.includes('http 4')) return `${ctx}: Request error — please refresh the page and try again.`;
+    if (m.includes('unexpected content-type')) return `${ctx}: Unexpected server response — refresh the page and try again.`;
+    if (m.includes('refresh failed') || m.includes('session expired')) return `${ctx}: Session issue — please sign in again.`;
+    return `${ctx}: Something went wrong — please refresh the page or try again.`;
+  };
   const orderStatusSteps = ['Pending', 'Shipped', 'Delivering', 'Delivered'];
   const statusIndex = useMemo(() => {
     const s = String(selectedOrder?.shipping?.delivery_status || selectedOrder?.payment_status || '').toLowerCase();
@@ -67,6 +82,14 @@ export default function ViewAccount() {
       setDetailInitialSkeleton(false);
     }
   }, [selectedOrderId]);
+
+  useEffect(() => {
+    const msgOrders = ordersError ? formatUiError(ordersError, 'Orders') : '';
+    const msgShipping = shippingError ? formatUiError(shippingError, 'Addresses') : '';
+    const msg = msgOrders || msgShipping;
+    if (msg) setErrorModalMsg(String(msg));
+  }, [ordersError, shippingError]);
+  const closeErrorModal = () => setErrorModalMsg('');
 
   React.useEffect(() => {
     if (active === 'orders') {
@@ -111,18 +134,15 @@ export default function ViewAccount() {
       <div className="account-layout">
         <AccountSideBar active={active} onSelect={handleSelect} />
         <section className="account-content" aria-live="polite">
+          {Boolean(errorModalMsg) && (
+            <ErrorModal message={errorModalMsg} onClose={closeErrorModal} durationMs={10000} />
+          )}
           {active === 'orders' && (
             <div className="account-section">
               <div className="my_section-header">
                 <div className="section-title">Orders</div>
                 <div className="section-subtitle">Track and manage your recent and past orders.</div>
               </div>
-              {ordersError && (
-                <div className="my_account-card">
-                  <div className="account-card__title">Could not load orders</div>
-                  <div className="account-card__text">Please refresh or try again later.</div>
-                </div>
-              )}
               {(initialOrdersSkeleton || (ordersLoading && orders.length === 0)) && (
                 <div className="orders-layout">
                   <div className="orders-list">
@@ -341,12 +361,6 @@ export default function ViewAccount() {
                 <div className="section-title">Shipping Addresses</div>
                 <div className="section-subtitle">Manage saved shipping details associated with your orders.</div>
               </div>
-              {shippingError && (
-                <div className="my_account-card">
-                  <div className="account-card__title">Could not load shipping details</div>
-                  <div className="account-card__text">Please refresh or try again later.</div>
-                </div>
-              )}
               {(initialAddressesSkeleton || (shippingLoading && shippingItems.length === 0)) && (
                 <div className="orders-layout">
                   <div className="orders-list addresses-list">

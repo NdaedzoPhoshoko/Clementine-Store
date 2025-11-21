@@ -39,7 +39,7 @@ export default function CartList({ items = [], meta = {}, loading = false, error
       <div className="cart-list">
         <div className="cart-list__error">
           <p>Failed to load your cart: {String(error)}</p>
-          <button className="cart-list__retry" onClick={refresh}>Try again</button>
+          <button onClick={refresh}>Try again</button>
         </div>
       </div>
     );

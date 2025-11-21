@@ -26,6 +26,19 @@ export default function Cart() {
   const { items: ctxItems, meta: ctxMeta, setItems: setCtxItems, updateItemQuantity, hydrate } = useCart();
   const [errorModalMsg, setErrorModalMsg] = useState('');
   const closeErrorModal = () => setErrorModalMsg('');
+  const formatUiError = (err, ctx) => {
+    if (!err) return '';
+    const raw = typeof err === 'string' ? err : (err?.message || 'Unexpected error');
+    const offline = typeof navigator !== 'undefined' && navigator && navigator.onLine === false;
+    if (offline) return `${ctx}: Network is offline — check your connection and refresh the page.`;
+    const m = String(raw).toLowerCase();
+    if (m.includes('failed to fetch')) return `${ctx}: Network error — please check your connection and refresh the page.`;
+    if (m.startsWith('http 5') || m.includes('http 5')) return `${ctx}: Server error — please try again later.`;
+    if (m.startsWith('http 4') || m.includes('http 4')) return `${ctx}: Request error — please refresh the page and try again.`;
+    if (m.includes('unexpected content-type')) return `${ctx}: Unexpected server response — refresh the page and try again.`;
+    if (m.includes('refresh failed') || m.includes('session expired')) return `${ctx}: Session issue — please sign in again.`;
+    return `${ctx}: Something went wrong — please refresh the page or try again.`;
+  };
 
   // Local visible items to support optimistic removal controlled at the page level
   const [visibleItems, setVisibleItems] = useState(items);
@@ -125,8 +138,7 @@ export default function Cart() {
       } catch (err) {
         setVisibleItems(prev);
         setCtxItems(prev);
-        const msg = err?.message || err || 'Failed to remove item.';
-        setErrorModalMsg(String(msg));
+        setErrorModalMsg(formatUiError(err, 'Cart'));
       }
     })();
   };
@@ -140,8 +152,7 @@ export default function Cart() {
         await updateQuantity(id, Number(nextQty));
         await refresh();
       } catch (err) {
-        const msg = err?.message || err || 'Failed to update quantity.';
-        setErrorModalMsg(String(msg));
+        setErrorModalMsg(formatUiError(err, 'Cart'));
       }
     }, 400);
     qtyTimersRef.current = timers;
@@ -162,8 +173,7 @@ export default function Cart() {
 
   useEffect(() => {
     if (error) {
-      const msg = typeof error === 'string' ? error : (error?.message || 'Failed to load your cart.');
-      setErrorModalMsg(String(msg));
+      setErrorModalMsg(formatUiError(error, 'Cart'));
     }
   }, [error]);
 
