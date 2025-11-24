@@ -33,6 +33,7 @@ export default function ViewAccount() {
   const [addrEdit, setAddrEdit] = useState({ open: false, orderId: null, shipping: null });
   const [initialOrdersSkeleton, setInitialOrdersSkeleton] = useState(true);
   const [initialAddressesSkeleton, setInitialAddressesSkeleton] = useState(false);
+  const [initialProfileSkeleton, setInitialProfileSkeleton] = useState(true);
   const [detailInitialSkeleton, setDetailInitialSkeleton] = useState(false);
   const [errorModalMsg, setErrorModalMsg] = useState('');
   const formatUiError = (err, ctx) => {
@@ -112,6 +113,14 @@ export default function ViewAccount() {
     if (active === 'addresses') {
       setInitialAddressesSkeleton(true);
       const t = setTimeout(() => setInitialAddressesSkeleton(false), 450);
+      return () => clearTimeout(t);
+    }
+  }, [active]);
+
+  React.useEffect(() => {
+    if (active === 'profile') {
+      setInitialProfileSkeleton(true);
+      const t = setTimeout(() => setInitialProfileSkeleton(false), 450);
       return () => clearTimeout(t);
     }
   }, [active]);
@@ -207,32 +216,48 @@ export default function ViewAccount() {
                 <div className="section-title">Profile</div>
                 <div className="section-subtitle">Update your name and email.</div>
               </div>
-              <div className="my_account-card">
-                <form className="profile-form" onSubmit={onSubmitProfile}>
+              {initialProfileSkeleton ? (
+                <div className="my_account-card">
+                  <div className="skeleton-line skeleton-title" />
                   <div className="form-row">
-                    <label className="form-label" htmlFor="pf-name">Name</label>
-                    <input id="pf-name" className="form-input" type="text" value={nameInput} onChange={(e) => setNameInput(e.target.value)} placeholder="Your name" autoComplete="name" />
+                    <div className="skeleton-line skeleton-text" style={{ width: '96px' }} />
+                    <div className="skeleton-line skeleton-text" style={{ width: '100%', height: 36, marginTop: 8 }} />
                   </div>
-                  <div className="form-row">
-                    <label className="form-label" htmlFor="pf-email">Email</label>
-                    <input id="pf-email" className="form-input" type="email" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} placeholder="you@example.com" autoComplete="email" />
+                  <div className="form-row" style={{ marginTop: 12 }}>
+                    <div className="skeleton-line skeleton-text" style={{ width: '96px' }} />
+                    <div className="skeleton-line skeleton-text" style={{ width: '100%', height: 36, marginTop: 8 }} />
                   </div>
-                  {(profileError || profileSuccessMsg) && (
-                    <div className={`form-banner ${profileError ? 'form-banner--error' : 'form-banner--success'}`}
-                         role="status" aria-live="polite">
-                      {profileError ? formatUiError(profileError, 'Profile') : String(profileSuccessMsg)}
+                  <div className="skeleton-line skeleton-btn" style={{ width: 140, marginTop: 16 }} />
+                  <div className="skeleton-line skeleton-btn" style={{ width: 90, marginTop: 8 }} />
+                </div>
+              ) : (
+                <div className="my_account-card">
+                  <form className="profile-form" onSubmit={onSubmitProfile}>
+                    <div className="form-row">
+                      <label className="form-label" htmlFor="pf-name">Name</label>
+                      <input id="pf-name" className="form-input" type="text" value={nameInput} onChange={(e) => setNameInput(e.target.value)} placeholder="Your name" autoComplete="name" />
                     </div>
-                  )}
-                  <div className="form-actions">
-                    <button type="submit" className="account-btn account-btn--dark" disabled={updatingProfile}>
-                      {updatingProfile ? 'Saving…' : 'Save changes'}
-                    </button>
-                    <button type="button" className="account-btn account-btn--light" onClick={onResetProfile} disabled={updatingProfile}>
-                      Reset
-                    </button>
-                  </div>
-                </form>
-              </div>
+                    <div className="form-row">
+                      <label className="form-label" htmlFor="pf-email">Email</label>
+                      <input id="pf-email" className="form-input" type="email" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} placeholder="you@example.com" autoComplete="email" />
+                    </div>
+                    {(profileError || profileSuccessMsg) && (
+                      <div className={`form-banner ${profileError ? 'form-banner--error' : 'form-banner--success'}`}
+                           role="status" aria-live="polite">
+                        {profileError ? formatUiError(profileError, 'Profile') : String(profileSuccessMsg)}
+                      </div>
+                    )}
+                    <div className="form-actions">
+                      <button type="submit" className="account-btn account-btn--dark" disabled={updatingProfile}>
+                        {updatingProfile ? 'Saving…' : 'Save changes'}
+                      </button>
+                      <button type="button" className="account-btn account-btn--light" onClick={onResetProfile} disabled={updatingProfile}>
+                        Reset
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
             </div>
           )}
           {active === 'orders' && (
