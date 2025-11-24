@@ -10,15 +10,22 @@ import useFetchMyShippingDetails from '../../hooks/useFetchMyShippingDetails.js'
 import PaginationBar from '../../components/pagination/PaginationBar.jsx';
 import useUpdateOrderShipping from '../../hooks/useUpdateOrderShipping.js';
 import ErrorModal from '../../components/modals/ErrorModal.jsx';
+import useAuthUser from '../../hooks/use_auth/useAuthUser.js';
+import useFetchUpdateProfile from '../../hooks/profile/useFetchUpdateProfile.js';
 
 export default function ViewAccount() {
-  const [active, setActive] = useState('orders');
+  const [active, setActive] = useState('profile');
   const { logout, loading: logoutLoading } = useAuthLogOut();
   const { clearCart } = useCart();
   const navigate = useNavigate();
   const { items: orders, loading: ordersLoading, error: ordersError, hasMore: ordersHasMore, refresh, page: ordersPage, meta: ordersMeta, setPage: setOrdersPage } = useFetchMyOrders({ initialPage: 1, limit: 10, enabled: active === 'orders' });
   const { items: shippingItems, loading: shippingLoading, error: shippingError, hasMore: shippingHasMore, page: shippingPage, meta: shippingMeta, setPage: setShippingPage, refresh: refreshShipping } = useFetchMyShippingDetails({ initialPage: 1, limit: 10, enabled: active === 'addresses' });
   const { update: updateOrderShipping } = useUpdateOrderShipping();
+  const { user } = useAuthUser();
+  const { update: updateProfile, loading: updatingProfile, error: profileError, data: profileData } = useFetchUpdateProfile();
+  const [nameInput, setNameInput] = useState('');
+  const [emailInput, setEmailInput] = useState('');
+  const [profileSuccessMsg, setProfileSuccessMsg] = useState('');
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const selectedOrder = useMemo(() => orders.find((o) => Number(o.id) === Number(selectedOrderId)) || null, [orders, selectedOrderId]);
   const [detailMotion, setDetailMotion] = useState(null);
@@ -107,6 +114,44 @@ export default function ViewAccount() {
     }
   }, [active]);
 
+  // Prefill profile form when navigating to Profile
+  useEffect(() => {
+    if (active === 'profile') {
+      const displayName = user?.name || user?.fullName || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || '';
+      setNameInput(String(displayName));
+      setEmailInput(String(user?.email || ''));
+      setProfileSuccessMsg('');
+    }
+  }, [active, user?.name, user?.fullName, user?.firstName, user?.lastName, user?.email]);
+
+  const onSubmitProfile = async (e) => {
+    e.preventDefault();
+    setProfileSuccessMsg('');
+    const payload = {};
+    const currentName = user?.name || '';
+    const currentEmail = user?.email || '';
+    if (nameInput.trim() !== '' && nameInput.trim() !== currentName) payload.name = nameInput.trim();
+    if (emailInput.trim() !== '' && emailInput.trim() !== currentEmail) payload.email = emailInput.trim();
+    if (!('name' in payload) && !('email' in payload)) {
+      setProfileSuccessMsg('No changes to save');
+      return;
+    }
+    try {
+      const res = await updateProfile(payload);
+      if (res && (res.name || res.email)) {
+        setProfileSuccessMsg('Profile updated');
+      }
+    } catch (_) {}
+  };
+
+  const onResetProfile = (e) => {
+    e.preventDefault();
+    const displayName = user?.name || user?.fullName || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || '';
+    setNameInput(String(displayName));
+    setEmailInput(String(user?.email || ''));
+    setProfileSuccessMsg('');
+  };
+
   const closeDetail = () => {
     setDetailMotion('exiting');
     setTimeout(() => {
@@ -136,6 +181,40 @@ export default function ViewAccount() {
         <section className="account-content" aria-live="polite">
           {Boolean(errorModalMsg) && (
             <ErrorModal message={errorModalMsg} onClose={closeErrorModal} durationMs={10000} />
+          )}
+          {active === 'profile' && (
+            <div className="account-section">
+              <div className="my_section-header">
+                <div className="section-title">Profile</div>
+                <div className="section-subtitle">Update your name and email.</div>
+              </div>
+              <div className="my_account-card">
+                <form className="profile-form" onSubmit={onSubmitProfile}>
+                  <div className="form-row">
+                    <label className="form-label" htmlFor="pf-name">Name</label>
+                    <input id="pf-name" className="form-input" type="text" value={nameInput} onChange={(e) => setNameInput(e.target.value)} placeholder="Your name" autoComplete="name" />
+                  </div>
+                  <div className="form-row">
+                    <label className="form-label" htmlFor="pf-email">Email</label>
+                    <input id="pf-email" className="form-input" type="email" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} placeholder="you@example.com" autoComplete="email" />
+                  </div>
+                  {(profileError || profileSuccessMsg) && (
+                    <div className={`form-banner ${profileError ? 'form-banner--error' : 'form-banner--success'}`}
+                         role="status" aria-live="polite">
+                      {profileError ? String(profileError) : String(profileSuccessMsg)}
+                    </div>
+                  )}
+                  <div className="form-actions">
+                    <button type="submit" className="account-btn account-btn--dark" disabled={updatingProfile}>
+                      {updatingProfile ? 'Saving…' : 'Save changes'}
+                    </button>
+                    <button type="button" className="account-btn account-btn--light" onClick={onResetProfile} disabled={updatingProfile}>
+                      Reset
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
           )}
           {active === 'orders' && (
             <div className="account-section">

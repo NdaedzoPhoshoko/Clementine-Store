@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { authStorage } from '../../hooks/use_auth/authStorage.js';
+import useAuthUser from '../../hooks/use_auth/useAuthUser.js';
 import './AccountAvatar.css';
 
 function getInitialsFromName(name) {
@@ -16,8 +16,7 @@ function getInitialsFromName(name) {
 }
 
 export default function AccountAvatar({ asLink = true, onClick }) {
-  const user = authStorage.getUser();
-  const isAuthed = authStorage.isAuthenticated();
+  const { user, isAuthed } = useAuthUser();
   const displayName = user?.name || user?.fullName || [user?.firstName, user?.lastName].filter(Boolean).join(' ');
   const initials = getInitialsFromName(displayName);
 

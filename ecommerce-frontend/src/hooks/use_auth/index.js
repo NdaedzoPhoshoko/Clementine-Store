@@ -4,3 +4,4 @@ export { default as useAuthLogOut } from './useAuthLogOut';
 export { default as useAuthRefresh } from './useAuthRefresh';
 export { default as useSessionExpiry } from './useSessionExpiry';
 export { authStorage } from './authStorage';
+export { default as useAuthUser } from './useAuthUser';

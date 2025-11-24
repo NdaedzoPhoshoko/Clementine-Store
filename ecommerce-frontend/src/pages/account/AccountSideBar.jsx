@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import './AccountSideBar.css';
-import { authStorage } from '../../hooks/use_auth/authStorage.js';
+import useAuthUser from '../../hooks/use_auth/useAuthUser.js';
 
 export default function AccountSideBar({ active, onSelect }) {
   const [initialSkeleton, setInitialSkeleton] = useState(true);
-  const user = authStorage.getUser();
+  const { user } = useAuthUser();
   const displayName = user?.name || user?.fullName || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Guest';
   const initials = (() => {
     const parts = String(displayName).trim().split(/\s+/).filter(Boolean);
@@ -37,7 +37,19 @@ export default function AccountSideBar({ active, onSelect }) {
 
   return (
     <aside className="account-sidebar" aria-label="Account navigation">
-      <div className="account-sidebar__user">
+      <div
+        className="account-sidebar__user"
+        role="button"
+        tabIndex={0}
+        aria-label="Open profile"
+        onClick={() => onSelect && onSelect('profile')}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onSelect && onSelect('profile');
+          }
+        }}
+      >
         {initialSkeleton ? (
           <>
             <span className="sidebar-avatar__circle skeleton-avatar" aria-hidden="true" />
