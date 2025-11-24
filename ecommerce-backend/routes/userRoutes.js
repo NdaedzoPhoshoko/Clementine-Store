@@ -1,5 +1,5 @@
 import express from "express";
-import { getUsers, registerUser, loginUser, getMe, getUserById, updateUserById } from "../controllers/userController.js";
+import { getUsers, registerUser, loginUser, getMe, getUserById, updateUserById, updateMe } from "../controllers/userController.js";
 import { protect, requireSelfOrAdmin } from "../middleware/auth.js";
 const router = express.Router();
 
@@ -78,6 +78,51 @@ router.post("/login", loginUser);
  *         description: Current user's profile
  */
 router.get("/me", protect, getMe);
+
+/**
+ * @swagger
+ * /api/users/me:
+ *   put:
+ *     summary: Update current user profile
+ *     tags:
+ *       - User Profile & Setting
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: New name for the user
+ *               email:
+ *                 type: string
+ *                 description: New email for the user (must be unique)
+ *     responses:
+ *       200:
+ *         description: Current user's profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id: { type: integer }
+ *                 name: { type: string }
+ *                 email: { type: string }
+ *                 created_at: { type: string, format: date-time }
+ *       400:
+ *         description: No fields provided or invalid data
+ *       409:
+ *         description: Email already in use by another user
+ *       401:
+ *         description: Not authorized
+ *       500:
+ *         description: Server error while updating profile
+ */
+router.put("/me", protect, updateMe);
 
 /**
  * @swagger

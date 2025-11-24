@@ -175,3 +175,60 @@ export const updateUserById = async (req, res) => {
     res.status(500).json({ message: "Error updating user" });
   }
 };
+
+export const updateMe = async (req, res) => {
+  try {
+    const tokenUserId = parseInt(req.user?.id, 10);
+    if (!tokenUserId) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
+    const existingRes = await pool.query(
+      "SELECT id, name, email, created_at FROM users WHERE id=$1",
+      [tokenUserId]
+    );
+    if (existingRes.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const existing = existingRes.rows[0];
+
+    const { name, email } = req.body || {};
+
+    if (typeof name === "undefined" && typeof email === "undefined") {
+      return res.status(400).json({ message: "No fields to update" });
+    }
+
+    if (typeof name !== "undefined") {
+      const trimmedName = String(name).trim();
+      if (!trimmedName) {
+        return res.status(400).json({ message: "Name cannot be empty" });
+      }
+      existing.name = trimmedName;
+    }
+
+    if (typeof email !== "undefined") {
+      const trimmedEmail = String(email).trim();
+      if (!trimmedEmail) {
+        return res.status(400).json({ message: "Email cannot be empty" });
+      }
+      const conflict = await pool.query(
+        "SELECT id FROM users WHERE email=$1 AND id<>$2",
+        [trimmedEmail, tokenUserId]
+      );
+      if (conflict.rows.length > 0) {
+        return res.status(409).json({ message: "Email already in use" });
+      }
+      existing.email = trimmedEmail;
+    }
+
+    const updateRes = await pool.query(
+      "UPDATE users SET name=$1, email=$2 WHERE id=$3 RETURNING id, name, email, created_at",
+      [existing.name, existing.email, tokenUserId]
+    );
+
+    return res.status(200).json(updateRes.rows[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error updating profile" });
+  }
+};
