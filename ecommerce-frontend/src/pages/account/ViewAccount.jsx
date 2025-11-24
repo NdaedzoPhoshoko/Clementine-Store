@@ -46,6 +46,8 @@ export default function ViewAccount() {
     if (m.startsWith('http 4') || m.includes('http 4')) return `${ctx}: Request error — please refresh the page and try again.`;
     if (m.includes('unexpected content-type')) return `${ctx}: Unexpected server response — refresh the page and try again.`;
     if (m.includes('refresh failed') || m.includes('session expired')) return `${ctx}: Session issue — please sign in again.`;
+    if (m.includes('email')) return `${ctx}: Please check the email address and try again.`;
+    if (m.includes('name')) return `${ctx}: Please check the name and try again.`;
     return `${ctx}: Something went wrong — please refresh the page or try again.`;
   };
   const orderStatusSteps = ['Pending', 'Shipped', 'Delivering', 'Delivered'];
@@ -124,6 +126,14 @@ export default function ViewAccount() {
     }
   }, [active, user?.name, user?.fullName, user?.firstName, user?.lastName, user?.email]);
 
+  // Show profile update errors in a readable modal
+  useEffect(() => {
+    if (profileError) {
+      const msg = formatUiError(profileError, 'Profile');
+      setErrorModalMsg(String(msg));
+    }
+  }, [profileError]);
+
   const onSubmitProfile = async (e) => {
     e.preventDefault();
     setProfileSuccessMsg('');
@@ -141,7 +151,10 @@ export default function ViewAccount() {
       if (res && (res.name || res.email)) {
         setProfileSuccessMsg('Profile updated');
       }
-    } catch (_) {}
+    } catch (err) {
+      const msg = formatUiError(err, 'Profile');
+      setErrorModalMsg(String(msg));
+    }
   };
 
   const onResetProfile = (e) => {
@@ -166,7 +179,13 @@ export default function ViewAccount() {
 
   const handleSelect = async (key) => {
     if (key === 'logout') {
-      try { await logout(); } catch {}
+      try {
+        await logout();
+      } catch (err) {
+        const msg = formatUiError(err, 'Logout');
+        setErrorModalMsg(String(msg));
+        return;
+      }
       try { clearCart(); } catch {}
       navigate('/');
       return;
@@ -201,7 +220,7 @@ export default function ViewAccount() {
                   {(profileError || profileSuccessMsg) && (
                     <div className={`form-banner ${profileError ? 'form-banner--error' : 'form-banner--success'}`}
                          role="status" aria-live="polite">
-                      {profileError ? String(profileError) : String(profileSuccessMsg)}
+                      {profileError ? formatUiError(profileError, 'Profile') : String(profileSuccessMsg)}
                     </div>
                   )}
                   <div className="form-actions">
