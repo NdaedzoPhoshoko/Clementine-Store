@@ -15,6 +15,7 @@ import SessionExpiryHandler from './components/auth/SessionExpiryHandler'
 import Cart from './pages/cart/Cart'
 import { CartProvider } from './hooks/for_cart/CartContext.jsx'
 import AboutUs from './pages/about_us/AboutUs.jsx'
+import Checkout from './pages/checkout/Checkout.jsx'
 
 function App() {
   return (
@@ -34,6 +35,8 @@ function App() {
               <Route path="/product/:id" element={<ProductPage />} />
               {/* Cart page */}
               <Route path="/cart" element={<Cart />} />
+              {/* Checkout page */}
+              <Route path="/cart/checkout" element={<Checkout />} />
               {/* Auth routes */}
               <Route path="/auth/login" element={<Login />} />
               <Route path="/auth/signup" element={<Signup />} />
