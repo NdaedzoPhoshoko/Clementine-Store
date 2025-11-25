@@ -134,6 +134,13 @@ export default function Checkout() {
       price: 15.15,
       qty: 2,
       thumb: '📗'
+    },
+    {
+      id: 3,
+      title: 'Atomic Habits by James Clear III',
+      price: 25.15,
+      qty: 1,
+      thumb: '📗'
     }
   ])
 
@@ -351,7 +358,7 @@ export default function Checkout() {
         {/* Right: Order Summary */}
         <aside className="summary-card">
           <h2 className="summary-title">Order Summary</h2>
-          <p className="summary-sub">Make sure your item is correct</p>
+          <p className="summary-sub">Make sure your order information is correct</p>
 
           {/* Items (preview first 2) */}
           <div className="items-list">
@@ -361,9 +368,7 @@ export default function Checkout() {
                 <div className="item-info">
                   <div className="item-title">{it.title}</div>
                   <div className="qty">
-                    <button className="qty-btn" onClick={() => dec(it.id)}>-</button>
                     <span className="qty-num">{it.qty}</span>
-                    <button className="qty-btn" onClick={() => inc(it.id)}>+</button>
                   </div>
                 </div>
                 <div className="price">{format(it.price * it.qty)}</div>

@@ -16,8 +16,15 @@ import Cart from './pages/cart/Cart'
 import { CartProvider } from './hooks/for_cart/CartContext.jsx'
 import AboutUs from './pages/about_us/AboutUs.jsx'
 import Checkout from './pages/checkout/Checkout.jsx'
+import { useEffect } from 'react'
+import useAuthRefresh from './hooks/use_auth/useAuthRefresh.js'
 
 function App() {
+  const { refresh } = useAuthRefresh();
+  useEffect(() => {
+    // Silent refresh on app load to sync UI session state
+    try { refresh({ silent: true }); } catch (_) {}
+  }, [refresh]);
   return (
     <CartProvider>
       <BrowserRouter>

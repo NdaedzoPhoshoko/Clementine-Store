@@ -14,11 +14,15 @@ const signRefreshToken = (id, tokenVersion = 0) => {
   });
 };
 
+// Persist refresh cookie for ~7 days (override via JWT_REFRESH_MAX_AGE_MS)
+const REFRESH_COOKIE_MAX_AGE_MS = Number.parseInt(process.env.JWT_REFRESH_MAX_AGE_MS || "", 10) || 7 * 24 * 60 * 60 * 1000;
+
 const refreshCookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
-  sameSite: "strict",
+  sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
   path: "/",
+  maxAge: REFRESH_COOKIE_MAX_AGE_MS,
 };
 
 export const refreshToken = async (req, res) => {

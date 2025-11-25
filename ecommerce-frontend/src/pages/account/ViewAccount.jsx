@@ -409,7 +409,7 @@ export default function ViewAccount() {
                             <div className="order-detail__summary">
                               <div className="kv"><div className="kv__label">Order Number</div><div className="kv__value">{selectedOrder.id}</div></div>
                               <div className="kv"><div className="kv__label">Placed On</div><div className="kv__value">{fmtDate(selectedOrder.created_at)}</div></div>
-                              <div className="kv"><div className="kv__label">Current Status</div><div className="kv__value">{selectedOrder.payment_status}</div></div>
+                              <div className="kv"><div className="kv__label">Payment Status</div><div className="kv__value">{selectedOrder.payment_status}</div></div>
                               <div className="kv"><div className="kv__label">Order Total</div><div className="kv__value">{fmtPrice(selectedOrder?.meta?.total ?? selectedOrder.total_price)}</div></div>
                               <div className="kv"><div className="kv__label">Items</div><div className="kv__value">{Number(selectedOrder?.meta?.itemsCount ?? (Array.isArray(selectedOrder.items) ? selectedOrder.items.reduce((s, it) => s + Number(it.quantity || 0), 0) : 0))}</div></div>
                             </div>
