@@ -1,10 +1,17 @@
 import React, { useMemo, useState, useEffect } from 'react'
 import './Checkout.css'
+import { useLocation } from 'react-router-dom'
+import { useCart } from '../../hooks/for_cart/CartContext.jsx'
+import useFetchMyShippingDetails from '../../hooks/useFetchMyShippingDetails.js'
 
 // Currency formatter (Rand)
 const format = (n) => `R${Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 export default function Checkout() {
+  const location = useLocation();
+  const { items: cartItems } = useCart();
+  const { items: shippingItems } = useFetchMyShippingDetails({ enabled: true });
+
   // Payment method selection
   const [method, setMethod] = useState('card')
 
@@ -68,6 +75,25 @@ export default function Checkout() {
     return () => window.removeEventListener('keydown', onKey)
   }, [confirmOpen])
   
+  // Save current card to saved cards when requested
+  const handlePay = () => {
+    const ready = isValidExp(card.exp) && isValidCvv(card.cvv) && card.name.trim() && card.number.trim()
+    if (!ready) return
+    if (saveCardChecked) {
+      const brand = detectBrand(card.number)
+      const id = `c_${Date.now()}`
+      const entry = { id, brand, name: card.name.trim(), number: card.number.replace(/\s+/g, ' ').trim(), exp: card.exp }
+      setSavedCards((prev) => {
+        const digits = card.number.replace(/\D/g, '')
+        const last4 = digits.slice(-4)
+        const exists = prev.some((c) => c.number.replace(/\D/g, '').slice(-4) === last4 && c.name === entry.name && c.exp === entry.exp)
+        const next = exists ? prev : [...prev, entry]
+        persistSavedCards(next)
+        return next
+      })
+    }
+    // In a real integration, we would call the payment API here
+  }
 
   // EFT/bank accounts removed per request
 
@@ -107,7 +133,7 @@ export default function Checkout() {
     return 'unknown'
   }
 
-  // Shipping details with edit toggle (aligned to account addresses schema)
+  // Shipping details with edit toggle (prefill from saved shipping if available)
   const [shipping, setShipping] = useState({
     name: 'Angeline Wayne',
     address: '45 Rose Ave, Sunnyside',
@@ -119,39 +145,43 @@ export default function Checkout() {
   const [email, setEmail] = useState('angeline@example.com')
   const [editingShip, setEditingShip] = useState(false)
 
-  // Cart preview (two+ items)
-  const [items, setItems] = useState([
-    {
-      id: 1,
-      title: 'The Mountain is You by Brianna Wiest',
-      price: 15.15,
-      qty: 1,
-      thumb: '📘'
-    },
-    {
-      id: 2,
-      title: 'Atomic Habits by James Clear',
-      price: 15.15,
-      qty: 2,
-      thumb: '📗'
-    },
-    {
-      id: 3,
-      title: 'Atomic Habits by James Clear III',
-      price: 25.15,
-      qty: 1,
-      thumb: '📗'
+  useEffect(() => {
+    const arr = Array.isArray(shippingItems) ? shippingItems : []
+    if (arr.length > 0) {
+      const s = arr[0]
+      setShipping({
+        name: s.name || shipping.name,
+        address: s.address || shipping.address,
+        city: s.city || shipping.city,
+        province: s.province || shipping.province,
+        postal_code: s.postal_code || shipping.postal_code,
+        phone_number: s.phone_number || shipping.phone_number
+      })
     }
-  ])
+  }, [shippingItems])
+
+  // Items from navigation state or cart context
+  const [items, setItems] = useState([])
+  const [showAllItems, setShowAllItems] = useState(false)
+  useEffect(() => {
+    const fromState = Array.isArray(location?.state?.items) ? location.state.items : null
+    const src = fromState || cartItems
+    const mapped = Array.isArray(src)
+      ? src.map((it, idx) => ({
+          id: it.cart_item_id || it.product_id || idx,
+          title: it.name || it.title || 'Item',
+          price: Number(it.price) || 0,
+          qty: Number(it.quantity || it.qty || 1),
+          image_url: typeof it.image_url === 'string' ? it.image_url : ''
+        }))
+      : []
+    setItems(mapped)
+  }, [location?.state?.items, cartItems])
 
   // Coupon
   const [coupon, setCoupon] = useState('GRATISONGKR')
 
-  // Quantity handlers
-  const inc = (id) =>
-    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, qty: it.qty + 1 } : it)))
-  const dec = (id) =>
-    setItems((prev) => prev.map((it) => (it.id === id && it.qty > 1 ? { ...it, qty: it.qty - 1 } : it)))
+  // Quantity handlers removed; qty is read-only in summary
 
   const subtotal = useMemo(() => items.reduce((sum, it) => sum + it.price * it.qty, 0), [items])
   const tax = useMemo(() => subtotal * 0.15, [subtotal])
@@ -360,11 +390,17 @@ export default function Checkout() {
           <h2 className="summary-title">Order Summary</h2>
           <p className="summary-sub">Make sure your order information is correct</p>
 
-          {/* Items (preview first 2) */}
-          <div className="items-list">
-            {items.slice(0, 2).map((it) => (
+          {/* Items (preview first 2, expandable) */}
+          <div className={`items-list ${showAllItems ? 'scroll' : ''}`}>
+            {(showAllItems ? items : items.slice(0, 2)).map((it) => (
               <div className="item" key={it.id}>
-                <div className="thumb">{it.thumb}</div>
+                <div className="thumb">
+                  {it.image_url ? (
+                    <img src={it.image_url} alt={it.title} />
+                  ) : (
+                    <span role="img" aria-label="package">📦</span>
+                  )}
+                </div>
                 <div className="item-info">
                   <div className="item-title">{it.title}</div>
                   <div className="qty">
@@ -374,12 +410,27 @@ export default function Checkout() {
                 <div className="price">{format(it.price * it.qty)}</div>
               </div>
             ))}
-            {items.length > 2 && (
-              <div className="items-more">+ {items.length - 2} more</div>
+            {items.length > 2 && !showAllItems && (
+              <button
+                type="button"
+                className="items-more"
+                onClick={() => setShowAllItems(true)}
+                aria-label={`Show ${items.length - 2} more items`}
+              >
+                + {items.length - 2} more
+              </button>
+            )}
+            {items.length > 2 && showAllItems && (
+              <button
+                type="button"
+                className="items-more"
+                onClick={() => setShowAllItems(false)}
+                aria-label="Show fewer items"
+              >
+                Show less
+              </button>
             )}
           </div>
-
-          {/* Coupon section removed per request */}
 
           {/* Optional Shipping Details (view + edit) */}
           <div className="shipping-block">
@@ -391,12 +442,15 @@ export default function Checkout() {
             </div>
             {!editingShip ? (
               <div className="ship-view">
-                <div>{shipping.name}</div>
-                <div>{shipping.address}</div>
-                <div>{shipping.city}</div>
-                <div>{shipping.province} {shipping.postal_code}</div>
-                <div>{shipping.phone_number ? `Phone: ${shipping.phone_number}` : ''}</div>
-                <div>{email}</div>
+                <div><span className="field-label">Email:</span> <span className="field-value">{email}</span></div>
+                <div><span className="field-label">Recipient:</span> <span className="field-value">{shipping.name}</span></div>
+                <div><span className="field-label">Address:</span> <span className="field-value">{shipping.address}</span></div>
+                <div><span className="field-label">City:</span> <span className="field-value">{shipping.city}</span></div>
+                <div><span className="field-label">Province:</span> <span className="field-value">{shipping.province}</span></div>
+                <div><span className="field-label">Postal code:</span> <span className="field-value">{shipping.postal_code}</span></div>
+                {shipping.phone_number && (
+                  <div><span className="field-label">Phone:</span> <span className="field-value">{shipping.phone_number}</span></div>
+                )}
               </div>
             ) : (
               <div className="ship-edit">
@@ -482,22 +536,3 @@ export default function Checkout() {
     </div>
   )
 }
-  // Save current card to saved cards when requested
-  const handlePay = () => {
-    const ready = isValidExp(card.exp) && isValidCvv(card.cvv) && card.name.trim() && card.number.trim()
-    if (!ready) return
-    if (saveCardChecked) {
-      const brand = detectBrand(card.number)
-      const id = `c_${Date.now()}`
-      const entry = { id, brand, name: card.name.trim(), number: card.number.replace(/\s+/g, ' ').trim(), exp: card.exp }
-      setSavedCards((prev) => {
-        const digits = card.number.replace(/\D/g, '')
-        const last4 = digits.slice(-4)
-        const exists = prev.some((c) => c.number.replace(/\D/g, '').slice(-4) === last4 && c.name === entry.name && c.exp === entry.exp)
-        const next = exists ? prev : [...prev, entry]
-        persistSavedCards(next)
-        return next
-      })
-    }
-    // In a real integration, we would call the payment API here
-  }

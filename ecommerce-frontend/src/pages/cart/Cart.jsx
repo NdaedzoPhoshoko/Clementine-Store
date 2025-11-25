@@ -7,7 +7,7 @@ import useUpdateCartItemQuantity from '../../hooks/for_cart/useUpdateCartItemQua
 import { useCart } from '../../hooks/for_cart/CartContext.jsx';
 import { createPortal } from 'react-dom'
 import authStorage from '../../hooks/use_auth/authStorage.js'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import ErrorModal from '../../components/modals/ErrorModal.jsx'
 
 const toNumber = (v) => (typeof v === 'string' ? parseFloat(v) : Number(v));
@@ -39,6 +39,8 @@ export default function Cart() {
     if (m.includes('refresh failed') || m.includes('session expired')) return `${ctx}: Session issue — please sign in again.`;
     return `${ctx}: Something went wrong — please refresh the page or try again.`;
   };
+
+  const navigate = useNavigate();
 
   // Local visible items to support optimistic removal controlled at the page level
   const [visibleItems, setVisibleItems] = useState(items);
@@ -103,9 +105,9 @@ export default function Cart() {
   const canCheckout = !loading && !error && (visibleItems?.length || 0) > 0;
 
   const onCheckout = () => {
-    // Placeholder: navigate to checkout or trigger flow
-    // e.g., useNavigate('/checkout') if router is set up
-    alert('Proceeding to checkout...');
+    const list = Array.isArray((ctxItems || [])) ? ctxItems : [];
+    // Pass raw cart items to checkout; it will map and compute totals
+    navigate('/cart/checkout', { state: { items: list } });
   };
 
   const onRequestDelete = (item) => {
