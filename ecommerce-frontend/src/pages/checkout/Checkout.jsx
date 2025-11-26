@@ -145,6 +145,21 @@ export default function Checkout() {
   const [email, setEmail] = useState('angeline@example.com')
   const [editingShip, setEditingShip] = useState(false)
 
+  // Prefer shipping from navigation state when continuing checkout
+  useEffect(() => {
+    const s = location?.state?.shipping
+    if (s && typeof s === 'object') {
+      setShipping((prev) => ({
+        name: s.name || prev.name,
+        address: s.address || prev.address,
+        city: s.city || prev.city,
+        province: s.province || prev.province,
+        postal_code: s.postal_code || prev.postal_code,
+        phone_number: s.phone_number || prev.phone_number,
+      }))
+    }
+  }, [location?.state?.shipping])
+
   useEffect(() => {
     const arr = Array.isArray(shippingItems) ? shippingItems : []
     if (arr.length > 0) {
