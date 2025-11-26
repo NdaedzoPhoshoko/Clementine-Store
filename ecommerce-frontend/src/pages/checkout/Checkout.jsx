@@ -272,7 +272,7 @@ export default function Checkout() {
                 <input
                   id="cc_number"
                   className="form-control"
-                  placeholder="1234 5678 9101 1121"
+                  placeholder="0000 0000 0000 0000"
                   value={card.number}
                   onChange={(e) => setCard({ ...card, number: e.target.value })}
                 />
