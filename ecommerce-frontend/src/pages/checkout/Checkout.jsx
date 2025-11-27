@@ -3,6 +3,8 @@ import './Checkout.css'
 import { useLocation } from 'react-router-dom'
 import { useCart } from '../../hooks/for_cart/CartContext.jsx'
 import useFetchMyShippingDetails from '../../hooks/useFetchMyShippingDetails.js'
+import useCreatePaymentIntent from '../../hooks/payment/useCreatePaymentIntent.js'
+import useConfirmPaymentIntent from '../../hooks/payment/useConfirmPaymentIntent.js'
 
 // Currency formatter (Rand)
 const format = (n) => `R${Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -78,7 +80,8 @@ export default function Checkout() {
   // Save current card to saved cards when requested
   const handlePay = () => {
     const ready = isValidExp(card.exp) && isValidCvv(card.cvv) && card.name.trim() && card.number.trim()
-    if (!ready) return
+    const orderId = Number(location?.state?.orderId || 0)
+    if (!ready || !orderId) return
     if (saveCardChecked) {
       const brand = detectBrand(card.number)
       const id = `c_${Date.now()}`
@@ -92,7 +95,20 @@ export default function Checkout() {
         return next
       })
     }
-    // In a real integration, we would call the payment API here
+    const run = async () => {
+      try {
+        setPaying(true)
+        const intentRes = await createPaymentIntent({ orderId })
+        const intentId = String(intentRes?.payment_intent_id || '')
+        if (!intentId) throw new Error('Missing payment_intent_id')
+        await confirmPaymentIntent({ orderId, paymentIntentId: intentId })
+        setPaying(false)
+        setPaymentDone(true)
+      } catch (_) {
+        setPaying(false)
+      }
+    }
+    run()
   }
 
   // EFT/bank accounts removed per request
@@ -201,6 +217,11 @@ export default function Checkout() {
   const subtotal = useMemo(() => items.reduce((sum, it) => sum + it.price * it.qty, 0), [items])
   const tax = useMemo(() => subtotal * 0.15, [subtotal])
   const total = useMemo(() => subtotal + tax, [subtotal, tax])
+
+  const { createPaymentIntent, loading: creatingIntent } = useCreatePaymentIntent()
+  const { confirmPaymentIntent, loading: confirmingIntent } = useConfirmPaymentIntent()
+  const [paying, setPaying] = useState(false)
+  const [paymentDone, setPaymentDone] = useState(false)
 
   return (
     <div className="checkout-page">
@@ -371,11 +392,11 @@ export default function Checkout() {
 
           <button
             className="pay-btn"
-            disabled={!(isValidExp(card.exp) && isValidCvv(card.cvv) && card.name.trim() && card.number.trim())}
-            aria-disabled={!(isValidExp(card.exp) && isValidCvv(card.cvv) && card.name.trim() && card.number.trim())}
+            disabled={!(isValidExp(card.exp) && isValidCvv(card.cvv) && card.name.trim() && card.number.trim()) || paying || creatingIntent || confirmingIntent || !Number(location?.state?.orderId || 0)}
+            aria-disabled={!(isValidExp(card.exp) && isValidCvv(card.cvv) && card.name.trim() && card.number.trim()) || paying || creatingIntent || confirmingIntent || !Number(location?.state?.orderId || 0)}
             onClick={handlePay}
           >
-            Pay {format(total)}
+            {paying || creatingIntent || confirmingIntent ? 'Processing…' : (paymentDone ? 'Paid' : `Pay ${format(total)}`)}
           </button>
 
           {confirmOpen && (

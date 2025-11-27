@@ -29,6 +29,8 @@ const allowedOrigins = [
 ];
 
 app.use(cors({ origin: allowedOrigins, credentials: true }));
+// Use raw body for Stripe webhook before JSON parser
+app.use("/api/payments/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
 app.use(cookieParser());
 

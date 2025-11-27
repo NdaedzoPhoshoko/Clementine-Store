@@ -1,4 +1,8 @@
 import pool from "../config/db.js";
+import Stripe from "stripe";
+
+const stripeSecret = process.env.STRIPE_SECRET_KEY || "";
+const stripe = stripeSecret ? new Stripe(stripeSecret) : null;
 
 export const createPayment = async (req, res) => {
   try {
@@ -136,4 +140,183 @@ const isAdminUser = async (userId) => {
     }
   } catch (_) {}
   return false;
+};
+
+export const createPaymentIntent = async (req, res) => {
+  try {
+    const userId = parseInt(req.user?.id, 10);
+    const orderId = parseInt(req.body?.order_id, 10);
+
+    if (!userId || userId <= 0) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+    if (!orderId || orderId <= 0) {
+      return res.status(400).json({ message: "Invalid order_id" });
+    }
+    if (!stripe) {
+      return res.status(500).json({ message: "Stripe not configured" });
+    }
+
+    const orderRes = await pool.query(
+      "SELECT id, user_id, total_price, payment_status FROM orders WHERE id=$1",
+      [orderId]
+    );
+    if (orderRes.rows.length === 0) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+    const order = orderRes.rows[0];
+    if (order.user_id !== userId) {
+      return res.status(403).json({ message: "Forbidden: order does not belong to user" });
+    }
+    if (order.payment_status === "PAID") {
+      return res.status(400).json({ message: "Order already paid" });
+    }
+
+    const amountCents = Math.round(Number(order.total_price) * 100);
+    if (!Number.isFinite(amountCents) || amountCents <= 0) {
+      return res.status(400).json({ message: "Invalid order total" });
+    }
+
+    const intent = await stripe.paymentIntents.create(
+      {
+        amount: amountCents,
+        currency: "zar",
+        automatic_payment_methods: { enabled: true },
+        metadata: { orderId: String(orderId), userId: String(userId) },
+      },
+      { idempotencyKey: `order-${orderId}` }
+    );
+
+    const paymentRes = await pool.query(
+      `INSERT INTO payments (order_id, amount, method, transaction_id, payment_status)
+       VALUES ($1, $2, $3, $4, 'PENDING')
+       RETURNING id, order_id, amount, method, transaction_id, payment_status, created_at`,
+      [orderId, Number(order.total_price), "STRIPE", intent.id]
+    );
+    const payment = paymentRes.rows[0];
+
+    return res.status(201).json({ client_secret: intent.client_secret, payment_intent_id: intent.id, payment });
+  } catch (err) {
+    console.error("Create PaymentIntent error:", err.message);
+    return res.status(500).json({ message: "Error creating payment intent" });
+  }
+};
+
+export const stripeWebhook = async (req, res) => {
+  try {
+    const sig = req.headers["stripe-signature"];
+    const whSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
+    if (!whSecret) {
+      return res.status(500).send("Webhook not configured");
+    }
+    if (!stripe) {
+      return res.status(500).send("Stripe not configured");
+    }
+
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig, whSecret);
+    } catch (err) {
+      console.error("Webhook signature verification failed:", err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    switch (event.type) {
+      case "payment_intent.succeeded": {
+        const intent = event.data.object;
+        const txId = intent.id;
+        try {
+          const payRes = await pool.query(
+            "SELECT order_id FROM payments WHERE transaction_id=$1",
+            [txId]
+          );
+          if (payRes.rows.length > 0) {
+            const orderId = payRes.rows[0].order_id;
+            await pool.query("UPDATE payments SET payment_status='SUCCEEDED' WHERE transaction_id=$1", [txId]);
+            await pool.query("UPDATE orders SET payment_status='PAID' WHERE id=$1", [orderId]);
+          }
+        } catch (e) {
+          console.error("Webhook update failed:", e.message);
+        }
+        break;
+      }
+      case "payment_intent.payment_failed": {
+        const intent = event.data.object;
+        const txId = intent.id;
+        try {
+          await pool.query("UPDATE payments SET payment_status='FAILED' WHERE transaction_id=$1", [txId]);
+        } catch (e) {
+          console.error("Webhook fail update error:", e.message);
+        }
+        break;
+      }
+      default:
+        break;
+    }
+
+    return res.status(200).send("ok");
+  } catch (err) {
+    console.error("Stripe webhook error:", err.message);
+    return res.status(500).send("server error");
+  }
+};
+
+export const confirmPaymentIntent = async (req, res) => {
+  try {
+    const userId = parseInt(req.user?.id, 10);
+    const orderId = parseInt(req.body?.order_id, 10);
+    const intentId = String(req.body?.payment_intent_id || '').trim();
+    if (!userId || userId <= 0) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+    if (!orderId || orderId <= 0 || !intentId) {
+      return res.status(400).json({ message: "Invalid order_id or payment_intent_id" });
+    }
+    if (!stripe) {
+      return res.status(500).json({ message: "Stripe not configured" });
+    }
+
+    const orderRes = await pool.query(
+      "SELECT id, user_id, total_price, payment_status FROM orders WHERE id=$1",
+      [orderId]
+    );
+    if (orderRes.rows.length === 0) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+    const order = orderRes.rows[0];
+    if (order.user_id !== userId) {
+      return res.status(403).json({ message: "Forbidden: order does not belong to user" });
+    }
+
+    let intent = await stripe.paymentIntents.retrieve(intentId);
+    if (!intent || intent.status !== "succeeded") {
+      try {
+        intent = await stripe.paymentIntents.confirm(intentId, { payment_method: 'pm_card_visa' });
+      } catch (e) {
+        return res.status(400).json({ message: "Payment not succeeded" });
+      }
+    }
+
+    const amountCents = Math.round(Number(order.total_price) * 100);
+    if (Number(intent.amount_received || intent.amount) !== amountCents) {
+      return res.status(400).json({ message: "Amount mismatch" });
+    }
+    if (intent.metadata && intent.metadata.orderId && Number(intent.metadata.orderId) !== Number(orderId)) {
+      return res.status(400).json({ message: "OrderId metadata mismatch" });
+    }
+
+    await pool.query("UPDATE payments SET payment_status='SUCCEEDED' WHERE transaction_id=$1", [intentId]);
+    await pool.query("UPDATE orders SET payment_status='PAID' WHERE id=$1", [orderId]);
+
+    const payRes = await pool.query(
+      `SELECT id, order_id, amount, method, transaction_id, payment_status, created_at FROM payments WHERE transaction_id=$1`,
+      [intentId]
+    );
+    const payment = payRes.rows[0] || null;
+
+    return res.status(200).json({ order: { id: order.id, payment_status: 'PAID', total_price: Number(order.total_price) }, payment });
+  } catch (err) {
+    console.error("Confirm PaymentIntent error:", err.message);
+    return res.status(500).json({ message: "Error confirming payment" });
+  }
 };
