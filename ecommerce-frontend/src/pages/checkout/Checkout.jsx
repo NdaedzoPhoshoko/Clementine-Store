@@ -1,16 +1,18 @@
 import React, { useMemo, useState, useEffect } from 'react'
 import './Checkout.css'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useCart } from '../../hooks/for_cart/CartContext.jsx'
 import useFetchMyShippingDetails from '../../hooks/useFetchMyShippingDetails.js'
 import useCreatePaymentIntent from '../../hooks/payment/useCreatePaymentIntent.js'
 import useConfirmPaymentIntent from '../../hooks/payment/useConfirmPaymentIntent.js'
+import SuccessModal from '../../components/modals/success_modal/SuccessModal.jsx'
 
 // Currency formatter (Rand)
 const format = (n) => `R${Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 export default function Checkout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { items: cartItems } = useCart();
   const { items: shippingItems } = useFetchMyShippingDetails({ enabled: true });
 
@@ -104,8 +106,15 @@ export default function Checkout() {
         await confirmPaymentIntent({ orderId, paymentIntentId: intentId })
         setPaying(false)
         setPaymentDone(true)
+        setModalVariant('success')
+        setModalMessage(`Payment successful. Order #${orderId} is now paid.`)
+        setModalOpen(true)
       } catch (_) {
         setPaying(false)
+        setPaymentDone(false)
+        setModalVariant('error')
+        setModalMessage('Payment failed. Please try again.')
+        setModalOpen(true)
       }
     }
     run()
@@ -222,6 +231,9 @@ export default function Checkout() {
   const { confirmPaymentIntent, loading: confirmingIntent } = useConfirmPaymentIntent()
   const [paying, setPaying] = useState(false)
   const [paymentDone, setPaymentDone] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [modalVariant, setModalVariant] = useState('success')
+  const [modalMessage, setModalMessage] = useState('')
 
   return (
     <div className="checkout-page">
@@ -360,7 +372,9 @@ export default function Checkout() {
                     id="cc_cvv"
                     className={`form-control ${errors.cvv ? 'error' : ''}`}
                     placeholder="CVV"
+                    type="password"
                     inputMode="numeric"
+                    autoComplete="cc-csc"
                     maxLength={3}
                     value={card.cvv}
                     onChange={(e) => {
@@ -398,6 +412,24 @@ export default function Checkout() {
           >
             {paying || creatingIntent || confirmingIntent ? 'Processing…' : (paymentDone ? 'Paid' : `Pay ${format(total)}`)}
           </button>
+
+          <SuccessModal
+            open={modalOpen}
+            variant={modalVariant}
+            title={modalVariant === 'success' ? 'Payment Successful' : 'Payment Failed'}
+            message={modalMessage}
+            onClose={() => setModalOpen(false)}
+            onAfterClose={() => {
+              setModalOpen(false);
+              if (modalVariant === 'success') {
+                navigate('/account', { state: { active: 'orders' } });
+              } else {
+                navigate('/cart');
+              }
+            }}
+            autoCloseMs={6000}
+            closeOnOverlay={true}
+          />
 
           {confirmOpen && (
             <div className="modal-backdrop" onClick={cancelRemove}>

@@ -3,7 +3,7 @@ import './ViewAccount.css';
 import AccountSideBar from './AccountSideBar.jsx';
 import useAuthLogOut from '../../hooks/use_auth/useAuthLogOut.js';
 import { useCart } from '../../hooks/for_cart/CartContext.jsx';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import useFetchMyOrders from '../../hooks/useFetchMyOrders.js';
 import EditOrderInfo from './EditOrderInfo.jsx';
 import useFetchMyShippingDetails from '../../hooks/useFetchMyShippingDetails.js';
@@ -18,6 +18,7 @@ export default function ViewAccount() {
   const { logout, loading: logoutLoading } = useAuthLogOut();
   const { clearCart } = useCart();
   const navigate = useNavigate();
+  const location = useLocation();
   const { items: orders, loading: ordersLoading, error: ordersError, hasMore: ordersHasMore, refresh, page: ordersPage, meta: ordersMeta, setPage: setOrdersPage } = useFetchMyOrders({ initialPage: 1, limit: 10, enabled: active === 'orders' });
   const { items: shippingItems, loading: shippingLoading, error: shippingError, hasMore: shippingHasMore, page: shippingPage, meta: shippingMeta, setPage: setShippingPage, refresh: refreshShipping } = useFetchMyShippingDetails({ initialPage: 1, limit: 10, enabled: active === 'addresses' });
   const { update: updateOrderShipping } = useUpdateOrderShipping();
@@ -108,6 +109,17 @@ export default function ViewAccount() {
       return () => clearTimeout(t);
     }
   }, [active]);
+
+  React.useEffect(() => {
+    const desired = String(location?.state?.active || '').toLowerCase();
+    if (desired === 'orders') {
+      setActive('orders');
+    } else if (desired === 'addresses') {
+      setActive('addresses');
+    } else if (desired === 'profile') {
+      setActive('profile');
+    }
+  }, [location?.state?.active]);
 
   React.useEffect(() => {
     if (active === 'addresses') {

@@ -291,7 +291,11 @@ export const confirmPaymentIntent = async (req, res) => {
     let intent = await stripe.paymentIntents.retrieve(intentId);
     if (!intent || intent.status !== "succeeded") {
       try {
-        intent = await stripe.paymentIntents.confirm(intentId, { payment_method: 'pm_card_visa' });
+        const origin = String(req.headers?.origin || '').trim();
+        const host = String(req.headers?.host || '').trim();
+        const publicBase = process.env.PUBLIC_APP_URL || (origin || (host ? `http://${host}` : '')) || 'http://localhost:5173';
+        const returnUrl = `${publicBase.replace(/\/$/, '')}/account`;
+        intent = await stripe.paymentIntents.confirm(intentId, { payment_method: 'pm_card_visa', return_url: returnUrl });
       } catch (e) {
         return res.status(400).json({ message: "Payment not succeeded" });
       }

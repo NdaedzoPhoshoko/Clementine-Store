@@ -110,6 +110,7 @@ export default function Cart() {
   const subtotalFromMeta = formatPrice(Number(meta?.subtotal));
 
   const canCheckout = !loading && !error && (visibleItems?.length || 0) > 0;
+  const showCheckoutBanner = isAuthed && !loading && !error && (visibleItems?.length ?? 0) === 0 && String(cart?.status) === 'CHECKOUT_IN_PROGRESS';
 
   const onCheckout = async () => {
     const list = Array.isArray((ctxItems || [])) ? ctxItems : [];
@@ -235,7 +236,7 @@ export default function Cart() {
           <h3 className="cart-title">Your Shopping Bag</h3>
         </header>
 
-        {isAuthed && (!loading && !error && (visibleItems?.length ?? 0) === 0) && (
+        {showCheckoutBanner && (
           <div className="checkout-banner" role="status" aria-live="polite">
             <div className="checkout-banner__text">
               You have a checkout in progress. To retrieve your cart items, choose "Cancel Checkout". To finish your order, continue to checkout.
@@ -245,7 +246,7 @@ export default function Cart() {
                 Continue Checkout
               </button>
               <button className="banner-btn" onClick={onCancelCheckout} disabled={reverting}>
-                Retrieve Cart Items
+                Cancel Checkout
               </button>
             </div>
           </div>
