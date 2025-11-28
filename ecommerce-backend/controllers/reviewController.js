@@ -63,3 +63,49 @@ export const createReview = async (req, res) => {
     return res.status(500).json({ message: "Error creating review" });
   }
 };
+
+export const getReviews = async (req, res) => {
+  try {
+    const pid = parseInt(req.query?.product_id, 10);
+    if (!pid || pid <= 0) {
+      return res.status(400).json({ message: "Invalid product_id" });
+    }
+
+    const itemsRes = await pool.query(
+      `SELECT id, user_id, product_id, rating, comment, created_at
+       FROM reviews
+       WHERE product_id=$1
+       ORDER BY created_at DESC`,
+      [pid]
+    );
+    const items = itemsRes.rows;
+
+    const statsRes = await pool.query(
+      "SELECT COALESCE(AVG(rating), 0) AS average_rating, COUNT(*) AS review_count FROM reviews WHERE product_id=$1",
+      [pid]
+    );
+    const stats = {
+      averageRating: parseFloat(statsRes.rows[0].average_rating),
+      reviewCount: parseInt(statsRes.rows[0].review_count, 10),
+    };
+
+    const uid = parseInt(req.user?.id, 10);
+    let haveOrdered = "require signin";
+    if (uid && uid > 0) {
+      const ordRes = await pool.query(
+        `SELECT 1
+         FROM order_items oi
+         JOIN orders o ON o.id = oi.order_id
+         WHERE o.user_id = $1 AND oi.product_id = $2
+         LIMIT 1`,
+        [uid, pid]
+      );
+      haveOrdered = ordRes.rows.length > 0 ? "ordered" : "not ordered";
+    }
+
+    return res.status(200).json({ items, stats, haveOrdered });
+  } catch (err) {
+    console.error("Get reviews error:", err.message);
+    return res.status(500).json({ message: "Error fetching reviews" });
+  }
+};

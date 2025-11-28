@@ -66,3 +66,15 @@ export const requireSelfOrAdmin = async (req, res, next) => {
     return res.status(500).json({ message: "Error verifying permissions" });
   }
 };
+
+export const optionalAuth = (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization || "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : null;
+    if (token) {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = { id: decoded.id };
+    }
+  } catch (_) {}
+  next();
+};
