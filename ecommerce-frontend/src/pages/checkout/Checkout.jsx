@@ -6,6 +6,7 @@ import useFetchMyShippingDetails from '../../hooks/useFetchMyShippingDetails.js'
 import useCreatePaymentIntent from '../../hooks/payment/useCreatePaymentIntent.js'
 import useConfirmPaymentIntent from '../../hooks/payment/useConfirmPaymentIntent.js'
 import useShippingReuseOptions from '../../hooks/payment/useShippingReuseOptions.js'
+import useSavedPaymentCards from '../../hooks/payment/useSavedPaymentCards.js'
 import SuccessModal from '../../components/modals/success_modal/SuccessModal.jsx'
 
 // Currency formatter (Rand)
@@ -65,7 +66,13 @@ export default function Checkout() {
   }
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [pendingRemove, setPendingRemove] = useState(null)
-  const confirmRemove = () => {
+  const { saveCard, removeCard } = useSavedPaymentCards()
+  const confirmRemove = async () => {
+    try {
+      if (pendingRemove?.backend_id) {
+        await removeCard({ id: pendingRemove.backend_id })
+      }
+    } catch (_) {}
     if (pendingRemove) removeSavedCard(pendingRemove.id)
     setConfirmOpen(false)
     setPendingRemove(null)
@@ -80,24 +87,10 @@ export default function Checkout() {
     return () => window.removeEventListener('keydown', onKey)
   }, [confirmOpen])
   
-  // Save current card to saved cards when requested
   const handlePay = () => {
     const ready = isValidExp(card.exp) && isValidCvv(card.cvv) && card.name.trim() && card.number.trim()
     const orderId = Number(location?.state?.orderId || 0)
     if (!ready || !orderId) return
-    if (saveCardChecked) {
-      const brand = detectBrand(card.number)
-      const id = `c_${Date.now()}`
-      const entry = { id, brand, name: card.name.trim(), number: card.number.replace(/\s+/g, ' ').trim(), exp: card.exp }
-      setSavedCards((prev) => {
-        const digits = card.number.replace(/\D/g, '')
-        const last4 = digits.slice(-4)
-        const exists = prev.some((c) => c.number.replace(/\D/g, '').slice(-4) === last4 && c.name === entry.name && c.exp === entry.exp)
-        const next = exists ? prev : [...prev, entry]
-        persistSavedCards(next)
-        return next
-      })
-    }
     const run = async () => {
       try {
         setPaying(true)
@@ -105,6 +98,29 @@ export default function Checkout() {
         const intentId = String(intentRes?.payment_intent_id || '')
         if (!intentId) throw new Error('Missing payment_intent_id')
         await confirmPaymentIntent({ orderId, paymentIntentId: intentId })
+        if (saveCardChecked) {
+          try {
+            const brand = detectBrand(card.number)
+            const digits = card.number.replace(/\D/g, '')
+            const saved = await saveCard({
+              brand,
+              card_number: digits,
+              exp: card.exp,
+              cardholder_name: card.name.trim(),
+            })
+            if (saved && saved.id) {
+              const entryId = `c_${Date.now()}`
+              const entry = { id: entryId, backend_id: saved.id, brand, name: card.name.trim(), number: card.number.replace(/\s+/g, ' ').trim(), exp: card.exp }
+              setSavedCards((prev) => {
+                const last4 = digits.slice(-4)
+                const exists = prev.some((c) => c.number.replace(/\D/g, '').slice(-4) === last4 && c.name === entry.name && c.exp === entry.exp)
+                const next = exists ? prev : [...prev, entry]
+                persistSavedCards(next)
+                return next
+              })
+            }
+          } catch (_) {}
+        }
         setPaying(false)
         setPaymentDone(true)
         setModalVariant('success')
