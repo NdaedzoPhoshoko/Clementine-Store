@@ -263,3 +263,28 @@ ALTER TABLE shipping_details
 
 CREATE INDEX IF NOT EXISTS idx_shipping_user_city_province_postal
   ON shipping_details (user_id, (lower(trim(city))), (lower(trim(province))), (trim(postal_code)));
+
+CREATE TABLE IF NOT EXISTS saved_payment_cards (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    brand VARCHAR(32) NOT NULL,
+    last4 VARCHAR(4) NOT NULL,
+    exp_month INT NOT NULL CHECK (exp_month BETWEEN 1 AND 12),
+    exp_year INT NOT NULL CHECK (exp_year >= EXTRACT(YEAR FROM NOW())),
+    cardholder_name VARCHAR(100) NOT NULL,
+    external_token VARCHAR(255),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_saved_payment_cards_user ON saved_payment_cards(user_id);
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'saved_payment_cards_user_last4_exp_unique'
+  ) THEN
+    ALTER TABLE saved_payment_cards
+      ADD CONSTRAINT saved_payment_cards_user_last4_exp_unique
+      UNIQUE (user_id, brand, last4, exp_month, exp_year, cardholder_name);
+  END IF;
+END $$;
