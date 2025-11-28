@@ -5,6 +5,7 @@ import { useCart } from '../../hooks/for_cart/CartContext.jsx'
 import useFetchMyShippingDetails from '../../hooks/useFetchMyShippingDetails.js'
 import useCreatePaymentIntent from '../../hooks/payment/useCreatePaymentIntent.js'
 import useConfirmPaymentIntent from '../../hooks/payment/useConfirmPaymentIntent.js'
+import useShippingReuseOptions from '../../hooks/payment/useShippingReuseOptions.js'
 import SuccessModal from '../../components/modals/success_modal/SuccessModal.jsx'
 
 // Currency formatter (Rand)
@@ -169,6 +170,8 @@ export default function Checkout() {
   })
   const [email, setEmail] = useState('angeline@example.com')
   const [editingShip, setEditingShip] = useState(false)
+  const { fetchReuseOptions, items: reuseItems, loading: reuseLoading } = useShippingReuseOptions()
+  const [reuseOpen, setReuseOpen] = useState(false)
 
   // Prefer shipping from navigation state when continuing checkout
   useEffect(() => {
@@ -184,6 +187,10 @@ export default function Checkout() {
       }))
     }
   }, [location?.state?.shipping])
+
+  useEffect(() => {
+    fetchReuseOptions().catch(() => {})
+  }, [fetchReuseOptions])
 
   useEffect(() => {
     const arr = Array.isArray(shippingItems) ? shippingItems : []
@@ -502,6 +509,44 @@ export default function Checkout() {
 
           {/* Optional Shipping Details (view + edit) */}
           <div className="shipping-block">
+            {(Array.isArray(reuseItems) && reuseItems.length > 0) && (
+              <div className={`saved-shipping ${reuseOpen ? 'open' : ''}`}>
+                <div className="saved-title">Saved Addresses</div>
+                <div className={`saved-list ${reuseOpen ? 'slider' : ''}`}>
+                  {(reuseOpen ? reuseItems : reuseItems.slice(0, 3)).map((r, idx) => (
+                    <button
+                      key={`${r.city || ''}-${r.province || ''}-${r.postal_code || ''}-${idx}`}
+                      type="button"
+                      className="saved-chip"
+                      onClick={() => {
+                        setShipping((prev) => ({
+                          ...prev,
+                          address: r.address || prev.address || '',
+                          city: r.city || prev.city || '',
+                          province: r.province || prev.province || '',
+                          postal_code: r.postal_code || prev.postal_code || '',
+                          phone_number: r.phone_number || prev.phone_number || ''
+                        }))
+                        setReuseOpen(false)
+                      }}
+                    >
+                      <span className="chip-title">{[r.city, r.province, r.postal_code].filter(Boolean).join(', ')}</span>
+                      <span className="chip-sub">{[r.address, r.phone_number].filter(Boolean).join(' · ')}</span>
+                    </button>
+                  ))}
+                </div>
+                {reuseItems.length > 3 && !reuseOpen && (
+                  <button type="button" className="items-more" onClick={() => setReuseOpen(true)}>
+                    + {reuseItems.length - 3} more
+                  </button>
+                )}
+                {reuseOpen && (
+                  <button type="button" className="items-more" onClick={() => setReuseOpen(false)}>
+                    Close
+                  </button>
+                )}
+              </div>
+            )}
             <div className="block-top">
               <span className="block-title">Shipping Details</span>
               <button className="link-btn" onClick={() => setEditingShip((v) => !v)}>

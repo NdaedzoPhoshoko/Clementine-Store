@@ -243,6 +243,12 @@ router.get("/my", protect, getMyShippingDetails);
  *                       postal_code:
  *                         type: string
  *                         nullable: true
+ *                       address:
+ *                         type: string
+ *                         nullable: true
+ *                       phone_number:
+ *                         type: string
+ *                         nullable: true
  *       401:
  *         description: Not authorized
  *       500:

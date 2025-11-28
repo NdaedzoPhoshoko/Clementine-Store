@@ -207,12 +207,12 @@ export const getShippingReuseOptions = async (req, res) => {
                NULLIF(LOWER(TRIM(city)), '') AS city_norm,
                NULLIF(LOWER(TRIM(province)), '') AS province_norm,
                NULLIF(TRIM(postal_code), '') AS postal_norm,
-               city, province, postal_code
+               city, province, postal_code, address, phone_number
         FROM shipping_details
         WHERE user_id = $1
       )
       SELECT DISTINCT ON (city_norm, province_norm, postal_norm)
-             city, province, postal_code
+             city, province, postal_code, address, phone_number
       FROM norm
       WHERE city_norm IS NOT NULL OR province_norm IS NOT NULL OR postal_norm IS NOT NULL
       ORDER BY city_norm, province_norm, postal_norm, id DESC
@@ -222,6 +222,8 @@ export const getShippingReuseOptions = async (req, res) => {
       city: r.city || null,
       province: r.province || null,
       postal_code: r.postal_code || null,
+      address: r.address || null,
+      phone_number: r.phone_number || null,
     }));
     return res.status(200).json({ items });
   } catch (err) {
