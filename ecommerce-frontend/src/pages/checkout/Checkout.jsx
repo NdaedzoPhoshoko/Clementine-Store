@@ -329,7 +329,11 @@ export default function Checkout() {
                   className="form-control"
                   placeholder="0000 0000 0000 0000"
                   value={card.number}
-                  onChange={(e) => setCard({ ...card, number: e.target.value })}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, '').slice(0, 19)
+                    const grouped = digits.match(/.{1,4}/g)?.join(' ') || digits
+                    setCard({ ...card, number: grouped })
+                  }}
                 />
                 {(() => {
                   const brand = detectBrand(card.number)
@@ -619,7 +623,14 @@ export default function Checkout() {
                   autoComplete="tel"
                   placeholder="Phone number"
                   value={shipping.phone_number}
-                  onChange={(e) => setShipping({ ...shipping, phone_number: e.target.value })}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    const cleaned = v
+                      .replace(/[^\d+\s-]/g, '')
+                      .replace(/(?!^)\+/g, '')
+                      .slice(0, 20)
+                    setShipping({ ...shipping, phone_number: cleaned })
+                  }}
                 />
               </div>
             )}
