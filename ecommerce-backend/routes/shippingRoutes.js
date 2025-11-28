@@ -1,5 +1,5 @@
 import express from "express";
-import { createOrUpdateShippingDetails, getShippingDetails, getMyShippingDetails } from "../controllers/shippingController.js";
+import { createOrUpdateShippingDetails, getShippingDetails, getMyShippingDetails, getShippingReuseOptions } from "../controllers/shippingController.js";
 import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -211,5 +211,43 @@ router.get("/", protect, getShippingDetails);
  *         description: Server error while fetching shipping details
  */
 router.get("/my", protect, getMyShippingDetails);
+
+/**
+ * @swagger
+ * /api/shipping-details/reuse:
+ *   get:
+ *     summary: Get distinct shipping locations for reuse
+ *     description: Returns unique combinations of city, province, and postal_code used by the authenticated user, for quick reuse in checkout.
+ *     tags: [Checkouts & Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of distinct shipping info
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 items:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       city:
+ *                         type: string
+ *                         nullable: true
+ *                       province:
+ *                         type: string
+ *                         nullable: true
+ *                       postal_code:
+ *                         type: string
+ *                         nullable: true
+ *       401:
+ *         description: Not authorized
+ *       500:
+ *         description: Server error while fetching reuse options
+ */
+router.get("/reuse", protect, getShippingReuseOptions);
 
 export default router;

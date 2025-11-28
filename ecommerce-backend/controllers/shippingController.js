@@ -192,3 +192,40 @@ const isAdminUser = async (userId) => {
   } catch (_) {}
   return false;
 };
+
+export const getShippingReuseOptions = async (req, res) => {
+  try {
+    const tokenUserId = parseInt(req.user?.id, 10);
+    if (!tokenUserId) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
+    const q = `
+      WITH norm AS (
+        SELECT id,
+               user_id,
+               NULLIF(LOWER(TRIM(city)), '') AS city_norm,
+               NULLIF(LOWER(TRIM(province)), '') AS province_norm,
+               NULLIF(TRIM(postal_code), '') AS postal_norm,
+               city, province, postal_code
+        FROM shipping_details
+        WHERE user_id = $1
+      )
+      SELECT DISTINCT ON (city_norm, province_norm, postal_norm)
+             city, province, postal_code
+      FROM norm
+      WHERE city_norm IS NOT NULL OR province_norm IS NOT NULL OR postal_norm IS NOT NULL
+      ORDER BY city_norm, province_norm, postal_norm, id DESC
+    `;
+    const result = await pool.query(q, [tokenUserId]);
+    const items = result.rows.map((r) => ({
+      city: r.city || null,
+      province: r.province || null,
+      postal_code: r.postal_code || null,
+    }));
+    return res.status(200).json({ items });
+  } catch (err) {
+    console.error("Get shipping reuse options error:", err.message);
+    return res.status(500).json({ message: "Error fetching shipping reuse options" });
+  }
+};

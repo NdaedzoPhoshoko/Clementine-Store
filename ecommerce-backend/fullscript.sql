@@ -145,7 +145,7 @@ CREATE INDEX IF NOT EXISTS idx_products_lower_name_trgm
   ON products USING gin ((lower(name)) gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_products_lower_description_trgm
   ON products USING gin ((lower(description)) gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS idx_categories_lower_name_trgm
+  CREATE INDEX IF NOT EXISTS idx_categories_lower_name_trgm
   ON categories USING gin ((lower(name)) gin_trgm_ops);
 
   -- additional details script
@@ -256,3 +256,10 @@ ALTER TABLE order_items
 
 ALTER TABLE order_items
   ADD COLUMN IF NOT EXISTS color_hex VARCHAR(12) NOT NULL DEFAULT '';
+
+-- Add timestamp to shipping_details for reuse recency and index for reuse lookup
+ALTER TABLE shipping_details
+  ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+
+CREATE INDEX IF NOT EXISTS idx_shipping_user_city_province_postal
+  ON shipping_details (user_id, (lower(trim(city))), (lower(trim(province))), (trim(postal_code)));
