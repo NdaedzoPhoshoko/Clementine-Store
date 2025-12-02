@@ -1,0 +1,54 @@
+Short Answer
+
+- Yes: when an access JWT expires, the client should use the refresh token to obtain a new access token and retry the original request.
+- The refresh endpoint should return a new access token (and often rotate the refresh token). If refresh fails (expired/invalid), the user must re-authenticate.
+How It Should Work
+
+- Access token: short-lived; sent on every API call via Authorization: Bearer <accessToken> .
+- Refresh token: long-lived; stored more securely (ideally httpOnly cookie) and only sent to a dedicated POST /auth/refresh endpoint.
+- Flow:
+  - Request fails with 401 and an error like “jwt expired”.
+  - Client calls POST /auth/refresh with the refresh token (cookie or header).
+  - Backend verifies refresh token and issues a new access token (and usually a new refresh token).
+  - Client stores the new access token (and any rotated refresh token) and retries the original request.
+Refresh Token Rotation
+
+- Many servers rotate refresh tokens each time they’re used:
+  - Return a fresh refresh token and invalidate the previous one.
+  - Helps prevent replay attacks.
+- Not every system regenerates the refresh token on every page navigation — typically only on actual refresh calls (or proactively near expiry).
+Frontend Behavior
+
+- Do not refresh on every screen change; refresh only:
+  - When the access token is expired (on 401).
+  - Or proactively if you track expiry and it’s close to expiring.
+- In your app, ensure the network layer:
+  - Adds Authorization: Bearer <accessToken> on all API requests.
+  - Detects 401 + “jwt expired”, calls the refresh endpoint, updates localStorage (or your token store), and retries.
+- In ecommerce-frontend/src/utils/apiFetch.js , verify:
+  - Requests use credentials: 'include' for refresh calls, so the refresh cookie is sent.
+  - The retry-on-401 logic correctly updates the accessToken in localStorage and replays the original request.
+- For hooks like the reviews hook, route requests through the same network helper so you get automatic refresh behavior.
+Backend Endpoint Expectations
+
+- POST /auth/refresh :
+  - Verifies refresh token (from httpOnly cookie or header).
+  - Returns JSON with a new accessToken .
+  - Optionally sets a new refresh token cookie (rotated).
+- Check ecommerce-backend/controllers/authController.js and ecommerce-backend/routes/authRoutes.js :
+  - Confirm the refresh route is implemented, sets CORS/credentials correctly, and returns the new token payload.
+  - Ensure the refresh cookie domain/path/secure flags align with your frontend origin.
+Common Pitfalls
+
+- Not sending the refresh cookie due to missing credentials: 'include' on the refresh request.
+- Refresh endpoint returning a token but client not storing it (stale localStorage ).
+- CORS misconfig preventing cookies from being set/sent.
+- Refresh token also expired/revoked → must redirect to login and clear tokens.
+Practical Checkpoints
+
+- Confirm that when an API request returns 401 "jwt expired" , your network layer:
+  - Calls POST /auth/refresh ;
+  - Receives new accessToken and updates storage;
+  - Retries the original call successfully.
+- Verify both authentication-sensitive hooks (like reviews) use the shared network helper so they benefit from the refresh flow.
+If you want, I can audit your apiFetch.js and authController.js to confirm the exact refresh flow and suggest any tweaks (credentials, rotation, CORS).

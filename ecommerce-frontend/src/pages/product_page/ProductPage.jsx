@@ -11,6 +11,8 @@ import { ChevronDown, ChevronUp } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import useAddCartItem from '../../hooks/for_cart/useAddCartItem.js'
 import { useCart } from '../../hooks/for_cart/CartContext.jsx'
+import { Send } from "lucide-react";
+import usePostProductReview from "../../hooks/usePostProductReview.js";
 
 function useInView(options = { rootMargin: '200px', threshold: 0.1 }) {
   const ref = useRef(null)
@@ -96,14 +98,30 @@ export default function ProductPage() {
   } = useFetchProductDetails({ productId })
   const [reviewsRef, reviewsInView] = useInView({ rootMargin: '300px', threshold: 0.2 })
   const [relatedRef, relatedInView] = useInView({ rootMargin: '300px', threshold: 0.1 })
-  const { reviews: fetchedReviews, reviewStats: fetchedReviewStats, loading: reviewsLoading, error: reviewsError } = useFetchProductReviews({ productId, enabled: reviewsInView });
+  const { reviews: fetchedReviews, reviewStats: fetchedReviewStats, haveOrdered, loading: reviewsLoading, error: reviewsError } = useFetchProductReviews({ productId, enabled: reviewsInView });
+  // Debug: log reviews hook state
+  useEffect(() => {
+    console.log('[ProductPage] useFetchProductReviews state', {
+      productId,
+      reviewsInView,
+      haveOrdered,
+      reviewsLoading,
+      reviewsError,
+      reviewStats: fetchedReviewStats,
+      reviewsCount: Array.isArray(fetchedReviews) ? fetchedReviews.length : null,
+      sample: Array.isArray(fetchedReviews) ? fetchedReviews.slice(0, 2) : fetchedReviews,
+    });
+  }, [productId, reviewsInView, haveOrdered, reviewsLoading, reviewsError, fetchedReviewStats, fetchedReviews]);
+  const [postedReviews, setPostedReviews] = useState([]);
+  const [reviewStatsOverride, setReviewStatsOverride] = useState(null);
   const [selectedRatings, setSelectedRatings] = useState([]);
   const onToggleRating = (rating) => {
     setSelectedRatings(prev => prev.includes(rating) ? prev.filter(r => r !== rating) : [...prev, rating]);
   };
   const baseReviews = Array.isArray(fetchedReviews) ? fetchedReviews : reviews;
-  const baseReviewStats = fetchedReviewStats || reviewStats;
-  const filteredReviews = selectedRatings.length > 0 ? baseReviews.filter(rv => selectedRatings.includes(Math.round(rv?.rating || 0))) : baseReviews;
+  const baseReviewStats = reviewStatsOverride || fetchedReviewStats || reviewStats;
+  const allReviews = [ ...(postedReviews || []), ...(Array.isArray(baseReviews) ? baseReviews : []) ];
+  const filteredReviews = selectedRatings.length > 0 ? allReviews.filter(rv => selectedRatings.includes(Math.round(rv?.rating || 0))) : allReviews;
   const formatDateDDMMYYYY = (input) => {
     if (!input) return '';
     const d = new Date(input);
@@ -129,10 +147,10 @@ export default function ProductPage() {
   };
   
   // Derived UI helpers
-  const ratingDistribution = (Array.isArray(baseReviews) && baseReviews.length > 0)
+  const ratingDistribution = (Array.isArray(allReviews) && allReviews.length > 0)
     ? [5,4,3,2,1].map(r => {
-        const count = baseReviews.filter(rv => Math.round(rv?.rating || 0) === r).length;
-        const percentage = baseReviews.length ? Math.round((count / baseReviews.length) * 100) : 0;
+        const count = allReviews.filter(rv => Math.round(rv?.rating || 0) === r).length;
+        const percentage = allReviews.length ? Math.round((count / allReviews.length) * 100) : 0;
         return { rating: r, count, percentage };
       })
     : [];
@@ -215,6 +233,60 @@ export default function ProductPage() {
 
   const { addItem, loading: addLoading, error: addError } = useAddCartItem()
   const { hydrate } = useCart()
+
+  const [reviewModalMsg, setReviewModalMsg] = useState("")
+  const [showWriteReview, setShowWriteReview] = useState(false)
+  const [reviewRating, setReviewRating] = useState(5)
+  const [reviewComment, setReviewComment] = useState("")
+  // remove: const [submittingReview, setSubmittingReview] = useState(false)
+  // add posting hook usage
+  const { postReview, loading: submittingReview, error: postError } = usePostProductReview()
+  // New: hover preview state for star rating control
+  const [ratingHover, setRatingHover] = useState(0)
+
+  // Clear gating message when user status allows writing a review
+  useEffect(() => {
+    console.log('[ProductPage] haveOrdered changed', haveOrdered);
+    if (haveOrdered === 'ordered') {
+      setReviewModalMsg('')
+    }
+  }, [haveOrdered])
+  function handleWriteReviewClick() {
+    console.log('[ProductPage] handleWriteReviewClick', { haveOrdered })
+    if (haveOrdered === "require signin") {
+      setReviewModalMsg("Please sign in to write a review for this product.")
+      return
+    }
+    if (haveOrdered === "not ordered") {
+      setReviewModalMsg("Please purchase this product before posting a review.")
+      return
+    }
+    setReviewModalMsg("")
+    setShowWriteReview(true)
+  }
+
+  async function submitReview() {
+    if (submittingReview) return
+    const rate = Math.max(1, Math.min(5, Number(reviewRating) || 5))
+    const comment = reviewComment.trim()
+    if (!comment) return
+    try {
+      const { review: rev, stats } = await postReview({ product_id: productId, rating: rate, comment })
+      if (rev) {
+        setPostedReviews(prev => [
+          { id: rev.id, user_id: rev.user_id, user_name: "You", rating: rev.rating, comment: rev.comment || "", created_at: rev.created_at },
+          ...prev,
+        ])
+      }
+      if (stats) setReviewStatsOverride(stats)
+      setShowWriteReview(false)
+      setReviewComment("")
+      setReviewRating(5)
+      setReviewModalMsg("Thanks for sharing your experience! Your review is posted.")
+    } catch (err) {
+      setReviewModalMsg(err.message || "Unable to submit review. Please try again.")
+    }
+  }
 
   const resolveColorHex = () => {
     const val = typeof selectedColor === 'string' ? selectedColor : ''
@@ -687,8 +759,83 @@ export default function ProductPage() {
             <div className="review-lists">
               <div className="review-lists-header">
                 <h3>See What Others Are Saying</h3>
-                <button type="button" className="review-write-btn">Write Review</button>
+                <button type="button" className="review-write-btn" onClick={handleWriteReviewClick}>Write Review</button>
               </div>
+              
+              {reviewModalMsg && (
+                <div className="review-info-msg" role="alert" aria-live="polite">
+                  <span>{reviewModalMsg}</span>
+                  {haveOrdered === 'require signin' && (
+                    <a href="/auth/login" className="review-info-msg__link">go to login</a>
+                  )}
+                </div>
+              )}
+              
+              {showWriteReview && (
+                <div className="review-write-area">
+                  {/* Accessible star rating control replacing the dropdown */}
+                  <div className="review-rating-inline">
+                    <span className="review-rating-hint">Click a star to select your rating</span>
+                    <div
+                      className="review-rating-control"
+                      role="radiogroup"
+                      aria-label="Select your rating"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+                          setReviewRating((prev) => Math.min(5, Number(prev) + 1))
+                        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+                          setReviewRating((prev) => Math.max(1, Number(prev) - 1))
+                        }
+                      }}
+                    >
+                      {[1,2,3,4,5].map((star) => {
+                        const activeUntil = ratingHover || reviewRating
+                        const isSelected = Number(activeUntil) >= star
+                        return (
+                          <label
+                            key={star}
+                            className={`rating-star ${isSelected ? 'selected' : ''}`}
+                            onMouseEnter={() => setRatingHover(star)}
+                            onMouseLeave={() => setRatingHover(0)}
+                            onClick={() => setReviewRating(star)}
+                          >
+                            <input
+                              type="radio"
+                              name="review-rating"
+                              value={star}
+                              checked={Number(reviewRating) === star}
+                              onChange={() => setReviewRating(star)}
+                              className="sr-only rating-input"
+                            />
+                            <span className="star-icon" aria-hidden="true">★</span>
+                            <span className="sr-only">{star} {star === 1 ? 'star' : 'stars'}</span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </div>
+                
+                  <textarea
+                    className="review-input"
+                    placeholder="Share your experience with this product..."
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    rows={3}
+                  />
+                
+                  <button
+                    type="button"
+                    className="review-submit-btn"
+                    onClick={submitReview}
+                    disabled={submittingReview || reviewComment.trim().length === 0}
+                    aria-label="Submit review"
+                  >
+                    <Send size={16} />
+                    <span>{submittingReview ? "Posting…" : "Submit"}</span>
+                  </button>
+                </div>
+              )}
               
               <div className="review-items">
                 {reviewsLoading ? (
@@ -738,6 +885,12 @@ export default function ProductPage() {
       <ErrorModal 
         message={error.message || "Failed to load product details"} 
         onClose={() => {}}
+      />
+    )}
+    {reviewModalMsg && (
+      <ErrorModal 
+        message={reviewModalMsg}
+        onClose={() => setReviewModalMsg("")}
       />
     )}
     </div>
