@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import './ProductPage.css'
 import useFetchProductDetails from '../../hooks/useFetchProductDetails'
 import useFetchProductReviews from '../../hooks/useFetchProductReviews'
-import { useParams } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import ErrorModal from '../../components/modals/ErrorModal'
 import RelatedProducts from './related_products/RelatedProducts.jsx'
 import ZoomImage from '../../components/image_zoom/ZoomImage.jsx'
@@ -251,6 +251,24 @@ export default function ProductPage() {
       setReviewModalMsg('')
     }
   }, [haveOrdered])
+  useEffect(() => {
+    if (haveOrdered !== 'ordered') {
+      setShowWriteReview(false)
+    }
+  }, [haveOrdered])
+  useEffect(() => {
+    const onAuthChanged = (e) => {
+      const isAuthed = !!e?.detail?.isAuthed
+      if (!isAuthed) {
+        setShowWriteReview(false)
+        setReviewModalMsg('')
+        setPostedReviews([])
+        setReviewStatsOverride(null)
+      }
+    }
+    try { window.addEventListener('auth:changed', onAuthChanged) } catch (_) {}
+    return () => { try { window.removeEventListener('auth:changed', onAuthChanged) } catch (_) {} }
+  }, [])
   function handleWriteReviewClick() {
     console.log('[ProductPage] handleWriteReviewClick', { haveOrdered })
     if (haveOrdered === "require signin") {
@@ -766,7 +784,7 @@ export default function ProductPage() {
                 <div className="review-info-msg" role="alert" aria-live="polite">
                   <span>{reviewModalMsg}</span>
                   {haveOrdered === 'require signin' && (
-                    <a href="/auth/login" className="review-info-msg__link">go to login</a>
+                    <Link to="/auth/login" className="review-info-msg__link">go to login</Link>
                   )}
                 </div>
               )}

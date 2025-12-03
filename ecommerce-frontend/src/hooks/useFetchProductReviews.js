@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import apiFetch from '../utils/apiFetch.js';
+import { authStorage } from './use_auth/authStorage.js';
 
 // Cache TTL aligned with other hooks
 const CACHE_TTL_MS = 60 * 1000; // 60 seconds
 
-const cacheKey = (productId) => `product-reviews-cache:v1:id=${productId}`;
+const cacheKey = (userId, productId) => `product-reviews-cache:v1:user=${userId ?? 'guest'}:id=${productId}`;
 
 function normalizeReview(r) {
   if (!r || typeof r !== 'object') return null;
@@ -28,6 +29,9 @@ export default function useFetchProductReviews({ productId, enabled = true } = {
 
   const controllerRef = useRef(null);
   const lastProductIdRef = useRef(productId);
+  const user = authStorage.getUser();
+  const signature = useMemo(() => String(user?.id ?? 'guest'), [user?.id]);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Reset when product ID changes
   useEffect(() => {
@@ -47,7 +51,7 @@ export default function useFetchProductReviews({ productId, enabled = true } = {
     controllerRef.current?.abort();
     controllerRef.current = controller;
 
-    const KEY = cacheKey(productId);
+    const KEY = cacheKey(signature, productId);
 
     let usedCache = false;
     let cacheIsStale = true;
@@ -159,7 +163,23 @@ export default function useFetchProductReviews({ productId, enabled = true } = {
     return () => {
       controller.abort();
     };
-  }, [productId, enabled]);
+  }, [productId, enabled, signature, refreshKey]);
+
+  useEffect(() => {
+    const onAuthChanged = (e) => {
+      const isAuthed = !!e?.detail?.isAuthed;
+      if (!isAuthed) {
+        setHaveOrdered('require signin');
+        setRefreshKey((k) => k + 1);
+      } else {
+        setRefreshKey((k) => k + 1);
+      }
+    };
+    try { window.addEventListener('auth:changed', onAuthChanged); } catch (_) {}
+    return () => {
+      try { window.removeEventListener('auth:changed', onAuthChanged); } catch (_) {}
+    };
+  }, []);
 
   return {
     reviews,

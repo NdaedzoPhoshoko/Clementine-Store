@@ -6,7 +6,7 @@ import useDeleteCartItem from '../../hooks/for_cart/useDeleteCartItem.js';
 import useUpdateCartItemQuantity from '../../hooks/for_cart/useUpdateCartItemQuantity.js';
 import { useCart } from '../../hooks/for_cart/CartContext.jsx';
 import { createPortal } from 'react-dom'
-import authStorage from '../../hooks/use_auth/authStorage.js'
+import useAuthUser from '../../hooks/use_auth/useAuthUser.js'
 import { Link, useNavigate } from 'react-router-dom'
 import ErrorModal from '../../components/modals/ErrorModal.jsx'
 // SuccessModal removed for retrieve action per request
@@ -22,7 +22,7 @@ const formatPrice = (v) => {
 };
 
 export default function Cart() {
-  const isAuthed = authStorage.isAuthenticated();
+  const { isAuthed } = useAuthUser();
   const { cart, items, meta, loading, error, refresh } = useFetchCart({ enabled: isAuthed });
   const { deleteItem, loading: deleting } = useDeleteCartItem();
   const { updateQuantity } = useUpdateCartItemQuantity();

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import { Link } from 'react-router-dom';
 import "./Products.css";
 import ProdGrid from "../../../components/products_grid/ProdGrid";
 import useFetchNewProducts from "../../../hooks/useFetchNewProducts.js";
@@ -34,10 +35,10 @@ export default function Products({ title = "Find Products", products = [], onAdd
         onAddToCart={onAddToCart}
       />
       <div className="home-products__more">
-        <a href="/shop-all" className="home-products__more-link" aria-label="View all products">
+        <Link to="/shop-all" className="home-products__more-link" aria-label="View all products">
           <span>View more</span>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
-        </a>
+        </Link>
       </div>
     </section>
   );

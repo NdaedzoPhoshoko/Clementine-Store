@@ -3,7 +3,7 @@ import './ViewAccount.css';
 import AccountSideBar from './AccountSideBar.jsx';
 import useAuthLogOut from '../../hooks/use_auth/useAuthLogOut.js';
 import { useCart } from '../../hooks/for_cart/CartContext.jsx';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import useFetchMyOrders from '../../hooks/useFetchMyOrders.js';
 import EditOrderInfo from './EditOrderInfo.jsx';
 import useFetchMyShippingDetails from '../../hooks/useFetchMyShippingDetails.js';
@@ -315,10 +315,10 @@ export default function ViewAccount() {
                 <div className="my_account-card">
                   <div className="account-card__title">No Orders Yet</div>
                   <div className="account-card__text">Start by browsing products and placing your first order.</div>
-                  <a className="account-card__link" href="/shop-all">
+                  <Link className="account-card__link" to="/shop-all">
                     Browse products
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 6 }} aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
-                  </a>
+                  </Link>
                 </div>
               )}
               {!initialOrdersSkeleton && orders.length > 0 && (
@@ -623,8 +623,8 @@ export default function ViewAccount() {
               </div>
               <div className="my_account-card">
                 <div className="account-support">
-                  <a className="account-btn account-btn--dark" href="/support/contact">Contact Support</a>
-                  <a className="account-btn account-btn--light" href="/support/live-chat">Live Chat</a>
+                  <Link className="account-btn account-btn--dark" to="/support/contact">Contact Support</Link>
+                  <Link className="account-btn account-btn--light" to="/support/live-chat">Live Chat</Link>
                 </div>
               </div>
             </div>

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from 'react-router-dom';
 import "./footer.css";
 
 const Footer = () => {
@@ -9,9 +10,9 @@ const Footer = () => {
       <div className="footer-inner">
         <div className="footer-grid" aria-label="Footer navigation">
           <div className="footer-brand">
-            <a href="/" className="footer-logo" aria-label="Home">
+            <Link to="/" className="footer-logo" aria-label="Home">
               <span className="footer-logo__text">Clementine</span>
-            </a>
+            </Link>
           </div>
 
           <div className="footer-column">
