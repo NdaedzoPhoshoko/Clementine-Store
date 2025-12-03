@@ -1,15 +1,16 @@
 import React, { createContext, useContext, useState, useMemo, useCallback, useEffect } from 'react';
 import useFetchCart from './useFetchCart.js';
-import authStorage from '../use_auth/authStorage.js';
+import useAuthUser from '../use_auth/useAuthUser.js';
 
 const CartContext = createContext(null);
 
 export function CartProvider({ children }) {
   const [items, setItems] = useState([]);
   const [meta, setMeta] = useState(null);
+  const { isAuthed } = useAuthUser();
 
-  // Fetch cart on app load for all users; apiFetch will handle auth/refresh gracefully
-  const { items: fetchedItems, meta: fetchedMeta, loading, error, refresh, clearCache } = useFetchCart({ enabled: true });
+  // Fetch cart when authorized; updates immediately on auth changes
+  const { items: fetchedItems, meta: fetchedMeta, loading, error, refresh, clearCache } = useFetchCart({ enabled: !!isAuthed });
 
   // Hydrate context whenever backend provides fresh data
   useEffect(() => {

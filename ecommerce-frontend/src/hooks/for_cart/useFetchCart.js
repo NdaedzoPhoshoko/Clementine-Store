@@ -16,7 +16,7 @@ export default function useFetchCart({ enabled = true } = {}) {
   const controllerRef = useRef(null);
 
   const user = authStorage.getUser();
-  const signature = useMemo(() => String(user?.id ?? 'unknown'), [user?.id]);
+  const signature = useMemo(() => String(user?.id ?? 'guest'), [user?.id]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -69,6 +69,22 @@ export default function useFetchCart({ enabled = true } = {}) {
     fetchLatest();
     return () => controller.abort();
   }, [enabled, signature, refreshKey]);
+
+  useEffect(() => {
+    const onAuthChanged = () => {
+      setRefreshKey((k) => k + 1);
+    };
+    const onStorage = (e) => {
+      if (!e || !e.key) return;
+      if (e.key === 'auth:user' || e.key === 'auth:accessToken') setRefreshKey((k) => k + 1);
+    };
+    try { window.addEventListener('auth:changed', onAuthChanged); } catch {}
+    try { window.addEventListener('storage', onStorage); } catch {}
+    return () => {
+      try { window.removeEventListener('auth:changed', onAuthChanged); } catch {}
+      try { window.removeEventListener('storage', onStorage); } catch {}
+    };
+  }, []);
 
   const refresh = async () => {
     setRefreshKey((k) => k + 1);

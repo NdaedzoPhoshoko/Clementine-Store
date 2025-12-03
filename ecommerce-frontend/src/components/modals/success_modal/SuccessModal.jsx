@@ -12,10 +12,15 @@ export default function SuccessModal({
   closeOnOverlay = true,
 }) {
   const didCloseRef = useRef(false);
+  const timerRef = useRef(null);
 
   const handleClose = () => {
     if (didCloseRef.current) return;
     didCloseRef.current = true;
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
     onClose && onClose();
     onAfterClose && onAfterClose();
   };
@@ -28,7 +33,7 @@ export default function SuccessModal({
 
   useEffect(() => {
     if (!open) return;
-    const t = setTimeout(() => {
+    timerRef.current = setTimeout(() => {
       handleClose();
     }, autoCloseMs);
 
@@ -40,7 +45,10 @@ export default function SuccessModal({
     window.addEventListener('keydown', onKey);
 
     return () => {
-      clearTimeout(t);
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
       window.removeEventListener('keydown', onKey);
     };
   }, [open, autoCloseMs, onClose]);
