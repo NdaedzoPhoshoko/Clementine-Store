@@ -21,6 +21,12 @@ export default function SuccessModal({
   };
 
   useEffect(() => {
+    if (open) {
+      didCloseRef.current = false;
+    }
+  }, [open]);
+
+  useEffect(() => {
     if (!open) return;
     const t = setTimeout(() => {
       handleClose();

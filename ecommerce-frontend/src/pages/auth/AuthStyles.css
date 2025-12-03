@@ -3,7 +3,7 @@
 /* Layout */
 .auth__layout {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 5fr 4fr;
   gap: 2rem;
   min-height: calc(100vh - 64px);
   background: var(--color-bg);
@@ -18,13 +18,14 @@
 
 .auth__card {
   width: 100%;
-  max-width: 320px;
+  max-width: 400px;
 }
 
 .auth__right {
   display: flex;
-  align-items: stretch;
-  padding: 1rem 2rem 1rem 1rem;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 1.5rem 1rem 1.5rem;
   background: none;
   min-height: inherit;
 }
@@ -131,20 +132,23 @@
 .auth__illustration {
   position: relative;
   width: 100%;
-  height: 100%;
-  min-height: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  min-height: 65vh;
   border-radius: 12px;
   overflow: hidden;
   background-image: url('/images/imageNoVnXXmDNi0.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  max-width: 860px;
+  margin: 0 auto;
 }
 .auth__illustration::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.55) 100%);
+  background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 70%, rgba(0,0,0,0.75) 100%);
 }
 .auth__illustration-card {
   position: relative;
@@ -190,13 +194,15 @@
   z-index: 2;
   display: grid;
   align-content: end;
-  gap: .65rem;
-  padding: 1rem;
+  justify-items: center;
+  text-align: center;
+  gap: .6rem;
+  padding: .95rem;
 }
 .auth__hero-title {
   margin: 0;
   color: var(--color-bg);
-  font-size: 1.4rem;
+  font-size: 1.43rem;
   font-weight: 800;
   letter-spacing: .2px;
   animation: authSlideUp .5s ease-out .05s both;
@@ -204,8 +210,8 @@
 .auth__hero-subtitle {
   margin: 0;
   color: rgba(255,255,255,.95);
-  max-width: 560px;
-  font-size: .95rem;
+  max-width: 572px;
+  font-size: 1.02rem;
   line-height: 1.35;
   animation: authSlideUp .6s ease-out .15s both;
 }
@@ -214,13 +220,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 24px;
+  height: 25px;
   padding: 0 .5rem;
   border: 1px solid rgba(255,255,255,.45);
   border-radius: 999px;
   color: #fff;
   background: rgba(255,255,255,.15);
-  font-size: .85rem;
+  font-size: .92rem;
 }
 
 @keyframes authSlideUp {
