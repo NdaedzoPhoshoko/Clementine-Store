@@ -1,7 +1,26 @@
-// Simple auth storage utility for tokens and user details
 const USER_KEY = 'auth:user';
 const ACCESS_TOKEN_KEY = 'auth:accessToken';
 const TOKEN_KEY = 'auth:token';
+
+function decodeJwtPayload(token) {
+  try {
+    const parts = String(token).split('.');
+    if (parts.length !== 3) return null;
+    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const json = typeof atob === 'function' ? atob(b64) : Buffer.from(b64, 'base64').toString('utf-8');
+    return JSON.parse(json);
+  } catch (_) {
+    return null;
+  }
+}
+
+function isTokenExpired(token) {
+  const payload = decodeJwtPayload(token);
+  const exp = payload && Number(payload.exp);
+  if (!exp || !Number.isFinite(exp)) return false;
+  const now = Math.floor(Date.now() / 1000);
+  return exp <= now;
+}
 
 export const authStorage = {
   setAuth({ user, token, accessToken } = {}) {
@@ -27,7 +46,11 @@ export const authStorage = {
       return null;
     }
   },
-  getAccessToken() { return localStorage.getItem(ACCESS_TOKEN_KEY) || null; },
+  getAccessToken() {
+    const t = localStorage.getItem(ACCESS_TOKEN_KEY) || null;
+    if (t && isTokenExpired(t)) return null;
+    return t;
+  },
   getToken() { return localStorage.getItem(TOKEN_KEY) || null; },
   clear() {
     localStorage.removeItem(USER_KEY);
@@ -35,7 +58,10 @@ export const authStorage = {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     try { window.dispatchEvent(new CustomEvent('auth:changed', { detail: { user: null, isAuthed: false } })); } catch (_) {}
   },
-  isAuthenticated() { return !!localStorage.getItem(ACCESS_TOKEN_KEY); },
+  isAuthenticated() {
+    const t = localStorage.getItem(ACCESS_TOKEN_KEY);
+    return !!t && !isTokenExpired(t);
+  },
 };
 
 export default authStorage;

@@ -49,21 +49,30 @@ export async function apiFetch(pathOrUrl, options = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const doFetch = async (url, opts = {}) => fetch(url, { ...options, ...opts, headers });
+  const doFetch = async (url, opts = {}) => fetch(url, { ...options, ...opts, headers, credentials: 'include', mode: 'cors' });
 
   for (let i = 0; i < urls.length; i++) {
     const url = urls[i];
-    let res = await doFetch(url);
+    let res;
+    try {
+      res = await doFetch(url);
+    } catch (err) {
+      if (i === urls.length - 1) throw err;
+      continue;
+    }
     if (res.status === 401 && !options.__retry) {
       try {
         const newToken = await refreshAccessToken();
         if (newToken) {
           headers = { ...headers, Authorization: `Bearer ${newToken}` };
-          res = await doFetch(url, { __retry: true });
+          try {
+            res = await doFetch(url, { __retry: true });
+          } catch (err) {
+            if (i === urls.length - 1) throw err;
+            continue;
+          }
         }
-      } catch (_) {
-        // leave res as 401
-      }
+      } catch (_) {}
     }
     if (res.status !== 404 || i === urls.length - 1) {
       return res;
