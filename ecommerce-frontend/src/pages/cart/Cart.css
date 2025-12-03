@@ -239,3 +239,47 @@
   color: var(--color-text);
   font-weight: 500;
 }
+.checkout-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  /* border: 1px solid var(--border-color, #e5e7eb); */
+  background: var(--surface-color, #fff);
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  margin-bottom: 16px;
+}
+
+.checkout-banner__text {
+  color: var(--text-color, #111827);
+  font-size: 0.95rem;
+}
+
+.banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.banner-btn {
+  appearance: none;
+  border: 1px solid var(--border-color, #e5e7eb);
+  background: transparent;
+  color: var(--text-color, #111827);
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.banner-btn--primary {
+  background: var(--primary-color, #111827);
+  color: var(--primary-contrast, #ffffff);
+  border-color: var(--primary-color, #111827);
+}
+
+.banner-btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

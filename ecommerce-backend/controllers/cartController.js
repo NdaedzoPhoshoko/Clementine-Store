@@ -365,3 +365,30 @@ export const deleteCartItem = async (req, res) => {
     res.status(500).json({ message: "Server error while deleting cart item" });
   }
 };
+
+export const revertCheckoutCart = async (req, res) => {
+  try {
+    const userId = parseInt(req.user?.id, 10);
+    if (!userId || userId <= 0) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+    const inProgressRes = await pool.query(
+      "SELECT id FROM cart WHERE user_id=$1 AND status='CHECKOUT_IN_PROGRESS' ORDER BY created_at DESC LIMIT 1",
+      [userId]
+    );
+    if (inProgressRes.rows.length === 0) {
+      return res.status(404).json({ message: "No cart in checkout in progress" });
+    }
+    const cartId = inProgressRes.rows[0].id;
+    const updRes = await pool.query(
+      "UPDATE cart SET status='ACTIVE' WHERE id=$1 RETURNING id, user_id, status, created_at",
+      [cartId]
+    );
+    const updated = updRes.rows[0];
+    const data = await getCartWithItems(updated.id);
+    return res.status(200).json({ ...data, message: "Checkout cancelled" });
+  } catch (err) {
+    console.error("Revert checkout error:", err.message);
+    return res.status(500).json({ message: "Error reverting checkout" });
+  }
+};

@@ -3,7 +3,7 @@ import './ViewAccount.css';
 import AccountSideBar from './AccountSideBar.jsx';
 import useAuthLogOut from '../../hooks/use_auth/useAuthLogOut.js';
 import { useCart } from '../../hooks/for_cart/CartContext.jsx';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import useFetchMyOrders from '../../hooks/useFetchMyOrders.js';
 import EditOrderInfo from './EditOrderInfo.jsx';
 import useFetchMyShippingDetails from '../../hooks/useFetchMyShippingDetails.js';
@@ -18,6 +18,7 @@ export default function ViewAccount() {
   const { logout, loading: logoutLoading } = useAuthLogOut();
   const { clearCart } = useCart();
   const navigate = useNavigate();
+  const location = useLocation();
   const { items: orders, loading: ordersLoading, error: ordersError, hasMore: ordersHasMore, refresh, page: ordersPage, meta: ordersMeta, setPage: setOrdersPage } = useFetchMyOrders({ initialPage: 1, limit: 10, enabled: active === 'orders' });
   const { items: shippingItems, loading: shippingLoading, error: shippingError, hasMore: shippingHasMore, page: shippingPage, meta: shippingMeta, setPage: setShippingPage, refresh: refreshShipping } = useFetchMyShippingDetails({ initialPage: 1, limit: 10, enabled: active === 'addresses' });
   const { update: updateOrderShipping } = useUpdateOrderShipping();
@@ -108,6 +109,17 @@ export default function ViewAccount() {
       return () => clearTimeout(t);
     }
   }, [active]);
+
+  React.useEffect(() => {
+    const desired = String(location?.state?.active || '').toLowerCase();
+    if (desired === 'orders') {
+      setActive('orders');
+    } else if (desired === 'addresses') {
+      setActive('addresses');
+    } else if (desired === 'profile') {
+      setActive('profile');
+    }
+  }, [location?.state?.active]);
 
   React.useEffect(() => {
     if (active === 'addresses') {
@@ -303,10 +315,10 @@ export default function ViewAccount() {
                 <div className="my_account-card">
                   <div className="account-card__title">No Orders Yet</div>
                   <div className="account-card__text">Start by browsing products and placing your first order.</div>
-                  <a className="account-card__link" href="/shop-all">
+                  <Link className="account-card__link" to="/shop-all">
                     Browse products
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 6 }} aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
-                  </a>
+                  </Link>
                 </div>
               )}
               {!initialOrdersSkeleton && orders.length > 0 && (
@@ -611,8 +623,8 @@ export default function ViewAccount() {
               </div>
               <div className="my_account-card">
                 <div className="account-support">
-                  <a className="account-btn account-btn--dark" href="/support/contact">Contact Support</a>
-                  <a className="account-btn account-btn--light" href="/support/live-chat">Live Chat</a>
+                  <Link className="account-btn account-btn--dark" to="/support/contact">Contact Support</Link>
+                  <Link className="account-btn account-btn--light" to="/support/live-chat">Live Chat</Link>
                 </div>
               </div>
             </div>

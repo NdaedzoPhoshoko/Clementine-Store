@@ -203,7 +203,21 @@ export const getProductReviews = async (req, res) => {
       reviewCount: parseInt(statsResult.rows[0].review_count, 10),
     };
 
-    return res.status(200).json({ reviews, stats });
+    let haveOrdered = "require signin";
+    const uid = parseInt(req.user?.id, 10);
+    if (uid && uid > 0) {
+      const ordRes = await pool.query(
+        `SELECT 1
+         FROM order_items oi
+         JOIN orders o ON o.id = oi.order_id
+         WHERE o.user_id = $1 AND oi.product_id = $2
+         LIMIT 1`,
+        [uid, id]
+      );
+      haveOrdered = ordRes.rows.length > 0 ? "ordered" : "not ordered";
+    }
+
+    return res.status(200).json({ reviews, stats, haveOrdered });
   } catch (err) {
     console.error("Get product reviews error:", err.message);
     return res.status(500).json({ message: "Error fetching product reviews" });

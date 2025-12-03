@@ -6,9 +6,13 @@ import useDeleteCartItem from '../../hooks/for_cart/useDeleteCartItem.js';
 import useUpdateCartItemQuantity from '../../hooks/for_cart/useUpdateCartItemQuantity.js';
 import { useCart } from '../../hooks/for_cart/CartContext.jsx';
 import { createPortal } from 'react-dom'
-import authStorage from '../../hooks/use_auth/authStorage.js'
+import useAuthUser from '../../hooks/use_auth/useAuthUser.js'
 import { Link, useNavigate } from 'react-router-dom'
 import ErrorModal from '../../components/modals/ErrorModal.jsx'
+// SuccessModal removed for retrieve action per request
+import useRevertCheckout from '../../hooks/for_cart/useRevertCheckout.js'
+import useCreateOrder from '../../hooks/for_cart/useCreateOrder.js'
+import useLatestOrder from '../../hooks/for_cart/useLatestOrder.js'
 
 const toNumber = (v) => (typeof v === 'string' ? parseFloat(v) : Number(v));
 const formatPrice = (v) => {
@@ -18,7 +22,7 @@ const formatPrice = (v) => {
 };
 
 export default function Cart() {
-  const isAuthed = authStorage.isAuthenticated();
+  const { isAuthed } = useAuthUser();
   const { cart, items, meta, loading, error, refresh } = useFetchCart({ enabled: isAuthed });
   const { deleteItem, loading: deleting } = useDeleteCartItem();
   const { updateQuantity } = useUpdateCartItemQuantity();
@@ -26,6 +30,8 @@ export default function Cart() {
   const { items: ctxItems, meta: ctxMeta, setItems: setCtxItems, updateItemQuantity, hydrate } = useCart();
   const [errorModalMsg, setErrorModalMsg] = useState('');
   const closeErrorModal = () => setErrorModalMsg('');
+  // Success modal state removed for retrieve action
+  const { revertCheckout, loading: reverting } = useRevertCheckout();
   const formatUiError = (err, ctx) => {
     if (!err) return '';
     const raw = typeof err === 'string' ? err : (err?.message || 'Unexpected error');
@@ -41,6 +47,7 @@ export default function Cart() {
   };
 
   const navigate = useNavigate();
+  const { createOrder, loading: creatingOrder } = useCreateOrder();
 
   // Local visible items to support optimistic removal controlled at the page level
   const [visibleItems, setVisibleItems] = useState(items);
@@ -103,11 +110,41 @@ export default function Cart() {
   const subtotalFromMeta = formatPrice(Number(meta?.subtotal));
 
   const canCheckout = !loading && !error && (visibleItems?.length || 0) > 0;
+  const showCheckoutBanner = isAuthed && !loading && !error && (visibleItems?.length ?? 0) === 0 && String(cart?.status) === 'CHECKOUT_IN_PROGRESS';
 
-  const onCheckout = () => {
+  const onCheckout = async () => {
     const list = Array.isArray((ctxItems || [])) ? ctxItems : [];
-    // Pass raw cart items to checkout; it will map and compute totals
-    navigate('/cart/checkout', { state: { items: list } });
+    try {
+      const payload = await createOrder({});
+      const nextItems = Array.isArray(payload?.items) ? payload.items : list;
+      const orderId = payload?.order?.id;
+      const total = payload?.meta?.total;
+      navigate('/cart/checkout', { state: { items: nextItems, orderId, total } });
+    } catch (err) {
+      setErrorModalMsg(formatUiError(err, 'Checkout'));
+    }
+  };
+
+  const { fetchLatestOrder, loading: loadingLatestOrder } = useLatestOrder();
+  const onContinueCheckout = async () => {
+    try {
+      const latest = await fetchLatestOrder();
+      if (!latest) {
+        throw new Error('No recent order found');
+      }
+      const items = Array.isArray(latest.items) ? latest.items.map((it) => ({
+        cart_item_id: it.order_item_id,
+        product_id: it.product_id,
+        name: it.name,
+        price: Number(it.price),
+        quantity: Number(it.quantity),
+        image_url: typeof it.image_url === 'string' ? it.image_url : '',
+      })) : [];
+      const total = Number(latest?.meta?.total ?? latest?.total_price ?? 0);
+      navigate('/cart/checkout', { state: { items, orderId: latest.id, total, shipping: latest.shipping || null } });
+    } catch (err) {
+      setErrorModalMsg(formatUiError(err, 'Checkout'));
+    }
   };
 
   const onRequestDelete = (item) => {
@@ -143,6 +180,15 @@ export default function Cart() {
         setErrorModalMsg(formatUiError(err, 'Cart'));
       }
     })();
+  };
+
+  const onCancelCheckout = async () => {
+    try {
+      await revertCheckout();
+      await refresh();
+    } catch (err) {
+      setErrorModalMsg(formatUiError(err, 'Cart'));
+    }
   };
 
   const scheduleQuantityUpdate = (cartItemId, nextQty) => {
@@ -189,6 +235,22 @@ export default function Cart() {
         <header className="cart-header">
           <h3 className="cart-title">Your Shopping Bag</h3>
         </header>
+
+        {showCheckoutBanner && (
+          <div className="checkout-banner" role="status" aria-live="polite">
+            <div className="checkout-banner__text">
+              You have a checkout in progress. To retrieve your cart items, choose "Cancel Checkout". To finish your order, continue to checkout.
+            </div>
+            <div className="banner-actions">
+              <button className="banner-btn banner-btn--primary" onClick={onContinueCheckout} disabled={loadingLatestOrder}>
+                Continue Checkout
+              </button>
+              <button className="banner-btn" onClick={onCancelCheckout} disabled={reverting}>
+                Cancel Checkout
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* // Replace logical-AND with ternary so the trailing ':' remains valid */}
         {!isAuthed ? (
@@ -257,7 +319,7 @@ export default function Cart() {
                 </div>
 
                 <div className="details-cta">
-                  <button className="checkout-btn" disabled={!canCheckout} onClick={onCheckout}>
+                  <button className="checkout-btn" disabled={!canCheckout || creatingOrder} onClick={onCheckout}>
                     Checkout
                   </button>
                 </div>
@@ -292,6 +354,7 @@ export default function Cart() {
           document.body
         )
       )}
+      {/* Success modal not shown for retrieval */}
      </>
    );
 }

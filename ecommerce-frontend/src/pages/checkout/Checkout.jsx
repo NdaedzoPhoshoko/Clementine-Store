@@ -1,14 +1,20 @@
 import React, { useMemo, useState, useEffect } from 'react'
 import './Checkout.css'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useCart } from '../../hooks/for_cart/CartContext.jsx'
 import useFetchMyShippingDetails from '../../hooks/useFetchMyShippingDetails.js'
+import useCreatePaymentIntent from '../../hooks/payment/useCreatePaymentIntent.js'
+import useConfirmPaymentIntent from '../../hooks/payment/useConfirmPaymentIntent.js'
+import useShippingReuseOptions from '../../hooks/payment/useShippingReuseOptions.js'
+import useSavedPaymentCards from '../../hooks/payment/useSavedPaymentCards.js'
+import SuccessModal from '../../components/modals/success_modal/SuccessModal.jsx'
 
 // Currency formatter (Rand)
 const format = (n) => `R${Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 export default function Checkout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { items: cartItems } = useCart();
   const { items: shippingItems } = useFetchMyShippingDetails({ enabled: true });
 
@@ -60,7 +66,13 @@ export default function Checkout() {
   }
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [pendingRemove, setPendingRemove] = useState(null)
-  const confirmRemove = () => {
+  const { saveCard, removeCard } = useSavedPaymentCards()
+  const confirmRemove = async () => {
+    try {
+      if (pendingRemove?.backend_id) {
+        await removeCard({ id: pendingRemove.backend_id })
+      }
+    } catch (_) {}
     if (pendingRemove) removeSavedCard(pendingRemove.id)
     setConfirmOpen(false)
     setPendingRemove(null)
@@ -75,24 +87,54 @@ export default function Checkout() {
     return () => window.removeEventListener('keydown', onKey)
   }, [confirmOpen])
   
-  // Save current card to saved cards when requested
   const handlePay = () => {
     const ready = isValidExp(card.exp) && isValidCvv(card.cvv) && card.name.trim() && card.number.trim()
-    if (!ready) return
-    if (saveCardChecked) {
-      const brand = detectBrand(card.number)
-      const id = `c_${Date.now()}`
-      const entry = { id, brand, name: card.name.trim(), number: card.number.replace(/\s+/g, ' ').trim(), exp: card.exp }
-      setSavedCards((prev) => {
-        const digits = card.number.replace(/\D/g, '')
-        const last4 = digits.slice(-4)
-        const exists = prev.some((c) => c.number.replace(/\D/g, '').slice(-4) === last4 && c.name === entry.name && c.exp === entry.exp)
-        const next = exists ? prev : [...prev, entry]
-        persistSavedCards(next)
-        return next
-      })
+    const orderId = Number(location?.state?.orderId || 0)
+    if (!ready || !orderId) return
+    const run = async () => {
+      try {
+        setPaying(true)
+        const intentRes = await createPaymentIntent({ orderId })
+        const intentId = String(intentRes?.payment_intent_id || '')
+        if (!intentId) throw new Error('Missing payment_intent_id')
+        await confirmPaymentIntent({ orderId, paymentIntentId: intentId })
+        if (saveCardChecked) {
+          try {
+            const brand = detectBrand(card.number)
+            const digits = card.number.replace(/\D/g, '')
+            const saved = await saveCard({
+              brand,
+              card_number: digits,
+              exp: card.exp,
+              cardholder_name: card.name.trim(),
+            })
+            if (saved && saved.id) {
+              const entryId = `c_${Date.now()}`
+              const entry = { id: entryId, backend_id: saved.id, brand, name: card.name.trim(), number: card.number.replace(/\s+/g, ' ').trim(), exp: card.exp }
+              setSavedCards((prev) => {
+                const last4 = digits.slice(-4)
+                const exists = prev.some((c) => c.number.replace(/\D/g, '').slice(-4) === last4 && c.name === entry.name && c.exp === entry.exp)
+                const next = exists ? prev : [...prev, entry]
+                persistSavedCards(next)
+                return next
+              })
+            }
+          } catch (_) {}
+        }
+        setPaying(false)
+        setPaymentDone(true)
+        setModalVariant('success')
+        setModalMessage(`Payment successful. Order #${orderId} is now paid.`)
+        setModalOpen(true)
+      } catch (_) {
+        setPaying(false)
+        setPaymentDone(false)
+        setModalVariant('error')
+        setModalMessage('Payment failed. Please try again.')
+        setModalOpen(true)
+      }
     }
-    // In a real integration, we would call the payment API here
+    run()
   }
 
   // EFT/bank accounts removed per request
@@ -144,6 +186,27 @@ export default function Checkout() {
   })
   const [email, setEmail] = useState('angeline@example.com')
   const [editingShip, setEditingShip] = useState(false)
+  const { fetchReuseOptions, items: reuseItems, loading: reuseLoading } = useShippingReuseOptions()
+  const [reuseOpen, setReuseOpen] = useState(false)
+
+  // Prefer shipping from navigation state when continuing checkout
+  useEffect(() => {
+    const s = location?.state?.shipping
+    if (s && typeof s === 'object') {
+      setShipping((prev) => ({
+        name: s.name || prev.name,
+        address: s.address || prev.address,
+        city: s.city || prev.city,
+        province: s.province || prev.province,
+        postal_code: s.postal_code || prev.postal_code,
+        phone_number: s.phone_number || prev.phone_number,
+      }))
+    }
+  }, [location?.state?.shipping])
+
+  useEffect(() => {
+    fetchReuseOptions().catch(() => {})
+  }, [fetchReuseOptions])
 
   useEffect(() => {
     const arr = Array.isArray(shippingItems) ? shippingItems : []
@@ -186,6 +249,14 @@ export default function Checkout() {
   const subtotal = useMemo(() => items.reduce((sum, it) => sum + it.price * it.qty, 0), [items])
   const tax = useMemo(() => subtotal * 0.15, [subtotal])
   const total = useMemo(() => subtotal + tax, [subtotal, tax])
+
+  const { createPaymentIntent, loading: creatingIntent } = useCreatePaymentIntent()
+  const { confirmPaymentIntent, loading: confirmingIntent } = useConfirmPaymentIntent()
+  const [paying, setPaying] = useState(false)
+  const [paymentDone, setPaymentDone] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [modalVariant, setModalVariant] = useState('success')
+  const [modalMessage, setModalMessage] = useState('')
 
   return (
     <div className="checkout-page">
@@ -274,7 +345,11 @@ export default function Checkout() {
                   className="form-control"
                   placeholder="0000 0000 0000 0000"
                   value={card.number}
-                  onChange={(e) => setCard({ ...card, number: e.target.value })}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, '').slice(0, 19)
+                    const grouped = digits.match(/.{1,4}/g)?.join(' ') || digits
+                    setCard({ ...card, number: grouped })
+                  }}
                 />
                 {(() => {
                   const brand = detectBrand(card.number)
@@ -324,7 +399,9 @@ export default function Checkout() {
                     id="cc_cvv"
                     className={`form-control ${errors.cvv ? 'error' : ''}`}
                     placeholder="CVV"
+                    type="password"
                     inputMode="numeric"
+                    autoComplete="cc-csc"
                     maxLength={3}
                     value={card.cvv}
                     onChange={(e) => {
@@ -356,12 +433,30 @@ export default function Checkout() {
 
           <button
             className="pay-btn"
-            disabled={!(isValidExp(card.exp) && isValidCvv(card.cvv) && card.name.trim() && card.number.trim())}
-            aria-disabled={!(isValidExp(card.exp) && isValidCvv(card.cvv) && card.name.trim() && card.number.trim())}
+            disabled={!(isValidExp(card.exp) && isValidCvv(card.cvv) && card.name.trim() && card.number.trim()) || paying || creatingIntent || confirmingIntent || !Number(location?.state?.orderId || 0)}
+            aria-disabled={!(isValidExp(card.exp) && isValidCvv(card.cvv) && card.name.trim() && card.number.trim()) || paying || creatingIntent || confirmingIntent || !Number(location?.state?.orderId || 0)}
             onClick={handlePay}
           >
-            Pay {format(total)}
+            {paying || creatingIntent || confirmingIntent ? 'Processing…' : (paymentDone ? 'Paid' : `Pay ${format(total)}`)}
           </button>
+
+          <SuccessModal
+            open={modalOpen}
+            variant={modalVariant}
+            title={modalVariant === 'success' ? 'Payment Successful' : 'Payment Failed'}
+            message={modalMessage}
+            onClose={() => setModalOpen(false)}
+            onAfterClose={() => {
+              setModalOpen(false);
+              if (modalVariant === 'success') {
+                navigate('/account', { state: { active: 'orders' } });
+              } else {
+                navigate('/cart');
+              }
+            }}
+            autoCloseMs={6000}
+            closeOnOverlay={true}
+          />
 
           {confirmOpen && (
             <div className="modal-backdrop" onClick={cancelRemove}>
@@ -434,6 +529,44 @@ export default function Checkout() {
 
           {/* Optional Shipping Details (view + edit) */}
           <div className="shipping-block">
+            {(Array.isArray(reuseItems) && reuseItems.length > 0) && (
+              <div className={`saved-shipping ${reuseOpen ? 'open' : ''}`}>
+                <div className="saved-title">Saved Addresses</div>
+                <div className={`saved-list ${reuseOpen ? 'slider' : ''}`}>
+                  {(reuseOpen ? reuseItems : reuseItems.slice(0, 3)).map((r, idx) => (
+                    <button
+                      key={`${r.city || ''}-${r.province || ''}-${r.postal_code || ''}-${idx}`}
+                      type="button"
+                      className="saved-chip"
+                      onClick={() => {
+                        setShipping((prev) => ({
+                          ...prev,
+                          address: r.address || prev.address || '',
+                          city: r.city || prev.city || '',
+                          province: r.province || prev.province || '',
+                          postal_code: r.postal_code || prev.postal_code || '',
+                          phone_number: r.phone_number || prev.phone_number || ''
+                        }))
+                        setReuseOpen(false)
+                      }}
+                    >
+                      <span className="chip-title">{[r.city, r.province, r.postal_code].filter(Boolean).join(', ')}</span>
+                      <span className="chip-sub">{[r.address, r.phone_number].filter(Boolean).join(' · ')}</span>
+                    </button>
+                  ))}
+                </div>
+                {reuseItems.length > 3 && !reuseOpen && (
+                  <button type="button" className="items-more" onClick={() => setReuseOpen(true)}>
+                    + {reuseItems.length - 3} more
+                  </button>
+                )}
+                {reuseOpen && (
+                  <button type="button" className="items-more" onClick={() => setReuseOpen(false)}>
+                    Close
+                  </button>
+                )}
+              </div>
+            )}
             <div className="block-top">
               <span className="block-title">Shipping Details</span>
               <button className="link-btn" onClick={() => setEditingShip((v) => !v)}>
@@ -506,7 +639,14 @@ export default function Checkout() {
                   autoComplete="tel"
                   placeholder="Phone number"
                   value={shipping.phone_number}
-                  onChange={(e) => setShipping({ ...shipping, phone_number: e.target.value })}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    const cleaned = v
+                      .replace(/[^\d+\s-]/g, '')
+                      .replace(/(?!^)\+/g, '')
+                      .slice(0, 20)
+                    setShipping({ ...shipping, phone_number: cleaned })
+                  }}
                 />
               </div>
             )}

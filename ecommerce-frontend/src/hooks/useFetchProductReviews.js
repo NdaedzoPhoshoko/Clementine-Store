@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
+import apiFetch from '../utils/apiFetch.js';
+import { authStorage } from './use_auth/authStorage.js';
 
 // Cache TTL aligned with other hooks
 const CACHE_TTL_MS = 60 * 1000; // 60 seconds
 
-const cacheKey = (productId) => `product-reviews-cache:v1:id=${productId}`;
+const cacheKey = (userId, productId) => `product-reviews-cache:v1:user=${userId ?? 'guest'}:id=${productId}`;
 
 function normalizeReview(r) {
   if (!r || typeof r !== 'object') return null;
@@ -21,11 +23,15 @@ function normalizeReview(r) {
 export default function useFetchProductReviews({ productId, enabled = true } = {}) {
   const [reviews, setReviews] = useState([]);
   const [reviewStats, setReviewStats] = useState({ averageRating: 0, reviewCount: 0 });
+  const [haveOrdered, setHaveOrdered] = useState('require signin');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const controllerRef = useRef(null);
   const lastProductIdRef = useRef(productId);
+  const user = authStorage.getUser();
+  const signature = useMemo(() => String(user?.id ?? 'guest'), [user?.id]);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Reset when product ID changes
   useEffect(() => {
@@ -33,6 +39,7 @@ export default function useFetchProductReviews({ productId, enabled = true } = {
       lastProductIdRef.current = productId;
       setReviews([]);
       setReviewStats({ averageRating: 0, reviewCount: 0 });
+      setHaveOrdered('require signin');
       setError(null);
     }
   }, [productId]);
@@ -44,7 +51,7 @@ export default function useFetchProductReviews({ productId, enabled = true } = {
     controllerRef.current?.abort();
     controllerRef.current = controller;
 
-    const KEY = cacheKey(productId);
+    const KEY = cacheKey(signature, productId);
 
     let usedCache = false;
     let cacheIsStale = true;
@@ -58,10 +65,14 @@ export default function useFetchProductReviews({ productId, enabled = true } = {
           const age = Date.now() - (cached.ts || 0);
           const arr = Array.isArray(cached.reviews) ? cached.reviews : [];
           const stats = cached.stats || cached.reviewStats || { averageRating: 0, reviewCount: 0 };
+          const cachedHaveOrdered = cached.haveOrdered;
           if (arr.length > 0 || stats) {
             const normalized = arr.map(normalizeReview).filter(Boolean);
             setReviews(normalized);
             setReviewStats(stats);
+            if (typeof cachedHaveOrdered === 'string') {
+              setHaveOrdered(cachedHaveOrdered);
+            }
             usedCache = true;
             cacheIsStale = age >= CACHE_TTL_MS;
             setLoading(false);
@@ -85,7 +96,7 @@ export default function useFetchProductReviews({ productId, enabled = true } = {
       for (let i = 0; i < attempts.length; i++) {
         const url = attempts[i];
         try {
-          const res = await fetch(url, {
+          const res = await apiFetch(url, {
             headers: { accept: 'application/json' },
             signal: controller.signal,
           });
@@ -99,21 +110,35 @@ export default function useFetchProductReviews({ productId, enabled = true } = {
           const data = await res.json();
           const arr = Array.isArray(data?.reviews) ? data.reviews : Array.isArray(data) ? data : [];
           const stats = data?.stats || data?.reviewStats || { averageRating: 0, reviewCount: 0 };
+          const have = data?.haveOrdered;
 
           const normalized = arr.map(normalizeReview).filter(Boolean);
           setReviews(normalized);
           setReviewStats(stats);
+          if (typeof have === 'string') {
+            setHaveOrdered(have);
+          } else {
+            setHaveOrdered('require signin');
+          }
 
           try {
             if (typeof window !== 'undefined' && window.localStorage) {
               localStorage.setItem(
                 KEY,
-                JSON.stringify({ ts: Date.now(), reviews: arr, stats })
+                JSON.stringify({ ts: Date.now(), reviews: arr, stats, haveOrdered: have })
               );
             }
           } catch (e) {
             console.warn('[useFetchProductReviews] Cache write failed:', e);
           }
+
+          // Debug log to verify haveOrdered and stats
+          console.log('[useFetchProductReviews] fetched', {
+            productId,
+            haveOrdered: typeof have === 'string' ? have : 'require signin',
+            count: normalized.length,
+            stats,
+          });
 
           setLoading(false);
           return; // success
@@ -130,16 +155,36 @@ export default function useFetchProductReviews({ productId, enabled = true } = {
 
     if (!usedCache || cacheIsStale) {
       fetchLatest();
+    } else {
+      // Even with fresh cache, haveOrdered can depend on auth state; fetch to refresh it quietly.
+      fetchLatest();
     }
 
     return () => {
       controller.abort();
     };
-  }, [productId, enabled]);
+  }, [productId, enabled, signature, refreshKey]);
+
+  useEffect(() => {
+    const onAuthChanged = (e) => {
+      const isAuthed = !!e?.detail?.isAuthed;
+      if (!isAuthed) {
+        setHaveOrdered('require signin');
+        setRefreshKey((k) => k + 1);
+      } else {
+        setRefreshKey((k) => k + 1);
+      }
+    };
+    try { window.addEventListener('auth:changed', onAuthChanged); } catch (_) {}
+    return () => {
+      try { window.removeEventListener('auth:changed', onAuthChanged); } catch (_) {}
+    };
+  }, []);
 
   return {
     reviews,
     reviewStats,
+    haveOrdered,
     loading,
     error,
     isLoading: loading,

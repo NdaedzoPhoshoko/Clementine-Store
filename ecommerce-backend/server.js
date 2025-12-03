@@ -16,6 +16,7 @@ import shippingRoutes from "./routes/shippingRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import inventoryRoutes from "./routes/inventoryRoutes.js";
+import cardRoutes from "./routes/cardRoutes.js";
 // Removed duplicate endpoint import
 
 dotenv.config();
@@ -29,6 +30,8 @@ const allowedOrigins = [
 ];
 
 app.use(cors({ origin: allowedOrigins, credentials: true }));
+// Use raw body for Stripe webhook before JSON parser
+app.use("/api/payments/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
 app.use(cookieParser());
 
@@ -44,6 +47,7 @@ app.use("/api/shipping-details", shippingRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/inventory-logs", inventoryRoutes);
+app.use("/api/cards", cardRoutes);
 
 // Removed duplicate categoriesWithImages endpoint and its Swagger block
 

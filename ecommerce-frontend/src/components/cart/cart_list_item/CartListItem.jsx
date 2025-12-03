@@ -144,7 +144,7 @@ export default function CartListItem({ item = {}, onRemove, onRestore, refresh, 
         <div className="cart-item__actions" aria-label="Item actions">
           <div className="qty-stepper" role="group" aria-label="Quantity">
             <button
-              className="qty-btn qty-btn--minus"
+              className="my-qty-btn qty-btn--minus"
               type="button"
               onClick={handleDecrease}
               disabled={false}
@@ -154,7 +154,7 @@ export default function CartListItem({ item = {}, onRemove, onRestore, refresh, 
             </button>
             <span className="qty-value" aria-live="polite">{qty}</span>
             <button
-              className="qty-btn qty-btn--plus"
+              className="my-qty-btn qty-btn--plus"
               type="button"
               onClick={handleIncrease}
               disabled={false}

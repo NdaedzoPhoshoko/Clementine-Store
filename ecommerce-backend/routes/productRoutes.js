@@ -1,7 +1,7 @@
 import express from "express";
 import multer from "multer";
 import { listProducts, getProductById, getProductReviews, createProduct, updateProduct, deleteProduct, uploadProductImage, deleteProductImage, deleteAllProductImages, getLatestProducts, autocompleteProductNames } from "../controllers/productController.js";
-import { protect, requireAdmin } from "../middleware/auth.js";
+import { protect, requireAdmin, optionalAuth } from "../middleware/auth.js";
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -604,7 +604,7 @@ router.get("/:id", getProductById);
  *         description: Product ID
  *     responses:
  *       200:
- *         description: Reviews list with aggregate stats
+ *         description: Reviews list with aggregate stats and the caller's order status
  *         content:
  *           application/json:
  *             schema:
@@ -635,6 +635,9 @@ router.get("/:id", getProductById);
  *                       type: number
  *                     reviewCount:
  *                       type: integer
+ *                 haveOrdered:
+ *                   type: string
+ *                   enum: ["ordered", "not ordered", "require signin"]
  *       400:
  *         description: Invalid product id
  *       404:
@@ -642,7 +645,7 @@ router.get("/:id", getProductById);
  *       500:
  *         description: Server error
  */
-router.get("/:id/reviews", getProductReviews);
+router.get("/:id/reviews", optionalAuth, getProductReviews);
 
 /**
  * @swagger

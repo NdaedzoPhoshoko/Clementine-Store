@@ -1,5 +1,5 @@
 import express from "express";
-import { getUserCart, clearUserCart } from "../controllers/cartController.js";
+import { getUserCart, clearUserCart, revertCheckoutCart } from "../controllers/cartController.js";
 import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -126,5 +126,48 @@ router.get("/", protect, getUserCart);
  *         description: Server error while clearing cart
  */
 router.delete("/", protect, clearUserCart);
+
+/**
+ * @swagger
+ * /api/cart/revert-checkout:
+ *   post:
+ *     summary: Revert checkout in progress and restore the active cart
+ *     description: Flips the user's CHECKOUT_IN_PROGRESS cart back to ACTIVE and returns the cart, items, and totals.
+ *     tags:
+ *       - Shopping Cart
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Checkout cancelled and cart restored
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 cart:
+ *                   type: object
+ *                   nullable: true
+ *                 items:
+ *                   type: array
+ *                   items: {}
+ *                 meta:
+ *                   type: object
+ *                   properties:
+ *                     totalItems:
+ *                       type: integer
+ *                     subtotal:
+ *                       type: number
+ *                 message:
+ *                   type: string
+ *                   example: "Checkout cancelled"
+ *       401:
+ *         description: Not authorized
+ *       404:
+ *         description: No cart in checkout in progress
+ *       500:
+ *         description: Server error while reverting checkout
+ */
+router.post("/revert-checkout", protect, revertCheckoutCart);
 
 export default router;

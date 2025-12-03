@@ -78,13 +78,13 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid var(--color-border);
+  /* border: 1px solid var(--color-border); */
   border-radius: 999px;
   padding: 4px 8px;
-  background: var(--color-bg);
+  /* background: var(--color-bg); */
 }
 
-.qty-btn {
+.my-qty-btn {
   appearance: none;
   border: none;
   background: transparent;
@@ -98,26 +98,27 @@
   transition: background 160ms ease, transform 160ms ease, color 160ms ease;
 }
 
-.qty-btn:hover, .qty-btn:focus-visible { background: var(--color-hover); }
-.qty-btn:active { transform: scale(0.96); }
+.my-qty-btn:hover, .my-qty-btn:focus-visible { background: var(--color-hover); }
+.my-qty-btn:active { transform: scale(0.96); }
 
 .qty-value { min-width: 20px; text-align: center; font-weight: 600; }
 
 .delete-btn {
   appearance: none;
-  border: 1px solid var(--color-border);
-  background: var(--color-bg);
+  /* border: 1px solid var(--color-border); */
+  /* background: var(--color-bg); */
   color: var(--color-danger);
   width: 32px;
   height: 32px;
   display: grid;
   place-items: center;
   border-radius: 8px;
+  border: none;
   cursor: pointer;
   transition: background 160ms ease, box-shadow 160ms ease, transform 160ms ease, filter 160ms ease;
 }
 
-.delete-btn:hover, .delete-btn:focus-visible { background: var(--color-surface); box-shadow: var(--shadow-1); filter: brightness(1.05); }
+.delete-btn:hover, .delete-btn:focus-visible { /* background: var(--color-surface) ;*/ box-shadow: var(--shadow-1); filter: brightness(1.05); }
 .delete-btn:active { transform: scale(0.96); }
 
 .stock { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--color-border); }

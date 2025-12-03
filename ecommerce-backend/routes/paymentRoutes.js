@@ -1,5 +1,5 @@
 import express from "express";
-import { createPayment, getPaymentByTransactionId } from "../controllers/paymentController.js";
+import { createPayment, getPaymentByTransactionId, createPaymentIntent, stripeWebhook, confirmPaymentIntent } from "../controllers/paymentController.js";
 import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -52,6 +52,47 @@ const router = express.Router();
  *         description: Server error while creating payment
  */
 router.post("/", protect, createPayment);
+
+/**
+ * @swagger
+ * /api/payments/create-intent:
+ *   post:
+ *     summary: Create Stripe PaymentIntent for an order
+ *     description: Validates the order and returns client_secret for Stripe payment confirmation.
+ *     tags: [Checkouts & Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               order_id: { type: integer, example: 42 }
+ *     responses:
+ *       201:
+ *         description: PaymentIntent created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 client_secret: { type: string }
+ *                 payment_intent_id: { type: string }
+ *       400:
+ *         description: Invalid input or order state
+ *       401:
+ *         description: Not authorized
+ *       500:
+ *         description: Server error or Stripe not configured
+ */
+router.post("/create-intent", protect, createPaymentIntent);
+
+// Webhook: must use raw body; middleware is configured in server.js
+router.post("/webhook", stripeWebhook);
+
+router.post("/confirm-intent", protect, confirmPaymentIntent);
 
 /**
  * @swagger
