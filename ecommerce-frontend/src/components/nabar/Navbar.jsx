@@ -51,11 +51,11 @@ const Navbar = () => {
     const tags = [];
     if (hfData?.trendy_product) {
       const p = hfData.trendy_product;
-      tags.push({ key: 'trending', label: 'Trendy Product', to: `/product/${p.product_id}`, img: p.image_url || placeholderImg });
+      tags.push({ key: 'trending', label: 'Trendy Products', to: `/product/${p.product_id}`, img: p.image_url || placeholderImg });
     }
     if (hfData?.new_arrival) {
       const p = hfData.new_arrival;
-      tags.push({ key: 'new-arrivals', label: 'New Arrival', to: `/product/${p.product_id}`, img: p.image_url || placeholderImg });
+      tags.push({ key: 'new-arrivals', label: 'New Arrivals', to: `/product/${p.product_id}`, img: p.image_url || placeholderImg });
     }
     if (hfData?.featured_collection?.top_product) {
       const fc = hfData.featured_collection;
@@ -69,7 +69,7 @@ const Navbar = () => {
     }
     if (hfData?.low_stock_alert) {
       const p = hfData.low_stock_alert;
-      tags.push({ key: 'low-stock', label: 'Low Stock Alert', to: `/product/${p.product_id}`, img: p.image_url || placeholderImg });
+      tags.push({ key: 'low-stock', label: 'Low Stock Alerts', to: `/product/${p.product_id}`, img: p.image_url || placeholderImg });
     }
     if (tags.length === 0) {
       return [
