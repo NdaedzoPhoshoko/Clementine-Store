@@ -10,7 +10,7 @@ const router = express.Router();
  *   get:
  *     summary: Get the active cart for a user
  *     tags:
- *       - Shopping Cart
+ *       - Checkouts & Orders
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -80,7 +80,7 @@ router.get("/", protect, getUserCart);
  *   delete:
  *     summary: Clear all items from the user's active cart
  *     tags:
- *       - Shopping Cart
+ *       - Checkouts & Orders
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -134,7 +134,7 @@ router.delete("/", protect, clearUserCart);
  *     summary: Revert checkout in progress and restore the active cart
  *     description: Flips the user's CHECKOUT_IN_PROGRESS cart back to ACTIVE and returns the cart, items, and totals.
  *     tags:
- *       - Shopping Cart
+ *       - Checkouts & Orders
  *     security:
  *       - bearerAuth: []
  *     responses:

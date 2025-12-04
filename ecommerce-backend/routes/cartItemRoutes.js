@@ -10,7 +10,7 @@ const router = express.Router();
  *   post:
  *     summary: Add an item to a user's active cart (creates cart if none)
  *     tags:
- *       - Shopping Cart
+ *       - Checkouts & Orders
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -101,7 +101,7 @@ router.post("/", protect, addCartItem);
  *   put:
  *     summary: Update quantity for a cart item (user-owned, ACTIVE cart only)
  *     tags:
- *       - Shopping Cart
+ *       - Checkouts & Orders
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -151,7 +151,7 @@ router.put("/:id", protect, updateCartItem);
  *   delete:
  *     summary: Remove a cart item (user-owned, ACTIVE cart only)
  *     tags:
- *       - Shopping Cart
+ *       - Checkouts & Orders
  *     security:
  *       - bearerAuth: []
  *     parameters:

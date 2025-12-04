@@ -17,6 +17,7 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import inventoryRoutes from "./routes/inventoryRoutes.js";
 import cardRoutes from "./routes/cardRoutes.js";
+import homeFeaturesRoutes from "./routes/homeFeaturesRoutes.js";
 // Removed duplicate endpoint import
 
 dotenv.config();
@@ -48,6 +49,7 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/inventory-logs", inventoryRoutes);
 app.use("/api/cards", cardRoutes);
+app.use("/api/home-features", homeFeaturesRoutes);
 
 // Removed duplicate categoriesWithImages endpoint and its Swagger block
 

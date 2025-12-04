@@ -8,6 +8,8 @@ const router = express.Router();
  * /api/users:
  *   get:
  *     summary: Get all users
+ *     tags:
+ *       - Admin
  *     responses:
  *       200:
  *         description: Successfully fetched users

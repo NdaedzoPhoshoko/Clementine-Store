@@ -41,6 +41,14 @@ const options = {
         description: "Product catalog: list, get, create, update, delete",
       },
       {
+        name: "Payments",
+        description: "Payment methods and saved cards",
+      },
+      {
+        name: "Home Features",
+        description: "Homepage insights: trendy, new arrival, featured collection, top rated, low stock",
+      },
+      {
         name: "Checkouts & Orders",
         description: "Checkout flow and order management",
       },

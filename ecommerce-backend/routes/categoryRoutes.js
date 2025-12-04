@@ -17,6 +17,8 @@ const router = express.Router();
  * /api/categories:
  *   get:
  *     summary: List categories
+ *     tags:
+ *       - Products & Categories
  *     parameters:
  *       - in: query
  *         name: page
@@ -43,6 +45,8 @@ router.get("/", listCategories);
  * /api/categories/with-images:
  *   get:
  *     summary: List categories with an image (last image in the category)
+ *     tags:
+ *       - Products & Categories
  *     parameters:
  *       - in: query
  *         name: page
@@ -69,6 +73,8 @@ router.get("/with-images", listCategoriesWithImages);
  * /api/categories/{id}:
  *   get:
  *     summary: Get a specific category
+ *     tags:
+ *       - Products & Categories
  *     parameters:
  *       - in: path
  *         name: id
@@ -86,6 +92,8 @@ router.get("/:id", getCategoryById);
  * /api/categories/{ids}/products:
  *   get:
  *     summary: Get products for given categories
+ *     tags:
+ *       - Products & Categories
  *     parameters:
  *       - in: path
  *         name: ids
@@ -114,6 +122,8 @@ router.get("/:ids/products", getCategoryProducts);
  * /api/categories/add:
  *   post:
  *     summary: Add multiple categories (admin only)
+ *     tags:
+ *       - Products & Categories
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -143,6 +153,8 @@ router.post("/add", protect, requireAdmin, addCategoriesBulk);
  * /api/categories/{id}:
  *   put:
  *     summary: Update a category (admin only)
+ *     tags:
+ *       - Products & Categories
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -173,6 +185,8 @@ router.put("/:id", protect, requireAdmin, updateCategory);
  * /api/categories/{id}:
  *   delete:
  *     summary: Delete a category (admin only)
+ *     tags:
+ *       - Products & Categories
  *     security:
  *       - bearerAuth: []
  *     parameters:
