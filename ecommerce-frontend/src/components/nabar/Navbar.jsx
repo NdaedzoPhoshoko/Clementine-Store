@@ -5,6 +5,7 @@ import { authStorage } from "../../hooks/use_auth/authStorage.js";
 import useAuthLogOut from "../../hooks/use_auth/useAuthLogOut.js";
 import useFetchCategoryNames from "../../hooks/useFetchCategoryNames.js";
 import useFetchAutocomplete from "../../hooks/useFetchAutocomplete.js";
+import useHomeFeatures from "../../hooks/home_features/useHomeFeatures.js";
 import { useNavigate, Link } from "react-router-dom";
 import { useCart } from "../../hooks/for_cart/CartContext.jsx";
 
@@ -44,15 +45,42 @@ const Navbar = () => {
     }, DELAY_CLOSE_MS);
   };
 
-  // Home menu tags with images; used to render grid with skeletons
-  const homeTags = [
-    { key: 'trending', label: 'Trending Now', to: '/trending', img: '/images/imageNoVnXXmDNi0.png' },
-    { key: 'new-arrivals', label: 'New Arrivals', to: '/new-arrivals', img: '/images/imageNoVnXXmDNi0.png' },
-    { key: 'featured', label: 'Featured Collections', to: '/featured', img: '/images/imageNoVnXXmDNi0.png' },
-    { key: 'top-rated', label: 'Top Rated', to: '/top-rated', img: '/images/imageNoVnXXmDNi0.png' },
-    { key: 'weekly-deals', label: 'Weekly Deals', to: '/weekly-deals', img: '/images/imageNoVnXXmDNi0.png' },
-    { key: 'gift-ideas', label: 'Gift Ideas', to: '/gift-ideas', img: '/images/imageNoVnXXmDNi0.png' },
-  ];
+  const { data: hfData, loading: hfLoading } = useHomeFeatures();
+  const placeholderImg = "/images/imageNoVnXXmDNi0.png";
+  const homeTags = useMemo(() => {
+    const tags = [];
+    if (hfData?.trendy_product) {
+      const p = hfData.trendy_product;
+      tags.push({ key: 'trending', label: 'Trendy Product', to: `/product/${p.product_id}`, img: p.image_url || placeholderImg });
+    }
+    if (hfData?.new_arrival) {
+      const p = hfData.new_arrival;
+      tags.push({ key: 'new-arrivals', label: 'New Arrival', to: `/product/${p.product_id}`, img: p.image_url || placeholderImg });
+    }
+    if (hfData?.featured_collection?.top_product) {
+      const fc = hfData.featured_collection;
+      const tp = fc.top_product;
+      const lbl = fc.category_name ? `Featured: ${fc.category_name}` : 'Featured Collections';
+      tags.push({ key: 'featured', label: lbl, to: `/product/${tp.product_id}`, img: tp.image_url || placeholderImg });
+    }
+    if (hfData?.top_rated) {
+      const p = hfData.top_rated;
+      tags.push({ key: 'top-rated', label: 'Top Rated', to: `/product/${p.product_id}`, img: p.image_url || placeholderImg });
+    }
+    if (hfData?.low_stock_alert) {
+      const p = hfData.low_stock_alert;
+      tags.push({ key: 'low-stock', label: 'Low Stock Alert', to: `/product/${p.product_id}`, img: p.image_url || placeholderImg });
+    }
+    if (tags.length === 0) {
+      return [
+        { key: 'trending', label: 'Trending Now', to: '/trending', img: placeholderImg },
+        { key: 'new-arrivals', label: 'New Arrivals', to: '/new-arrivals', img: placeholderImg },
+        { key: 'featured', label: 'Featured Collections', to: '/featured', img: placeholderImg },
+        { key: 'top-rated', label: 'Top Rated', to: '/top-rated', img: placeholderImg },
+      ];
+    }
+    return tags;
+  }, [hfData]);
   const [homeLoaded, setHomeLoaded] = useState({});
   const markLoaded = (key) => setHomeLoaded((prev) => ({ ...prev, [key]: true }));
   const { names, loading: namesLoading, error: namesError } = useFetchCategoryNames({ page: 1, limit: 40 });
@@ -329,25 +357,38 @@ const Navbar = () => {
                   <p>Explore highlights from across the store: seasonal picks, editor‑curated collections, and what shoppers are loving right now. This is the quickest way to discover themes, styles, and best‑selling products without needing to search.</p>
                 </div>
                 <div className="mega-right">
-                  {homeTags.map((t) => (
-                    <Link key={t.key} to={t.to} className={`mega-tag ${homeLoaded[t.key] ? 'mega-tag--loaded' : 'mega-tag--loading'}`}>
-                      <span className="mega-tag__label">{t.label}</span>
-                      <div className="mega-tag__img-wrap">
-                        {!homeLoaded[t.key] && <span className="mega-tag__skeleton" aria-hidden="true" />}
-                        <img
-                          src={t.img}
-                          alt={t.label}
-                          className="mega-tag__img"
-                          loading="lazy"
-                          decoding="async"
-                          width="160"
-                          height="100"
-                          onLoad={() => markLoaded(t.key)}
-                          onError={() => markLoaded(t.key)}
-                        />
-                      </div>
-                    </Link>
-                  ))}
+                  {hfLoading ? (
+                    <>
+                      {Array.from({ length: 4 }).map((_, i) => (
+                        <div key={`hf-skel-${i}`} className="mega-tag mega-tag--skeleton" aria-hidden="true">
+                          <div className="mega-tag__img-wrap">
+                            <span className="skeleton-block mega-tag__img-skeleton" />
+                          </div>
+                          <span className="skeleton-block mega-tag__label-skeleton" />
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    homeTags.map((t) => (
+                      <Link key={t.key} to={t.to} className={`mega-tag ${homeLoaded[t.key] ? 'mega-tag--loaded' : 'mega-tag--loading'}`}>
+                        <span className="mega-tag__label">{t.label}</span>
+                        <div className="mega-tag__img-wrap">
+                          {!homeLoaded[t.key] && <span className="skeleton-block mega-tag__img-skeleton" aria-hidden="true" />}
+                          <img
+                            src={t.img}
+                            alt={t.label}
+                            className="mega-tag__img"
+                            loading="lazy"
+                            decoding="async"
+                            width="160"
+                            height="100"
+                            onLoad={() => markLoaded(t.key)}
+                            onError={() => markLoaded(t.key)}
+                          />
+                        </div>
+                      </Link>
+                    ))
+                  )}
                 </div>
               </div>
               )}
