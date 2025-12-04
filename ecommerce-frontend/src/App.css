@@ -66,3 +66,12 @@ p {
 .font-body {
   font-family: var(--font-primary);
 }
+
+/* Support page theme override */
+.support-theme {
+  --color-bg: #000000;
+  --color-surface: #0a0a0a;
+  --color-text: #f5f5f5;
+  --color-muted: #9aa0b1;
+  --color-border: #1f2329;
+}

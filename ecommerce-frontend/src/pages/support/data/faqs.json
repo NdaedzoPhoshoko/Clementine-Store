@@ -1,0 +1,41 @@
+{
+  "intro": {
+    "text": "Everything you need to know about shipping, returns, sizing and orders at Clementine Store. Can’t find an answer?",
+    "linkText": "Chat to our team",
+    "linkHref": "/support/live-chat"
+  },
+  "items": [
+    {
+      "question": "Shipping times and delivery fees",
+      "answer": "Orders are processed within 1–2 business days. Standard delivery typically arrives in 2–5 business days within your region and 5–12 business days internationally, excluding weekends and holidays. You will receive a tracking link by email as soon as your order ships. Shipping costs are calculated at checkout and may be waived on qualifying orders when a free‑shipping promotion is active."
+    },
+    {
+      "question": "Returns and exchanges policy",
+      "answer": "We accept returns within 30 days of delivery for unworn items with original tags and packaging. To start a return or exchange, visit your account order page or contact support with your order number. Exchanges for size or color are typically free for domestic customers. Refunds are issued to the original payment method and may take 3–7 business days to appear depending on your bank."
+    },
+    {
+      "question": "Choosing the right size and fit",
+      "answer": "Each product page includes a detailed size chart and fit notes. Measure your chest, waist, and hips with a soft tape and compare to our chart. If you are between sizes, we generally recommend sizing up for a relaxed fit and sizing down for a tailored fit. If the fit isn’t perfect, you can exchange easily within the 30‑day window."
+    },
+    {
+      "question": "Order tracking and status updates",
+      "answer": "After you place an order, we send a confirmation email and a second email with tracking once the package leaves our warehouse. You can also check real‑time status on the Order Status page from your account. If tracking does not update immediately, please allow 24 hours for the carrier to scan the shipment."
+    },
+    {
+      "question": "Materials and garment care",
+      "answer": "Our apparel is made from quality fabrics such as cotton blends, recycled polyester, and durable knits designed for everyday wear. Check the care label on each garment for specific instructions. In general, wash cold with like colors, avoid bleach, and tumble dry low or hang dry to preserve shape and color. Avoid high heat when ironing and turn garments inside out to minimize pilling."
+    },
+    {
+      "question": "International orders and customs duties",
+      "answer": "We ship to many countries worldwide. Depending on your destination, local VAT, duties, or customs fees may be collected by the carrier or customs authority upon delivery. These charges are set by your country and are the responsibility of the recipient. Transit times can vary based on customs processing and local courier networks."
+    },
+    {
+      "question": "Discount codes and promotions",
+      "answer": "Promotions are announced on the site and via our newsletter. Only one discount code can be applied per order unless otherwise stated. Codes must be entered at checkout and cannot be combined with certain offers or items marked as non‑discountable. Price adjustments are not guaranteed for purchases made outside a promotional period."
+    },
+    {
+      "question": "Restocks and out‑of‑stock items",
+      "answer": "Popular items can sell out quickly. If a style is currently unavailable, you can subscribe to restock alerts on the product page. Some limited releases may not restock, but we often introduce similar styles and updated colors each season."
+    }
+  ]
+}
