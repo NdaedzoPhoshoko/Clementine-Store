@@ -83,6 +83,7 @@ export const listProducts = async (req, res) => {
     const hasNext = pageNum < pages;
     const hasPrev = pageNum > 1;
 
+    res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
     return res.status(200).json({
       items,
       meta: { page: pageNum, limit: limitNum, total, pages, hasNext, hasPrev },
@@ -136,6 +137,7 @@ export const getProductById = async (req, res) => {
       reviewCount: parseInt(statsResult.rows[0].review_count, 10),
     };
 
+    res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=120');
     return res.status(200).json({
       product: {
         id: p.id,
@@ -217,6 +219,7 @@ export const getProductReviews = async (req, res) => {
       haveOrdered = ordRes.rows.length > 0 ? "ordered" : "not ordered";
     }
 
+    res.set('Cache-Control', 'private, no-store');
     return res.status(200).json({ reviews, stats, haveOrdered });
   } catch (err) {
     console.error("Get product reviews error:", err.message);
@@ -621,6 +624,7 @@ export const deleteProduct = async (req, res) => {
 
     await pool.query("DELETE FROM products WHERE id=$1", [id]);
 
+    res.set('Cache-Control', 'no-store');
     return res.status(200).json({ message: "Product deleted", product });
   } catch (err) {
     console.error("Delete product error:", err.message);
@@ -691,10 +695,12 @@ export const uploadProductImage = async (req, res) => {
       updatedPrimary = true;
     }
 
+    res.set('Cache-Control', 'no-store');
     return res.status(201).json({
       images: uploaded,
       productId: id,
       updatedPrimary,
+      
     });
   } catch (err) {
     console.error("Upload product image error:", err.message);
@@ -781,6 +787,7 @@ export const deleteProductImage = async (req, res) => {
       updatedPrimary = true;
     }
 
+    res.set('Cache-Control', 'no-store');
     return res.status(200).json({
       message: "Image deleted",
       deletedImageId: imageId,
@@ -881,6 +888,7 @@ export const deleteAllProductImages = async (req, res) => {
       updatedPrimary = true;
     }
 
+    res.set('Cache-Control', 'no-store');
     return res.status(200).json({
       message: "All product images deleted",
       productId,
@@ -914,6 +922,7 @@ export const getLatestProducts = async (req, res) => {
       review_count: parseInt(item.review_count, 10)
     }));
     
+    res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
     return res.status(200).json(products);
   } catch (err) {
     console.error("Get latest products error:", err.message);

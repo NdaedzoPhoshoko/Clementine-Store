@@ -19,6 +19,7 @@ export default function useFetchBrowseProducts({
   maxPrice,
   inStock,
   enabled = true,
+  showSkeletonOnRefresh = false,
 } = {}) {
   const [items, setItems] = useState([]);
   const [itemsByPage, setItemsByPage] = useState({});
@@ -28,6 +29,7 @@ export default function useFetchBrowseProducts({
   const [error, setError] = useState(null);
   const [hasMore, setHasMore] = useState(true);
   const [meta, setMeta] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Signature of all params except page — when it changes, reset listing
   const signature = useMemo(
@@ -98,8 +100,9 @@ export default function useFetchBrowseProducts({
     }
 
     const fetchLatest = async () => {
-      if (page === 1) setLoading(!usedCache);
-      else setLoadingMore(!usedCache);
+      if (page === 1) setLoading(!usedCache || showSkeletonOnRefresh);
+      else setLoadingMore(!usedCache || showSkeletonOnRefresh);
+      setRefreshing(!!usedCache);
       setError(null);
 
       const base = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:5000';
@@ -162,6 +165,7 @@ export default function useFetchBrowseProducts({
 
           if (page === 1) setLoading(false);
           else setLoadingMore(false);
+          setRefreshing(false);
           return; // success
         } catch (err) {
           if (controller.signal.aborted) return;
@@ -170,6 +174,7 @@ export default function useFetchBrowseProducts({
             setError(err);
             if (page === 1) setLoading(false);
             else setLoadingMore(false);
+            setRefreshing(false);
           }
         }
       }
@@ -179,7 +184,10 @@ export default function useFetchBrowseProducts({
       fetchLatest();
     }
 
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+      setRefreshing(false);
+    };
   }, [page, limit, search, categoryId, minPrice, maxPrice, inStock, enabled]);
 
   const loadNextPage = () => {
@@ -195,7 +203,7 @@ export default function useFetchBrowseProducts({
     setError(null);
   };
 
-  return { items, page, pageItems: itemsByPage[page] || [], itemsByPage, hasMore, loading, loadingMore, error, meta, loadNextPage, setPage, reset };
+  return { items, page, pageItems: itemsByPage[page] || [], itemsByPage, hasMore, loading, loadingMore, refreshing, error, meta, loadNextPage, setPage, reset };
 }
 
 function normalizeItem(p) {

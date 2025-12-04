@@ -313,7 +313,7 @@
   border-radius: 8px;
   background: transparent; /* remove background color */
 }
-.mega-tag:hover { box-shadow: var(--shadow-soft); }
+/* .mega-tag:hover { box-shadow: var(--shadow-soft); } */
 
 /* Skeleton placeholders for Home mega-tag images */
 .mega-tag__img-wrap {

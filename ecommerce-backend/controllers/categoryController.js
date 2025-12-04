@@ -86,6 +86,7 @@ export const getCategoryProducts = async (req, res) => {
     const hasNext = pageNum < pages;
     const hasPrev = pageNum > 1;
 
+    res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=1200');
     return res.status(200).json({
       categories,
       items,
@@ -167,6 +168,7 @@ export const listCategories = async (req, res) => {
     const hasNext = pageNum < pages;
     const hasPrev = pageNum > 1;
 
+    res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=1200');
     return res.status(200).json({
       items,
       meta: { page: pageNum, limit: limitNum, total, pages, hasNext, hasPrev },
@@ -233,6 +235,7 @@ export const listCategoriesWithImages = async (req, res) => {
     const hasNext = pageNum < pages;
     const hasPrev = pageNum > 1;
 
+    res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=1200');
     return res.status(200).json({
       items,
       meta: { page: pageNum, limit: limitNum, total, pages, hasNext, hasPrev },
@@ -301,6 +304,7 @@ export const addCategoriesBulk = async (req, res) => {
       .filter((c) => !insertedNames.has(c.name.toLowerCase()))
       .map((c) => ({ name: c.name }));
 
+    res.set('Cache-Control', 'no-store');
     return res.status(201).json({ inserted, skipped });
   } catch (err) {
     console.error("Add categories bulk error:", err.message);
@@ -349,6 +353,7 @@ export const updateCategory = async (req, res) => {
       if (result.rows.length === 0) {
         return res.status(404).json({ message: "Category not found" });
       }
+      res.set('Cache-Control', 'no-store');
       return res.status(200).json({ category: result.rows[0] });
     } catch (err) {
       // Handle unique violation on name
@@ -379,6 +384,7 @@ export const deleteCategory = async (req, res) => {
       return res.status(404).json({ message: "Category not found" });
     }
 
+    res.set('Cache-Control', 'no-store');
     return res.status(200).json({ category: result.rows[0] });
   } catch (err) {
     console.error("Delete category error:", err.message);

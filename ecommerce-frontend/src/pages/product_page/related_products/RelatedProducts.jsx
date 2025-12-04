@@ -6,7 +6,7 @@ import './RelatedProducts.css';
 
 export default function RelatedProducts({ categoryId, categoryName, currentProductId }) {
   const [cols, setCols] = useState(4);
-  const { items, loading, error } = useFetchBrowseProducts({ initialPage: 1, limit: 12, categoryId, inStock: true, enabled: !!categoryId });
+  const { items, loading, refreshing, error } = useFetchBrowseProducts({ initialPage: 1, limit: 12, categoryId, inStock: true, enabled: !!categoryId, showSkeletonOnRefresh: true });
 
   // Compute how many cards to show based on screen size
   useEffect(() => {
@@ -38,7 +38,7 @@ export default function RelatedProducts({ categoryId, categoryName, currentProdu
 
   return (
     <section className="related-products" aria-label="Related products">
-      {loading ? (
+      {loading || refreshing ? (
         <div className="related-products__header-skeleton">
           <div className="rp-skeleton related-products__title-skeleton" aria-hidden="true"></div>
           <div className="rp-skeleton related-products__view-all-skeleton" aria-hidden="true"></div>
@@ -49,9 +49,17 @@ export default function RelatedProducts({ categoryId, categoryName, currentProdu
           <Link className="related-products__view-all" to={viewAllTo}>View All</Link>
         </div>
       )}
-      <div className="related-products__grid" style={{ '--cols': cols }}>
-        <ProdGrid products={displayItems} loading={loading} className="related-one-row" ariaLabel="Related products" />
-      </div>
+      {loading || refreshing ? (
+        <div className="related-products__skeleton-grid" style={{ '--cols': cols }}>
+          {Array.from({ length: cols }).map((_, i) => (
+            <div key={i} className="rp-skeleton related-products__skeleton-item" aria-hidden="true"></div>
+          ))}
+        </div>
+      ) : (
+        <div className="related-products__grid" style={{ '--cols': cols }}>
+          <ProdGrid products={displayItems} className="related-one-row" ariaLabel="Related products" />
+        </div>
+      )}
     </section>
   );
 }
