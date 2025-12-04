@@ -38,10 +38,17 @@ export default function RelatedProducts({ categoryId, categoryName, currentProdu
 
   return (
     <section className="related-products" aria-label="Related products">
-      <div className="related-products__header">
-        <h2 className="related-products__title">Related Products</h2>
-        <Link className="related-products__view-all" to={viewAllTo}>View All</Link>
-      </div>
+      {loading ? (
+        <div className="related-products__header-skeleton">
+          <div className="rp-skeleton related-products__title-skeleton" aria-hidden="true"></div>
+          <div className="rp-skeleton related-products__view-all-skeleton" aria-hidden="true"></div>
+        </div>
+      ) : (
+        <div className="related-products__header">
+          <h2 className="related-products__title">Related Products</h2>
+          <Link className="related-products__view-all" to={viewAllTo}>View All</Link>
+        </div>
+      )}
       <div className="related-products__grid" style={{ '--cols': cols }}>
         <ProdGrid products={displayItems} loading={loading} className="related-one-row" ariaLabel="Related products" />
       </div>

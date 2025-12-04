@@ -37,3 +37,32 @@
     grid-template-columns: repeat(var(--cols, 1), minmax(0, 1fr)) !important;
   }
 }
+
+/* Skeleton styles for header and grid placeholders */
+.rp-skeleton {
+  background: linear-gradient(90deg, var(--color-surface), var(--color-bg), var(--color-surface));
+  background-size: 200% 100%;
+  animation: rp-shimmer 1.2s linear infinite;
+  border-radius: 6px;
+}
+
+@keyframes rp-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.related-products__header-skeleton {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.related-products__title-skeleton { width: 180px; height: 24px; }
+.related-products__view-all-skeleton { width: 90px; height: 16px; }
+
+.related-products__skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
+  gap: 16px;
+}
+.related-products__skeleton-item { height: 200px; }
