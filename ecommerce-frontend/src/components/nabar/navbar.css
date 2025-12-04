@@ -282,6 +282,10 @@
 .nav-mega .mega-left,
 .nav-mega .mega-right { padding: 0 8px; }
 
+.mega-left {
+  border-right: 1px solid var(--color-primary);
+}
+
 .nav-mega.open { display: grid; }
 
 .mega-left h4 {
@@ -298,6 +302,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  /* border-left: 1px solid var(--color-primary); */
 }
 .mega-tag {
   display: inline-flex;
