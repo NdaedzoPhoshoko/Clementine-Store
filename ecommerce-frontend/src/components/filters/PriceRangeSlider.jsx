@@ -38,15 +38,30 @@ export default function PriceRangeSlider({
 
   // Debounce outgoing change
   const debounceRef = useRef(null);
+  const isFirstRender = useRef(true);
+  
+  // Use a ref for the callback to avoid triggering the effect when the parent re-renders (creating a new function)
+  const onDebouncedChangeRef = useRef(onDebouncedChange);
   useEffect(() => {
-    if (typeof onDebouncedChange === "function") {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => {
-        onDebouncedChange(localMin, localMax);
-      }, 300);
-      return () => clearTimeout(debounceRef.current);
+    onDebouncedChangeRef.current = onDebouncedChange;
+  }, [onDebouncedChange]);
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
     }
-  }, [localMin, localMax, onDebouncedChange]);
+    
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    
+    debounceRef.current = setTimeout(() => {
+      if (typeof onDebouncedChangeRef.current === "function") {
+        onDebouncedChangeRef.current(localMin, localMax);
+      }
+    }, 300);
+    
+    return () => clearTimeout(debounceRef.current);
+  }, [localMin, localMax]); // Removed onDebouncedChange from dependencies
 
   const handleMinRange = (e) => {
     const v = clamp(e.target.value);

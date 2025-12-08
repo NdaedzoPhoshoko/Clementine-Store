@@ -12,8 +12,16 @@ export default function useFetchBrowseProducts({
   showSkeletonOnRefresh = false,
 } = {}) {
   const [items, setItems] = useState([]);
-  const [itemsByPage, setItemsByPage] = useState({});
+  // const [itemsByPage, setItemsByPage] = useState({}); // Simplified: No caching to fix jumping/stale issues
+  
+  // Page is now controlled by internal state, initialized by prop
   const [page, setPage] = useState(initialPage);
+  
+  // Sync page with initialPage prop (e.g. for browser back/forward navigation)
+  useEffect(() => {
+    setPage(initialPage);
+  }, [initialPage]);
+  
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
@@ -43,8 +51,8 @@ export default function useFetchBrowseProducts({
     if (signature !== lastSignatureRef.current) {
       lastSignatureRef.current = signature;
       setItems([]);
-      setItemsByPage({});
-      // Removed setPage(1) to avoid forcing page resets on filter changes
+      // setItemsByPage({});
+      setLoading(true); // Ensure loading is true immediately to prevent "No products" flash
       setHasMore(true);
       setError(null);
     }
@@ -58,10 +66,11 @@ export default function useFetchBrowseProducts({
     controllerRef.current = controller;
 
     const fetchLatest = async () => {
-      if (page === 1) setLoading(true);
-      else setLoadingMore(true);
+      setLoading(true);
+      setLoadingMore(false);
       setRefreshing(false);
       setError(null);
+      // setItems([]); // Optional: Clear items immediately to show skeleton (handled by loading=true in UI)
 
       const base = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:5000';
 
@@ -101,16 +110,16 @@ export default function useFetchBrowseProducts({
           const arr = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
           const normalized = arr.map(normalizeItem);
 
-          setItems((prev) => dedupeById(page === 1 ? normalized : [...prev, ...normalized]));
-          setItemsByPage((prev) => ({ ...prev, [page]: normalized }));
+          setItems(normalized);
+          // setItemsByPage((prev) => ({ ...prev, [page]: normalized }));
           setMeta(data?.meta || null);
 
           const nextHasMore =
             typeof data?.meta?.hasMore !== 'undefined' ? Boolean(data.meta.hasMore) : arr.length === Number(limit);
           setHasMore(nextHasMore);
 
-          if (page === 1) setLoading(false);
-          else setLoadingMore(false);
+          setLoading(false);
+          setLoadingMore(false);
           setRefreshing(false);
           return; // success
         } catch (err) {
@@ -118,8 +127,8 @@ export default function useFetchBrowseProducts({
           console.warn('[useFetchBrowseProducts] Attempt failed:', err);
           if (i === attempts.length - 1) {
             setError(err);
-            if (page === 1) setLoading(false);
-            else setLoadingMore(false);
+            setLoading(false);
+            setLoadingMore(false);
             setRefreshing(false);
           }
         }
@@ -135,19 +144,18 @@ export default function useFetchBrowseProducts({
   }, [page, limit, search, categoryId, minPrice, maxPrice, inStock, enabled]);
 
   const loadNextPage = () => {
-    if (loading || loadingMore || !hasMore) return;
-    setPage((p) => Number(p) + 1);
+    setPage((p) => p + 1);
   };
 
   const reset = () => {
     setItems([]);
-    setItemsByPage({});
+    // setItemsByPage({});
     setPage(1);
     setHasMore(true);
     setError(null);
   };
 
-  return { items, page, pageItems: itemsByPage[page] || [], itemsByPage, hasMore, loading, loadingMore, refreshing, error, meta, loadNextPage, setPage, reset };
+  return { items, pageItems: items, hasMore, loading, loadingMore, refreshing, error, meta, loadNextPage, reset, page, setPage };
 }
 
 function normalizeItem(p) {

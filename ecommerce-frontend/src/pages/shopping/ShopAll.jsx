@@ -51,6 +51,7 @@ export default function ShopAll() {
     setPage,
     pageItems,
     loading,
+    loadingMore,
     error,
     meta,
     hasMore,
@@ -136,6 +137,11 @@ export default function ShopAll() {
     }
   }, [page, query, selectedCatId, minPrice, maxPrice, inStockOnly, sort, categories]);
 
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [page]);
+
   const displayProducts = useMemo(() => {
     let list = Array.isArray(pageItems) ? [...pageItems] : [];
     if (sort === "price-asc") list.sort((a, b) => (Number(a.price || 0) - Number(b.price || 0)));
@@ -145,7 +151,11 @@ export default function ShopAll() {
     return list;
   }, [pageItems, sort]);
 
-  const isEmpty = !loading && Array.isArray(displayProducts) && displayProducts.length === 0;
+  // If pageItems is undefined, it means we haven't fetched the data for this page yet.
+  const isPageLoaded = Array.isArray(pageItems);
+  const isActuallyLoading = loading || loadingMore || !isPageLoaded;
+
+  const isEmpty = !isActuallyLoading && Array.isArray(displayProducts) && displayProducts.length === 0;
 
   const totalPages = meta?.pages || 1;
   const hasPrev = typeof meta?.hasPrev !== 'undefined' ? !!meta?.hasPrev : page > 1;
@@ -154,8 +164,14 @@ export default function ShopAll() {
   // Derived values for grouped sort dropdowns
   const sortPriceValue = sort.startsWith("price") ? sort : "";
   const sortNameValue = sort.startsWith("name") ? sort : "";
-  const handlePriceSortChange = (val) => setSort(val || "relevance");
-  const handleNameSortChange = (val) => setSort(val || "relevance");
+  const handlePriceSortChange = (val) => {
+    setSort(val || "relevance");
+    setPage(1);
+  };
+  const handleNameSortChange = (val) => {
+    setSort(val || "relevance");
+    setPage(1);
+  };
   const goToPage = (n) => {
     const target = Number(n);
     if (!Number.isFinite(target)) return;
@@ -192,7 +208,7 @@ export default function ShopAll() {
     setInStockOnly(true);
     setSort("relevance");
     setCatQuery("");
-    // Do NOT change page here to avoid forcing pagination
+    setPage(1);
   };
 
   // Compute min/max across currently displayed products for slider bounds
@@ -231,6 +247,14 @@ export default function ShopAll() {
     }
   }, [minPrice, maxPrice, priceTempMin, priceTempMax]);
 
+  const handlePriceChange = React.useCallback((lo, hi) => {
+    setPriceTempMin(lo);
+    setPriceTempMax(hi);
+    setMinPrice(String(lo));
+    setMaxPrice(String(hi));
+    setPage(1);
+  }, []);
+
   return (
     <section className="shop-all" aria-label="Shop All">
       <div className="shop-layout">
@@ -256,7 +280,10 @@ export default function ShopAll() {
                 className="filter-input form-control"
                 placeholder="Search products"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setPage(1);
+                }}
                 aria-label="Search products"
               />
             </div>
@@ -272,12 +299,7 @@ export default function ShopAll() {
                 valueMin={priceTempMin ?? 0}
                 valueMax={priceTempMax ?? 6000}
                 step={50}
-                onDebouncedChange={(lo, hi) => {
-                  setPriceTempMin(lo);
-                  setPriceTempMax(hi);
-                  setMinPrice(String(lo));
-                  setMaxPrice(String(hi));
-                }}
+                onDebouncedChange={handlePriceChange}
               />
             </div>
           </div>
@@ -323,7 +345,10 @@ export default function ShopAll() {
                 <input
                   type="checkbox"
                   checked={inStockOnly}
-                  onChange={(e) => setInStockOnly(e.target.checked)}
+                  onChange={(e) => {
+                    setInStockOnly(e.target.checked);
+                    setPage(1);
+                  }}
                   aria-label="Only show items in stock"
                 />
                 <span>In Stock only</span>
@@ -356,18 +381,18 @@ export default function ShopAll() {
               ) : Array.isArray(filteredCategories) && filteredCategories.length ? (
                 <div className="filter-list__items" role="radiogroup" aria-label="Category filters">
                   {filteredCategories.map((c) => (
-                    <label key={c.id} className="filter-list__item" onClick={(e) => { if (selectedCatId === c.id) { e.preventDefault(); setSelectedCatId(null); } }}>
+                    <label key={c.id} className="filter-list__item" onClick={(e) => { if (selectedCatId === c.id) { e.preventDefault(); setSelectedCatId(null); setPage(1); } }}>
                       <input
                         type="radio"
                         name="category"
                         className="filter-radio filter-checkbox"
                         checked={selectedCatId === c.id}
-                        onChange={(e) => { if (e.target.checked) { setSelectedCatId(c.id); } }}
+                        onChange={(e) => { if (e.target.checked) { setSelectedCatId(c.id); setPage(1); } }}
                         aria-checked={selectedCatId === c.id ? "true" : "false"}
                       />
                       <span
                         className="filter-list__name"
-                        onClick={(e) => { if (selectedCatId === c.id) { e.preventDefault(); e.stopPropagation(); setSelectedCatId(null); } }}
+                        onClick={(e) => { if (selectedCatId === c.id) { e.preventDefault(); e.stopPropagation(); setSelectedCatId(null); setPage(1); } }}
                       >
                         {c.name}
                       </span>
@@ -417,7 +442,7 @@ export default function ShopAll() {
             </div>
           ) : (
             <>
-              <ProdGrid products={displayProducts} loading={loading} ariaLabel="All products" />
+              <ProdGrid products={displayProducts} loading={isActuallyLoading} ariaLabel="All products" />
               <PaginationBar
                 page={page}
                 totalPages={totalPages}

@@ -12,19 +12,30 @@ export default function ProdGrid({
 }) {
   const cls = className ? `prod-grid ${className}` : "prod-grid";
 
-  // Debounce loading skeleton to avoid flicker on very fast responses
-  const isLoading = !!loading;
-  const [showSkeleton, setShowSkeleton] = useState(isLoading);
+  // Smart Debounce:
+  // If loading is true:
+  // 1. If we have products (stale data), delay the skeleton to avoid flicker on fast loads.
+  // 2. If we have NO products, show skeleton immediately to avoid empty white space.
+  const [debouncedLoading, setDebouncedLoading] = useState(false);
+  
   useEffect(() => {
-    let t;
-    if (isLoading) {
-      t = setTimeout(() => setShowSkeleton(true), 120);
+    if (loading) {
+      if (products && products.length > 0) {
+        // Stale data exists: debounce
+        const t = setTimeout(() => setDebouncedLoading(true), 200);
+        return () => clearTimeout(t);
+      } else {
+        // No data: immediate skeleton
+        setDebouncedLoading(true);
+      }
     } else {
-      setShowSkeleton(false);
+      setDebouncedLoading(false);
     }
-    return () => { if (t) clearTimeout(t); };
-  }, [isLoading]);
+  }, [loading, products]);
 
+  // When loading, render skeleton placeholders immediately
+  const showSkeleton = debouncedLoading;
+  
   // When loading or when products are empty, render skeleton placeholders to keep grid stable
   const placeholders = Array.from({ length: 8 }, (_, i) => ({
     id: `placeholder-${i}`,
@@ -33,12 +44,16 @@ export default function ProdGrid({
     description: null,
     price: null,
   }));
-  const list = showSkeleton ? placeholders : (products && products.length > 0 ? products : placeholders);
+  
+  // If explicitly loading, show placeholders.
+  // If not loading but products is empty/undefined, also show placeholders (initial load safety).
+  // Otherwise show actual products.
+  const effectiveList = (showSkeleton || !products || products.length === 0) ? placeholders : products;
 
   return (
     <section className={cls} aria-label={ariaLabel} data-ready={showSkeleton ? "false" : "true"}>
       <div className="prod-grid__list" role="list" aria-busy={showSkeleton ? "true" : undefined}>
-        {list.map((p, i) => (
+        {effectiveList.map((p, i) => (
           <div
             role="listitem"
             key={p.id ?? `${p.name}-${i}`}
