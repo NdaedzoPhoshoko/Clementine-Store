@@ -78,6 +78,15 @@ export const addCartItem = async (req, res) => {
     }
     const product = prodRes.rows[0];
 
+    // Check if user has a checkout in progress
+    const checkoutCartRes = await pool.query(
+      "SELECT id FROM cart WHERE user_id=$1 AND status='CHECKOUT_IN_PROGRESS' LIMIT 1",
+      [userId]
+    );
+    if (checkoutCartRes.rows.length > 0) {
+      return res.status(409).json({ message: "Please complete or cancel your current checkout before adding new items." });
+    }
+
     // Get or create ACTIVE cart for user
     const cartRes = await pool.query(
       "SELECT id, user_id, status, created_at FROM cart WHERE user_id=$1 AND status='ACTIVE' ORDER BY created_at DESC LIMIT 1",

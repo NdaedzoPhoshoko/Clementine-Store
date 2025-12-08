@@ -1,0 +1,102 @@
+.checkout-conflict-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+
+.checkout-conflict-modal {
+  background: #fff;
+  border-radius: 12px;
+  width: min(90vw, 440px);
+  padding: 24px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  animation: conflictSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+@keyframes conflictSlideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.checkout-conflict__title {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.checkout-conflict__desc {
+  margin: 0 0 24px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.checkout-conflict__actions {
+  display: grid;
+  gap: 12px;
+}
+
+.checkout-conflict__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.checkout-conflict__btn--primary {
+  background: var(--color-text);
+  color: var(--color-bg);
+}
+.checkout-conflict__btn--primary:hover {
+  background: var(--color-primary);
+}
+
+.checkout-conflict__btn--secondary {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+.checkout-conflict__btn--secondary:hover {
+  background: var(--color-bg-subtle);
+  border-color: var(--color-text);
+}
+
+.checkout-conflict__btn--ghost {
+  background: transparent;
+  color: var(--color-text-muted);
+}
+.checkout-conflict__btn--ghost:hover {
+  color: var(--color-text);
+  text-decoration: underline;
+}
+
+.checkout-conflict__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  border-radius: 4px;
+}
+.checkout-conflict__close:hover {
+  background: var(--color-bg-subtle);
+  color: var(--color-text);
+}

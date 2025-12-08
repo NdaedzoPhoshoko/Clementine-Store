@@ -2,8 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import authStorage from './use_auth/authStorage.js';
 import apiFetch from '../utils/apiFetch.js';
 
-const CACHE_TTL_MS = 5 * 60 * 1000;
-
 export default function useFetchMyShippingDetails({ initialPage = 1, limit = 20, enabled = true } = {}) {
   const [items, setItems] = useState([]);
   const [itemsByPage, setItemsByPage] = useState({});
@@ -19,8 +17,6 @@ export default function useFetchMyShippingDetails({ initialPage = 1, limit = 20,
   const user = authStorage.getUser();
   const signature = useMemo(() => String(user?.id ?? 'unknown'), [user?.id]);
 
-  const cacheKey = (userId, p, l) => `shipping-cache:v1:user=${userId ?? 'unknown'}:p=${p}:l=${l}`;
-
   useEffect(() => {
     if (!enabled) return;
 
@@ -28,48 +24,9 @@ export default function useFetchMyShippingDetails({ initialPage = 1, limit = 20,
     controllerRef.current?.abort();
     controllerRef.current = controller;
 
-    const KEY = cacheKey(user?.id, page, limit);
-
-    let usedCache = false;
-    let cacheIsStale = true;
-
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const raw = localStorage.getItem(KEY);
-        if (raw) {
-          const cached = JSON.parse(raw);
-          const age = Date.now() - (cached.ts || 0);
-          const arr = Array.isArray(cached.items) ? cached.items : [];
-          if (arr.length >= 0) {
-            const normalized = arr.map((s) => ({
-              id: s.id,
-              order_id: s.order_id,
-              user_id: s.user_id,
-              name: String(s.name || ''),
-              address: String(s.address || ''),
-              city: String(s.city || ''),
-              province: s.province || null,
-              postal_code: s.postal_code || null,
-              phone_number: s.phone_number || null,
-              delivery_status: String(s.delivery_status || ''),
-            }));
-            setItems((prev) => (page === 1 ? normalized : [...prev, ...normalized]));
-            setItemsByPage((prev) => ({ ...prev, [page]: normalized }));
-            setMeta(cached.meta || null);
-            const nextHasMore = typeof cached?.meta?.hasNext !== 'undefined' ? Boolean(cached.meta.hasNext) : (Array.isArray(arr) && arr.length === Number(limit));
-            setHasMore(nextHasMore);
-            usedCache = true;
-            cacheIsStale = age >= CACHE_TTL_MS;
-            if (page === 1) setLoading(false);
-            else setLoadingMore(false);
-          }
-        }
-      }
-    } catch (_) {}
-
     const fetchLatest = async () => {
-      if (page === 1) setLoading(!usedCache);
-      else setLoadingMore(!usedCache);
+      if (page === 1) setLoading(true);
+      else setLoadingMore(true);
       setError(null);
 
       const params = new URLSearchParams();
@@ -104,12 +61,6 @@ export default function useFetchMyShippingDetails({ initialPage = 1, limit = 20,
         const nextHasMore = typeof data?.meta?.hasNext !== 'undefined' ? Boolean(data.meta.hasNext) : arr.length === Number(limit);
         setHasMore(nextHasMore);
 
-        try {
-          if (typeof window !== 'undefined' && window.localStorage) {
-            localStorage.setItem(KEY, JSON.stringify({ ts: Date.now(), items: arr, meta: data?.meta || null }));
-          }
-        } catch (_) {}
-
         if (page === 1) setLoading(false);
         else setLoadingMore(false);
         return;
@@ -121,9 +72,7 @@ export default function useFetchMyShippingDetails({ initialPage = 1, limit = 20,
       }
     };
 
-    if (!usedCache || cacheIsStale) {
-      fetchLatest();
-    }
+    fetchLatest();
 
     return () => controller.abort();
   }, [enabled, signature, page, limit, refreshKey]);
@@ -134,23 +83,11 @@ export default function useFetchMyShippingDetails({ initialPage = 1, limit = 20,
   };
 
   const refresh = async () => {
-    try {
-      const KEY = cacheKey(user?.id, page, limit);
-      if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.removeItem(KEY);
-      }
-    } catch (_) {}
     setRefreshKey((k) => k + 1);
   };
 
   const clearCache = () => {
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        Object.keys(localStorage).forEach((k) => {
-          if (k.startsWith(`shipping-cache:v1:user=${user?.id ?? 'unknown'}`)) localStorage.removeItem(k);
-        });
-      }
-    } catch (_) {}
+    // No-op
   };
 
   return { items, page, pageItems: itemsByPage[page] || [], itemsByPage, hasMore, loading, loadingMore, error, meta, loadNextPage, setPage, refresh, clearCache };

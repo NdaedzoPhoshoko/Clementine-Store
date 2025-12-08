@@ -14,6 +14,7 @@ import { useCart } from '../../hooks/for_cart/CartContext.jsx'
 import { Send } from "lucide-react";
 import usePostProductReview from "../../hooks/usePostProductReview.js";
 import { extractIdFromSlug } from '../../utils/slugUtils';
+import CheckoutConflictModal from '../../components/modals/checkout_conflict/CheckoutConflictModal.jsx';
 
 function useInView(options = { rootMargin: '200px', threshold: 0.1 }) {
   const ref = useRef(null)
@@ -245,6 +246,7 @@ export default function ProductPage() {
   const { postReview, loading: submittingReview, error: postError } = usePostProductReview()
   // New: hover preview state for star rating control
   const [ratingHover, setRatingHover] = useState(0)
+  const [addToCartError, setAddToCartError] = useState(null)
 
   // Clear gating message when user status allows writing a review
   useEffect(() => {
@@ -318,6 +320,7 @@ export default function ProductPage() {
 
   // Handlers
   const handleAddToCart = async () => {
+    setAddToCartError(null)
     try {
       const payload = await addItem({
         productId: productId,
@@ -326,7 +329,9 @@ export default function ProductPage() {
         colorHex: resolveColorHex(),
       })
       hydrate({ items: payload?.items, meta: payload?.meta })
-    } catch (_) {}
+    } catch (err) {
+      setAddToCartError(err?.message || "Failed to add item to cart")
+    }
   }
   
   const handleCheckout = () => {
@@ -348,6 +353,17 @@ export default function ProductPage() {
 
   return (
       <div className="product-page">
+        {addToCartError === 'Please complete or cancel your current checkout before adding new items.' ? (
+          <CheckoutConflictModal
+            onClose={() => setAddToCartError(null)}
+            onResolved={() => setAddToCartError(null)}
+          />
+        ) : addToCartError && (
+          <ErrorModal
+            message={addToCartError}
+            onClose={() => setAddToCartError(null)}
+          />
+        )}
         {loading ? (
         <div className="product-layout">
           {/* Left column - Product gallery skeleton */}

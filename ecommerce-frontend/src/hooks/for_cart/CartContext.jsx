@@ -10,7 +10,7 @@ export function CartProvider({ children }) {
   const { isAuthed } = useAuthUser();
 
   // Fetch cart when authorized; updates immediately on auth changes
-  const { items: fetchedItems, meta: fetchedMeta, loading, error, refresh, clearCache } = useFetchCart({ enabled: !!isAuthed });
+  const { cart, items: fetchedItems, meta: fetchedMeta, loading, error, refresh, clearCache } = useFetchCart({ enabled: !!isAuthed });
 
   // Hydrate context whenever backend provides fresh data
   useEffect(() => {
@@ -39,6 +39,7 @@ export function CartProvider({ children }) {
   }, [clearCache]);
 
   const value = useMemo(() => ({
+    cart,
     items,
     meta,
     setItems,
@@ -49,7 +50,7 @@ export function CartProvider({ children }) {
     error,
     refresh,
     clearCart,
-  }), [items, meta, updateItemQuantity, hydrate, loading, error, refresh, clearCart]);
+  }), [cart, items, meta, updateItemQuantity, hydrate, loading, error, refresh, clearCart]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
