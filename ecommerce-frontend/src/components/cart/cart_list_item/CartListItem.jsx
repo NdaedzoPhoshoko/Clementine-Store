@@ -1,6 +1,7 @@
 import './CartListItem.css';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { createProductSlug } from "../../../utils/slugUtils";
 
 
 const toNumber = (v) => (typeof v === 'string' ? parseFloat(v) : Number(v));
@@ -38,7 +39,7 @@ export default function CartListItem({ item = {}, onRemove, onRestore, refresh, 
 
   const handleView = () => {
     if (productIdResolved) {
-      navigate(`/product/${productIdResolved}`);
+      navigate(`/product/${createProductSlug(name, productIdResolved)}`);
     }
   };
 

@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import useFetchCategoryNames from "../../hooks/useFetchCategoryNames.js";
+import { extractNameFromSlug } from "../../utils/slugUtils";
 import "./breadcrumbs.css";
 
 function capitalize(word) {
@@ -43,9 +44,10 @@ export default function Breadcrumbs() {
       items.push({ label: "Shop All", to: "/shop-all" });
     }
   } else if (pathSegments[0] === "product") {
-    const id = pathSegments[1];
-    items.push({ label: "Product", to: "/shop-all" });
-    items.push({ label: id ? `#${id}` : "Detail", to: null });
+    const slug = pathSegments[1];
+    const name = extractNameFromSlug(slug);
+    items.push({ label: "Shop All", to: "/shop-all" });
+    items.push({ label: name ? capitalize(name) : "Detail", to: null });
   } else {
     // Fallback: show capitalized segments
     pathSegments.forEach((seg, i) => {

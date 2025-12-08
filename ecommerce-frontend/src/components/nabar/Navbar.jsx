@@ -8,6 +8,7 @@ import useFetchAutocomplete from "../../hooks/useFetchAutocomplete.js";
 import useHomeFeatures from "../../hooks/home_features/useHomeFeatures.js";
 import { useNavigate, Link } from "react-router-dom";
 import { useCart } from "../../hooks/for_cart/CartContext.jsx";
+import { createProductSlug } from "../../utils/slugUtils";
 
 const Navbar = () => {
   const { items, meta, clearCart } = useCart();
@@ -51,25 +52,25 @@ const Navbar = () => {
     const tags = [];
     if (hfData?.trendy_product) {
       const p = hfData.trendy_product;
-      tags.push({ key: 'trending', label: 'Trendy Products', to: `/product/${p.product_id}`, img: p.image_url || placeholderImg });
+      tags.push({ key: 'trending', label: 'Trendy Products', to: `/product/${createProductSlug(p.name, p.product_id)}`, img: p.image_url || placeholderImg });
     }
     if (hfData?.new_arrival) {
       const p = hfData.new_arrival;
-      tags.push({ key: 'new-arrivals', label: 'New Arrivals', to: `/product/${p.product_id}`, img: p.image_url || placeholderImg });
+      tags.push({ key: 'new-arrivals', label: 'New Arrivals', to: `/product/${createProductSlug(p.name, p.product_id)}`, img: p.image_url || placeholderImg });
     }
     if (hfData?.featured_collection?.top_product) {
       const fc = hfData.featured_collection;
       const tp = fc.top_product;
       const lbl = fc.category_name ? `Featured: ${fc.category_name}` : 'Featured Collections';
-      tags.push({ key: 'featured', label: lbl, to: `/product/${tp.product_id}`, img: tp.image_url || placeholderImg });
+      tags.push({ key: 'featured', label: lbl, to: `/product/${createProductSlug(tp.name, tp.product_id)}`, img: tp.image_url || placeholderImg });
     }
     if (hfData?.top_rated) {
       const p = hfData.top_rated;
-      tags.push({ key: 'top-rated', label: 'Top Rated', to: `/product/${p.product_id}`, img: p.image_url || placeholderImg });
+      tags.push({ key: 'top-rated', label: 'Top Rated', to: `/product/${createProductSlug(p.name, p.product_id)}`, img: p.image_url || placeholderImg });
     }
     if (hfData?.low_stock_alert) {
       const p = hfData.low_stock_alert;
-      tags.push({ key: 'low-stock', label: 'Low Stock Alerts', to: `/product/${p.product_id}`, img: p.image_url || placeholderImg });
+      tags.push({ key: 'low-stock', label: 'Low Stock Alerts', to: `/product/${createProductSlug(p.name, p.product_id)}`, img: p.image_url || placeholderImg });
     }
     if (tags.length === 0) {
       return [

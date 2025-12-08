@@ -1,6 +1,7 @@
 import React from "react";
 import "./ProdCard.css";
 import { useNavigate } from "react-router-dom";
+import { createProductSlug } from "../../../utils/slugUtils";
 
 export default function ProdCard({
   id,
@@ -20,7 +21,8 @@ export default function ProdCard({
 
   const handleView = () => {
     // Navigate to product details page
-    navigate(`/product/${id}`);
+    const slug = createProductSlug(name, id);
+    navigate(`/product/${slug}`);
   };
 
   const handleKeyDown = (e) => {

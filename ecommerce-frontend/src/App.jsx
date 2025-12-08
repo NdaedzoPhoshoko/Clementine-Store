@@ -35,7 +35,7 @@ function AppShell() {
           <Route path="/shop-all" element={<ShopAll />} />
           <Route path="/support" element={<Support />} />
           <Route path="/support/*" element={<Support />} />
-          <Route path="/product/:id" element={<ProductPage />} />
+          <Route path="/product/:slug" element={<ProductPage />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/cart/checkout" element={<Checkout />} />
           <Route path="/auth/login" element={<Login />} />

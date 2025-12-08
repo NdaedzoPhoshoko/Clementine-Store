@@ -13,6 +13,7 @@ import useAddCartItem from '../../hooks/for_cart/useAddCartItem.js'
 import { useCart } from '../../hooks/for_cart/CartContext.jsx'
 import { Send } from "lucide-react";
 import usePostProductReview from "../../hooks/usePostProductReview.js";
+import { extractIdFromSlug } from '../../utils/slugUtils';
 
 function useInView(options = { rootMargin: '200px', threshold: 0.1 }) {
   const ref = useRef(null)
@@ -77,7 +78,8 @@ function Accordion({ items }) {
 }
 
 export default function ProductPage() {
-  const { id } = useParams() || { id: '26' } // Default to product ID 26 if no param
+  const { slug } = useParams();
+  const id = extractIdFromSlug(slug) || '26';
   const productId = parseInt(id)
   
   // Fetch product details using the hook
