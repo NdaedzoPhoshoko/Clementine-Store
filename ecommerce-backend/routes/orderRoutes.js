@@ -1,5 +1,5 @@
 import express from "express";
-import { createOrder, getUserOrders, updateOrderShipping } from "../controllers/orderController.js";
+import { createOrder, getUserOrders, updateOrderShipping, getTrackOrder } from "../controllers/orderController.js";
 import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -234,5 +234,40 @@ router.get("/my", protect, getUserOrders);
  *         description: Server error while updating shipping
  */
 router.patch("/:id/shipping", protect, updateOrderShipping);
+
+/**
+ * @swagger
+ * /api/orders/track/{id}:
+ *   get:
+ *     summary: Track order status
+ *     description: Get the current status of an order by its ID without authentication.
+ *     tags: [Checkouts & Orders]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Order ID
+ *     responses:
+ *       200:
+ *         description: Order status found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id: { type: integer }
+ *                 status: { type: string, description: "Delivery status e.g. Pending, Shipped, Delivering, Delivered" }
+ *                 payment_status: { type: string }
+ *                 created_at: { type: string, format: date-time }
+ *       400:
+ *         description: Invalid order ID
+ *       404:
+ *         description: Order not found
+ *       500:
+ *         description: Server error
+ */
+router.get("/track/:id", getTrackOrder);
 
 export default router;

@@ -320,3 +320,44 @@ export const updateOrderShipping = async (req, res) => {
     return res.status(500).json({ message: "Error updating shipping" });
   }
 };
+
+export const getTrackOrder = async (req, res) => {
+  try {
+    const orderId = parseInt(req.params.id, 10);
+    if (!orderId || orderId <= 0) {
+      return res.status(400).json({ message: "Invalid order id" });
+    }
+
+    const orderRes = await pool.query(
+      "SELECT id, total_price, payment_status, created_at FROM orders WHERE id=$1",
+      [orderId]
+    );
+
+    if (orderRes.rows.length === 0) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    const order = orderRes.rows[0];
+
+    const shippingRes = await pool.query(
+      "SELECT delivery_status FROM shipping_details WHERE order_id=$1",
+      [orderId]
+    );
+    
+    const deliveryStatus = shippingRes.rows.length > 0 ? shippingRes.rows[0].delivery_status : 'Pending';
+
+    // Map to frontend expected steps if needed, or just return raw status
+    // Frontend steps: Pending, Shipped, Delivering, Delivered
+    
+    return res.status(200).json({
+      id: order.id,
+      status: deliveryStatus, // This matches the "delivery_status" column which usually holds 'Pending', 'Shipped', etc.
+      payment_status: order.payment_status,
+      created_at: order.created_at
+    });
+
+  } catch (err) {
+    console.error("Track order error:", err.message);
+    return res.status(500).json({ message: "Error tracking order" });
+  }
+};

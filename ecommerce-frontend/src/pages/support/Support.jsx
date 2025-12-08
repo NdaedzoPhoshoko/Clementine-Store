@@ -1,6 +1,7 @@
 import './Support.css'
 import { useState, useEffect, useRef } from 'react'
 import faqsData from './data/faqs.json'
+import useFetchOrderTrackingPublic from '../../hooks/support/useFetchOrderTrackingPublic'
 
 function Reveal({ children, className = '', as = 'div', threshold = 0.1, ...props }) {
   const [isVisible, setIsVisible] = useState(false)
@@ -184,7 +185,8 @@ function ContactForm() {
 function TrackOrder() {
   const [orderId, setOrderId] = useState('')
   const [current, setCurrent] = useState(null)
-  const [error, setError] = useState('')
+  const [validationError, setValidationError] = useState('')
+  const { trackOrder, loading, error: apiError } = useFetchOrderTrackingPublic()
 
   const steps = [
     { key: 'pending', label: 'Pending' },
@@ -193,15 +195,26 @@ function TrackOrder() {
     { key: 'delivered', label: 'Delivered' },
   ]
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault()
     const v = orderId.trim()
-    setError('')
-    if (!v) { setCurrent(null); setError('Enter your order number'); return }
-    const code = v.toUpperCase()
-    const hash = Array.from(code).reduce((acc, ch) => acc + ch.charCodeAt(0), 0)
-    const idx = Math.min(steps.length - 1, Math.max(0, hash % steps.length))
-    setCurrent(idx)
+    setValidationError('')
+    if (!v) { setCurrent(null); setValidationError('Enter your order number'); return }
+    
+    try {
+      const res = await trackOrder(v)
+      if (res && res.status) {
+        const s = res.status.toLowerCase()
+        const idx = steps.findIndex(step => step.key === s || step.label.toLowerCase() === s)
+        setCurrent(idx >= 0 ? idx : 0)
+      } else {
+        setCurrent(null)
+        setValidationError('Status info not available')
+      }
+    } catch (e) {
+      setCurrent(null)
+      // apiError will be set
+    }
   }
 
   return (
@@ -213,27 +226,30 @@ function TrackOrder() {
             id="orderId"
             type="text"
             className="form-control"
-            placeholder="e.g. 24JPT"
+            placeholder="e.g. 1001"
             value={orderId}
             onChange={(e) => setOrderId(e.target.value)}
             required
+            disabled={loading}
           />
         </div>
         <div className="track-actions">
-          <button type="submit" className="contact-btn">Check status</button>
+          <button type="submit" className="contact-btn" disabled={loading}>
+            {loading ? 'Checking...' : 'Check status'}
+          </button>
         </div>
-        {error && <span className="input-hint input-hint--error">{error}</span>}
+        {(validationError || apiError) && <span className="input-hint input-hint--error">{validationError || apiError}</span>}
         <div className={`track-results ${Number.isInteger(current) ? 'open' : ''}`}>
           {Number.isInteger(current) && (
             <div className="status-timeline">
               {steps.map((s, i) => (
-                <>
+                <div key={`step-wrapper-${s.key}`} style={{ display: 'contents' }}>
                   <div className={`timeline-step ${i < current ? 'timeline-step--done' : ''} ${i === current ? 'timeline-step--current' : ''}`} key={`step-${s.key}`}>
                     <span className="timeline-node" />
                     <span className="timeline-label">{s.label}</span>
                   </div>
                   {i < steps.length - 1 ? <span className="timeline-connector" key={`con-${s.key}`} /> : null}
-                </>
+                </div>
               ))}
             </div>
           )}
