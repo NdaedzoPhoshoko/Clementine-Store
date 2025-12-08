@@ -1,6 +1,32 @@
 import './Support.css'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import faqsData from './data/faqs.json'
+
+function Reveal({ children, className = '', as = 'div', threshold = 0.1, ...props }) {
+  const [isVisible, setIsVisible] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true)
+          observer.disconnect()
+        }
+      },
+      { threshold }
+    )
+    if (ref.current) observer.observe(ref.current)
+    return () => observer.disconnect()
+  }, [threshold])
+
+  const Component = as
+  return (
+    <Component ref={ref} className={`${className} ${isVisible ? 'is-visible' : ''}`} {...props}>
+      {children}
+    </Component>
+  )
+}
 
 export default function Support() {
   const [open, setOpen] = useState(0)
@@ -10,25 +36,25 @@ export default function Support() {
   return (
     <main className="support-page" aria-labelledby="support-heading">
       <section className="support-hero" aria-label="Support hero">
-        <div className="left__secton">
+        <Reveal className="left__secton">
           <div className="left-content">
             <p className="support-kicker">Support</p>
             <h1 id="support-heading" className="support-title">Frequently Asked Questions</h1>
             <p className="support-subtext">Need help? Browse common questions about orders, shipping, returns, and accounts.</p>
           </div>
-        </div>
+        </Reveal>
         <div className="right__section">
           <img
             src="/images/website_screenshot.png"
             alt="Website screenshot"
             className="support-hero-image"
             decoding="async"
-            loading="eager"
+            loading="lazy"
           />
         </div>
       </section>
 
-      <section className="support-faqs" aria-label="General FAQs">
+      <Reveal as="section" className="support-faqs" aria-label="General FAQs">
         <div className="faq-intro">
           <h2 className="faq-heading">General FAQs</h2>
           <p className="faq-text">{intro.text} {intro.linkHref && intro.linkText ? (<a href={intro.linkHref} className="faq-link">{intro.linkText}</a>) : null}.</p>
@@ -59,23 +85,23 @@ export default function Support() {
             )
           })}
         </div>
-      </section>
+      </Reveal>
 
-      <section className="support-contact" aria-label="Contact support">
+      <Reveal as="section" className="support-contact" aria-label="Contact support">
         <div className="contact-intro">
           <h2 className="contact-heading">Still have more questions?</h2>
           <p className="contact-text">Populate your question in the form below. Our support team will contact you at your email address. Responses may take a few days during high inquiry periods, so please be patient.</p>
         </div>
         <ContactForm />
-      </section>
+      </Reveal>
 
-      <section className="support-track" aria-label="Track order without signing in">
+      <Reveal as="section" className="support-track" aria-label="Track order without signing in">
         <div className="track-intro">
           <h2 className="track-heading">Track an order</h2>
           <p className="track-text">Enter your order number to see the latest status. If there are many inquiries, updates can take time. Please be patient.</p>
         </div>
         <TrackOrder />
-      </section>
+      </Reveal>
     </main>
   )
 }

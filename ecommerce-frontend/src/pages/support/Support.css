@@ -174,7 +174,7 @@
   gap: 16px;
   background: #ffffff;
   color: #1a1d2b;
-  border: 1px solid var(--color-border);
+  /* border: 1px solid var(--color-border); */
   border-radius: 12px;
   padding: 20px;
   box-shadow: var(--shadow-soft);
@@ -264,9 +264,9 @@
 .track-form {
   display: grid;
   gap: 16px;
-  background: #ffffff;
+  /* background: #ffffff; */
   color: #1a1d2b;
-  border: 1px solid var(--color-border);
+  /* border: 1px solid var(--color-border); */
   border-radius: 12px;
   padding: 20px;
   box-shadow: var(--shadow-soft);
@@ -275,7 +275,7 @@
   justify-items: start;
   text-align: left;
 }
-.track-row { display: grid; gap: 8px; }
+.track-row { display: grid; gap: 8px; width: 100%; }
 .track-actions { display: flex; align-items: center; gap: 12px; }
 .track-form .form-control {
   background: #ffffff;
@@ -307,8 +307,38 @@
 .timeline-step--done .timeline-node { border-color: var(--color-primary); background: var(--color-primary); }
 .timeline-step--current .timeline-node { border-color: var(--color-primary); background: var(--color-accent); }
 .timeline-step--done + .timeline-connector { background: var(--color-primary); }
-.timeline-step--done .timeline-label, .timeline-step--current .timeline-label { color: var(--color-text); font-weight: 600; }
+.timeline-step--done .timeline-label, .timeline-step--current .timeline-label { color: var(--color-accent); font-weight: 600; }
 
 @media (max-width: 900px) {
   .support-track { grid-template-columns: 1fr; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.left__secton, .support-faqs, .support-contact, .support-track {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.left__secton.is-visible,
+.support-faqs.is-visible,
+.support-contact.is-visible,
+.support-track.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.support-hero-image {
+  animation: fade-in 0.8s ease-out forwards;
+  opacity: 0;
+  animation-delay: 0.2s;
 }
