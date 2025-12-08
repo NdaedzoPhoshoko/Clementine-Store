@@ -1,8 +1,5 @@
 import { useEffect, useState } from 'react';
 
-const CACHE_KEY = 'new-products-cache:v1';
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-
 export default function useFetchNewProducts() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -11,30 +8,8 @@ export default function useFetchNewProducts() {
   useEffect(() => {
     const controller = new AbortController();
 
-    // Try cache first
-    let usedCache = false;
-    let cacheIsStale = true;
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const raw = localStorage.getItem(CACHE_KEY);
-        if (raw) {
-          const cached = JSON.parse(raw);
-          const age = Date.now() - (cached.ts || 0);
-          if (Array.isArray(cached.products)) {
-            console.log('[useFetchNewProducts] Using cached products. Age(ms):', age);
-            setProducts(cached.products);
-            setLoading(false);
-            usedCache = true;
-            cacheIsStale = age >= CACHE_TTL_MS;
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('[useFetchNewProducts] Cache read failed:', e);
-    }
-
     const fetchLatest = async () => {
-      if (!usedCache) setLoading(true);
+      setLoading(true);
       setError(null);
       const base = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:5000';
       const attempts = [
@@ -80,13 +55,6 @@ export default function useFetchNewProducts() {
 
           console.log('[useFetchNewProducts] Normalized:', normalized);
           setProducts(normalized);
-          try {
-            if (typeof window !== 'undefined' && window.localStorage) {
-              localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), products: normalized }));
-            }
-          } catch (e) {
-            console.warn('[useFetchNewProducts] Cache write failed:', e);
-          }
           setLoading(false);
           return; // success, stop attempts
         } catch (err) {
@@ -94,15 +62,13 @@ export default function useFetchNewProducts() {
           console.warn('[useFetchNewProducts] Attempt failed:', err);
           if (i === attempts.length - 1) {
             setError(err);
-            if (!usedCache) setLoading(false);
+            setLoading(false);
           }
         }
       }
     };
 
-    if (!usedCache || cacheIsStale) {
-      fetchLatest();
-    }
+    fetchLatest();
     return () => controller.abort();
   }, []);
 

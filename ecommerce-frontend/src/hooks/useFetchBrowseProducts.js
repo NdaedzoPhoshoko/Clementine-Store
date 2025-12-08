@@ -1,15 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-// Cache TTL aligned with other hooks
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-
-const cacheKey = (page, limit, search, categoryId, minPrice, maxPrice, inStock) =>
-  `browse-products-cache:v1:p=${page}:l=${limit}:s=${encodeURIComponent(search || '')}:cat=${
-    categoryId ?? 'na'
-  }:min=${minPrice ?? 'na'}:max=${maxPrice ?? 'na'}:stk=${
-    typeof inStock === 'undefined' || inStock === null ? 'na' : String(Boolean(inStock))
-  }`;
-
 export default function useFetchBrowseProducts({
   initialPage = 1,
   limit = 12,
@@ -67,42 +57,10 @@ export default function useFetchBrowseProducts({
     controllerRef.current?.abort();
     controllerRef.current = controller;
 
-    const KEY = cacheKey(page, limit, search, categoryId, minPrice, maxPrice, inStock);
-
-    let usedCache = false;
-    let cacheIsStale = true;
-
-    // Try cache first for this page + filter signature
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const raw = localStorage.getItem(KEY);
-        if (raw) {
-          const cached = JSON.parse(raw);
-          const age = Date.now() - (cached.ts || 0);
-          const arr = Array.isArray(cached.items) ? cached.items : [];
-          if (arr.length > 0) {
-            const normalized = arr.map(normalizeItem);
-            setItems((prev) => dedupeById(page === 1 ? normalized : [...prev, ...normalized]));
-            setItemsByPage((prev) => ({ ...prev, [page]: normalized }));
-            setMeta(cached.meta || null);
-            const nextHasMore =
-              typeof cached.hasMore !== 'undefined' ? Boolean(cached.hasMore) : arr.length === Number(limit);
-            setHasMore(nextHasMore);
-            usedCache = true;
-            cacheIsStale = age >= CACHE_TTL_MS;
-            if (page === 1) setLoading(false);
-            else setLoadingMore(false);
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('[useFetchBrowseProducts] Cache read failed:', e);
-    }
-
     const fetchLatest = async () => {
-      if (page === 1) setLoading(!usedCache || showSkeletonOnRefresh);
-      else setLoadingMore(!usedCache || showSkeletonOnRefresh);
-      setRefreshing(!!usedCache);
+      if (page === 1) setLoading(true);
+      else setLoadingMore(true);
+      setRefreshing(false);
       setError(null);
 
       const base = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:5000';
@@ -151,18 +109,6 @@ export default function useFetchBrowseProducts({
             typeof data?.meta?.hasMore !== 'undefined' ? Boolean(data.meta.hasMore) : arr.length === Number(limit);
           setHasMore(nextHasMore);
 
-          // Cache write
-          try {
-            if (typeof window !== 'undefined' && window.localStorage) {
-              localStorage.setItem(
-                KEY,
-                JSON.stringify({ ts: Date.now(), items: arr, meta: data?.meta || null, hasMore: nextHasMore })
-              );
-            }
-          } catch (e) {
-            console.warn('[useFetchBrowseProducts] Cache write failed:', e);
-          }
-
           if (page === 1) setLoading(false);
           else setLoadingMore(false);
           setRefreshing(false);
@@ -180,9 +126,7 @@ export default function useFetchBrowseProducts({
       }
     };
 
-    if (!usedCache || cacheIsStale) {
-      fetchLatest();
-    }
+    fetchLatest();
 
     return () => {
       controller.abort();
