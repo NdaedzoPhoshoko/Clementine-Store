@@ -8,7 +8,7 @@ export const getUserCart = async (req, res) => {
     }
 
     const cartResult = await pool.query(
-      "SELECT id, user_id, status, created_at FROM cart WHERE user_id=$1 AND status='ACTIVE' ORDER BY created_at DESC LIMIT 1",
+      "SELECT id, user_id, status, created_at FROM cart WHERE user_id=$1 AND status IN ('ACTIVE', 'CHECKOUT_IN_PROGRESS') ORDER BY created_at DESC LIMIT 1",
       [userId]
     );
 

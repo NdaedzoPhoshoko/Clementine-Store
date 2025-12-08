@@ -110,7 +110,7 @@ export default function Cart() {
   const subtotalFromMeta = formatPrice(Number(meta?.subtotal));
 
   const canCheckout = !loading && !error && (visibleItems?.length || 0) > 0;
-  const showCheckoutBanner = isAuthed && !loading && !error && (visibleItems?.length ?? 0) === 0 && String(cart?.status) === 'CHECKOUT_IN_PROGRESS';
+  const showCheckoutBanner = isAuthed && !loading && !error && String(cart?.status) === 'CHECKOUT_IN_PROGRESS';
 
   const onCheckout = async () => {
     const list = Array.isArray((ctxItems || [])) ? ctxItems : [];
