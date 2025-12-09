@@ -16,6 +16,7 @@
 
 .home-categories__title {
   margin: 0;
+  margin-left: 60px;
   font-size: 22px;
   font-weight: 800;
   letter-spacing: -0.02em;
@@ -40,7 +41,6 @@
   padding: 12px 4px;
   overflow-x: auto;
   overflow-y: hidden;
-  scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   -ms-overflow-style: none; /* IE/Edge */
   scrollbar-width: none; /* Firefox */
@@ -53,8 +53,6 @@
   flex-direction: row;
   align-items: stretch;
   gap: 24px;
-  transition: transform 300ms ease; /* smooth slide */
-  will-change: transform;
 }
 
 /* Card Redesign */
@@ -250,4 +248,8 @@
   }
   .cat-card__name-default { font-size: 1.1rem; }
   .home-categories__btn { width: 40px; height: 40px; font-size: 24px; }
+}
+
+@media (max-width: 640px) {
+  .home-categories__title { margin-left: 12px; }
 }

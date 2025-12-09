@@ -1,6 +1,6 @@
 import './Categories.css'
 import useFetchCategoriesWithImages from '../../../hooks/useFetchCategoriesWithImages.js'
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 // Match Navbar's slugify behavior for category filters
@@ -111,10 +111,22 @@ export default function Categories({ onError }) {
     if (needMore) setPage((p) => p + 1);
   }, [nearEndIndex, cats.length, loading]);
 
+  const handleScroll = useCallback(() => {
+    const el = trackRef.current;
+    if (!el || unitX <= 0) return;
+    const x = el.scrollLeft;
+    const next = Math.round(x / unitX);
+    if (next !== offset) setOffset(next);
+  }, [unitX, offset]);
+
   const handleNext = () => {
     const nextOffset = offset + itemsPerView;
     const max = Math.max(0, cats.length - itemsPerView);
     const clamped = Math.min(nextOffset, max);
+    const el = trackRef.current;
+    if (el) {
+      try { el.scrollTo({ left: clamped * unitX, behavior: 'smooth' }); } catch (_) { el.scrollLeft = clamped * unitX; }
+    }
     setOffset(clamped);
     const remainingAhead = cats.length - (clamped + itemsPerView);
     if (remainingAhead <= itemsPerView && !loading) {
@@ -123,7 +135,12 @@ export default function Categories({ onError }) {
   };
 
   const handlePrev = () => {
-    setOffset((o) => Math.max(0, o - itemsPerView));
+    const prev = Math.max(0, offset - itemsPerView);
+    const el = trackRef.current;
+    if (el) {
+      try { el.scrollTo({ left: prev * unitX, behavior: 'smooth' }); } catch (_) { el.scrollLeft = prev * unitX; }
+    }
+    setOffset(prev);
   };
 
   const placeholders = Array.from({ length: itemsPerView }, (_, i) => ({ id: `ph-${i}`, name: '...', image: '' }));
@@ -145,8 +162,8 @@ export default function Categories({ onError }) {
           ‹
         </button>
 
-        <div className="home-categories__track" ref={trackRef}>
-          <div className="home-categories__list" style={{ transform: `translateX(-${offset * unitX}px)` }}>
+        <div className="home-categories__track" ref={trackRef} onScroll={handleScroll}>
+          <div className="home-categories__list">
             {renderList.map((c, i) => {
               const isPh = String(c.id || '').startsWith('ph-');
               const label = c.name || '';
@@ -172,7 +189,7 @@ export default function Categories({ onError }) {
           className="home-categories__btn home-categories__btn--next"
           onClick={handleNext}
           aria-label="Next categories"
-          disabled={loading && cats.length <= offset + itemsPerView}
+          disabled={offset >= Math.max(0, cats.length - itemsPerView)}
         >
           ›
         </button>
