@@ -1,9 +1,9 @@
 /* Inherit global theme variables from src/index.css */
 
 .home-categories {
-  padding: 24px 16px;
+  /* padding: 24px 16px; */
   padding-inline: 34px; /* add horizontal padding for large screens */
-  margin-block: 24px;
+  /* margin-block: 24px; */
 }
 
 .home-categories__header {
@@ -74,6 +74,25 @@
   text-align: left;
 }
 
+.cat-card::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 3px;
+  background: var(--color-primary);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+  z-index: 3;
+}
+
+.cat-card:hover::after {
+  transform: scaleX(1);
+}
+
 .cat-card:hover,
 .cat-card:focus-visible {
   transform: translateY(-5px);
@@ -100,16 +119,17 @@
 
 .cat-card__overlay {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
+  box-sizing: border-box;
+  border-radius: inherit;
   background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0) 100%);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   padding: 24px;
-  pointer-events: none; /* Allow clicks to pass through to button logic if needed */
+  pointer-events: none;
+  transition: background 240ms ease, backdrop-filter 240ms ease, -webkit-backdrop-filter 240ms ease;
+  will-change: backdrop-filter, background;
 }
 
 .cat-card__name {
@@ -126,47 +146,35 @@
   text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
-.cat-card__name-hover {
-  display: none; /* Hidden by default */
-  font-size: 1.2rem;
-  font-weight: 600;
-  margin-bottom: 12px;
-  color: #e0e0e0;
-}
-
-.cat-card__button {
-  display: block;
-  width: 100%;
-  padding: 12px 0;
-  background-color: rgba(16, 24, 32, 0.9); /* Dark background like screenshot */
-  color: #fff;
-  text-align: center;
-  font-weight: 600;
-  font-size: 0.9rem;
-  text-transform: uppercase;
-  border: 1px solid rgba(255,255,255,0.1);
-  opacity: 1; /* Always visible based on screenshot */
-  transition: background 0.3s, border-color 0.3s;
-  margin-top: 8px;
-}
-
 /* Hover State Logic */
-.cat-card:hover .cat-card__name-default {
-  /* Keep visible or hide? Screenshot implies title stays, but user said "shows Browse..." */
-  /* Let's keep the title but add the "Browse" hint or replace it. */
-  /* User said: "the words inform of the image cards must be name of category when on hover the card shows Browse ${category}" */
-  /* This implies REPLACEMENT */
+.cat-card__hover-center {
+  position: absolute;
+  inset: 0;
   display: none;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-align: center;
+  z-index: 2;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  opacity: 0;
+  transition: opacity 220ms ease;
 }
 
-.cat-card:hover .cat-card__name-hover {
-  display: block;
+.cat-card:hover .cat-card__hover-center {
+  display: flex;
+  opacity: 1;
 }
 
-.cat-card:hover .cat-card__button {
-  background-color: #fff;
-  color: #000;
-  border-color: #fff;
+/* Blur and simplify overlay background on hover for clarity */
+.cat-card:hover .cat-card__overlay {
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
 }
 
 
@@ -241,6 +249,5 @@
     height: 280px;
   }
   .cat-card__name-default { font-size: 1.1rem; }
-  .cat-card__button { padding: 8px 0; font-size: 0.8rem; }
   .home-categories__btn { width: 40px; height: 40px; font-size: 24px; }
 }

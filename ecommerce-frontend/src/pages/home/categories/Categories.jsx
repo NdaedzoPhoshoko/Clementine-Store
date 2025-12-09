@@ -34,13 +34,12 @@ function CategoryCard({ name, image, isPlaceholder = false, onClick }) {
           {isPlaceholder ? (
             <span className="cat-card__name-skeleton skeleton-block" aria-hidden="true"></span>
           ) : (
-            <>
-              <span className="cat-card__name-default">{name || 'Category'}</span>
-              <span className="cat-card__name-hover">Browse {name || 'Category'}</span>
-              <span className="cat-card__button">Go To Section</span>
-            </>
+            <span className="cat-card__name-default">{name || 'Category'}</span>
           )}
         </span>
+        {!isPlaceholder && (
+          <span className="cat-card__hover-center">Browse</span>
+        )}
       </div>
     </div>
   );
