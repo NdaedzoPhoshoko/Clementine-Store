@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 // Match Navbar's slugify behavior for category filters
 const slugify = (s) => s.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
 
-function CategoryCard({ name, image, isPlaceholder = false, onClick }) {
+function CategoryCard({ name, image, isPlaceholder = false, onClick, delayMs = 0 }) {
   const fallback = '/images/imageNoVnXXmDNi0.png';
   const src = image && image.length > 0 ? image : fallback;
   return (
@@ -21,6 +21,7 @@ function CategoryCard({ name, image, isPlaceholder = false, onClick }) {
           onClick();
         }
       }}
+      style={isPlaceholder ? undefined : { animationDelay: `${delayMs}ms` }}
     >
       <div className="cat-card__image-container">
         {isPlaceholder ? (
@@ -48,11 +49,13 @@ function CategoryCard({ name, image, isPlaceholder = false, onClick }) {
 export default function Categories({ onError }) {
   const viewportRef = useRef(null);
   const trackRef = useRef(null);
+  const listRef = useRef(null);
   const [itemsPerView, setItemsPerView] = useState(6);
   const [page, setPage] = useState(1);
   const [offset, setOffset] = useState(0);
   const [cats, setCats] = useState([]);
   const [unitX, setUnitX] = useState(236); // card width + gap in px
+  const [entered, setEntered] = useState(false);
 
   const navigate = useNavigate();
 
@@ -102,6 +105,19 @@ export default function Categories({ onError }) {
     ro.observe(viewportEl);
     ro.observe(trackEl);
     return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setEntered(true);
+        obs.disconnect();
+      }
+    }, { threshold: 0.1 });
+    obs.observe(el);
+    return () => obs.disconnect();
   }, []);
 
   // Prefetch next page when near end of current buffer
@@ -163,7 +179,7 @@ export default function Categories({ onError }) {
         </button>
 
         <div className="home-categories__track" ref={trackRef} onScroll={handleScroll}>
-          <div className="home-categories__list">
+          <div ref={listRef} className={`home-categories__list ${entered ? 'is-entered' : ''}`}>
             {renderList.map((c, i) => {
               const isPh = String(c.id || '').startsWith('ph-');
               const label = c.name || '';
@@ -179,6 +195,7 @@ export default function Categories({ onError }) {
                   image={c.image}
                   isPlaceholder={isPh}
                   onClick={onCardClick}
+                  delayMs={i * 80}
                 />
               );
             })}
