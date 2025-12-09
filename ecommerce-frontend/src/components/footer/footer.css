@@ -42,7 +42,7 @@
 .footer-links li { margin: 6px 0; }
 .footer-link {
   color: var(--color-muted);
-  font-weight: 600;
+  font-size: 13px;
   text-decoration: none;
 }
 .footer-link:hover { color: var(--palette-primary); opacity: 0.72; }

@@ -492,12 +492,9 @@ const Navbar = () => {
                   <p>Get help with orders, shipping, returns, and account questions. Find quick answers, track your order status, or reach our support team for personalized assistance when you need it.</p>
                 </div>
                 <div className="mega-right">
-                  <Link to="/support/faq" className="mega-tag">FAQ</Link>
-                  <Link to="/support/shipping" className="mega-tag">Shipping</Link>
-                  <Link to="/support/returns" className="mega-tag">Returns</Link>
-                  <Link to="/support/order-status" className="mega-tag">Order Status</Link>
-                  <Link to="/support/contact" className="mega-tag">Contact Support</Link>
-                  <Link to="/support/live-chat" className="mega-tag">Live Chat</Link>
+                  <Link to="/support#faqs" className="mega-tag" onClick={() => setActiveMenu(null)}>FAQ</Link>
+                  <Link to="/support#track" className="mega-tag" onClick={() => setActiveMenu(null)}>Track Order</Link>
+                  <Link to="/support#contact" className="mega-tag" onClick={() => setActiveMenu(null)}>Contact Support</Link>
                 </div>
               </div>
               )}

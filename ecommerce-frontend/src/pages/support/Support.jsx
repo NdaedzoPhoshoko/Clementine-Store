@@ -1,5 +1,6 @@
 import './Support.css'
 import { useState, useEffect, useRef } from 'react'
+import { useLocation } from 'react-router-dom'
 import faqsData from './data/faqs.json'
 import useFetchOrderTrackingPublic from '../../hooks/support/useFetchOrderTrackingPublic'
 
@@ -30,9 +31,25 @@ function Reveal({ children, className = '', as = 'div', threshold = 0.1, ...prop
 }
 
 export default function Support() {
+  const location = useLocation()
   const [open, setOpen] = useState(0)
   const faqs = faqsData.items || faqsData
   const intro = faqsData.intro || {}
+
+  // Scroll to hash targets when navigating via /support#section
+  useEffect(() => {
+    if (location && location.hash) {
+      const target = document.querySelector(location.hash)
+      if (target) {
+        try {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        } catch (e) {
+          const y = target.getBoundingClientRect().top + window.scrollY
+          window.scrollTo({ top: y, behavior: 'smooth' })
+        }
+      }
+    }
+  }, [location.hash])
 
   return (
     <main className="support-page" aria-labelledby="support-heading">
@@ -55,7 +72,7 @@ export default function Support() {
         </div>
       </section>
 
-      <Reveal as="section" className="support-faqs" aria-label="General FAQs">
+      <Reveal as="section" id="faqs" className="support-faqs" aria-label="General FAQs">
         <div className="faq-intro">
           <h2 className="faq-heading">General FAQs</h2>
           <p className="faq-text">{intro.text} {intro.linkHref && intro.linkText ? (<a href={intro.linkHref} className="faq-link">{intro.linkText}</a>) : null}.</p>
@@ -88,7 +105,7 @@ export default function Support() {
         </div>
       </Reveal>
 
-      <Reveal as="section" className="support-contact" aria-label="Contact support">
+      <Reveal as="section" id="contact" className="support-contact" aria-label="Contact support">
         <div className="contact-intro">
           <h2 className="contact-heading">Still have more questions?</h2>
           <p className="contact-text">Populate your question in the form below. Our support team will contact you at your email address. Responses may take a few days during high inquiry periods, so please be patient.</p>
@@ -96,7 +113,7 @@ export default function Support() {
         <ContactForm />
       </Reveal>
 
-      <Reveal as="section" className="support-track" aria-label="Track order without signing in">
+      <Reveal as="section" id="track" className="support-track" aria-label="Track order without signing in">
         <div className="track-intro">
           <h2 className="track-heading">Track an order</h2>
           <p className="track-text">Enter your order number to see the latest status. If there are many inquiries, updates can take time. Please be patient.</p>
