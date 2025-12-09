@@ -335,17 +335,19 @@ export default function ViewAccount() {
                             )}
                             <button type="button" className="account-card__link account-card__link--btn" onClick={() => setSelectedOrderId(o.id)}>View order</button>
                           </div>
-                          <div className={`status-timeline order-card__timeline ${selectedOrder ? 'is-hidden' : ''}`} role="list">
-                            {orderStatusSteps.map((label, i) => (
-                              <React.Fragment key={label}>
-                                <div className={`timeline-step ${i < getStatusIndex(o) ? 'timeline-step--done' : ''} ${i === getStatusIndex(o) ? 'timeline-step--current' : ''}`} role="listitem">
-                                  <div className="timeline-node" />
-                                  <div className="timeline-label">{label}</div>
-                                </div>
-                                {i < orderStatusSteps.length - 1 && <div className="timeline-connector" />}
-                              </React.Fragment>
-                            ))}
-                          </div>
+                          {!selectedOrderId && (
+                            <div className="status-timeline order-card__timeline" role="list">
+                              {orderStatusSteps.map((label, i) => (
+                                <React.Fragment key={label}>
+                                  <div className={`timeline-step ${i < getStatusIndex(o) ? 'timeline-step--done' : ''} ${i === getStatusIndex(o) ? 'timeline-step--current' : ''}`} role="listitem">
+                                    <div className="timeline-node" />
+                                    <div className="timeline-label">{label}</div>
+                                  </div>
+                                  {i < orderStatusSteps.length - 1 && <div className="timeline-connector" />}
+                                </React.Fragment>
+                              ))}
+                            </div>
+                          )}
                         </div>
                         {idx < orders.length - 1 && <div className="orders-divider" />}
                       </React.Fragment>

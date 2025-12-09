@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import './AccountSideBar.css';
 import useAuthUser from '../../hooks/use_auth/useAuthUser.js';
+import { useNavigate } from 'react-router-dom';
 
 export default function AccountSideBar({ active, onSelect }) {
+  const navigate = useNavigate();
   const [initialSkeleton, setInitialSkeleton] = useState(true);
   const { user } = useAuthUser();
   const displayName = user?.name || user?.fullName || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Guest';
@@ -23,10 +25,16 @@ export default function AccountSideBar({ active, onSelect }) {
       className={`account-sidebar__item ${active === k ? 'is-active' : ''}`}
       role="menuitem"
       tabIndex={0}
-      onClick={() => onSelect && onSelect(k)}
+      onClick={() => {
+        if (k === 'faq') { navigate('/support#faqs'); return; }
+        if (k === 'support') { navigate('/support'); return; }
+        onSelect && onSelect(k);
+      }}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
+          if (k === 'faq') { navigate('/support#faqs'); return; }
+          if (k === 'support') { navigate('/support'); return; }
           onSelect && onSelect(k);
         }
       }}
@@ -77,7 +85,7 @@ export default function AccountSideBar({ active, onSelect }) {
         </ul>
       </div>
       <div className="account-sidebar__section">
-        <div className="account-sidebar__title">Settings</div>
+        <div className="account-sidebar__title">Help Center</div>
         <ul className="account-sidebar__list" role="menu">
           <Item k="faq" label="FAQ" />
           <Item k="support" label="Support" />
