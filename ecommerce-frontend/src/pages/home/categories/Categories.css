@@ -3,6 +3,7 @@
 .home-categories {
   padding: 24px 16px;
   padding-inline: 34px; /* add horizontal padding for large screens */
+  margin-block: 24px;
 }
 
 .home-categories__header {
@@ -10,7 +11,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 8px;
+  margin-bottom: 24px;
 }
 
 .home-categories__title {
@@ -23,93 +24,12 @@
 
 /* Slider viewport + track */
 .home-categories__viewport {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  overflow: hidden;
-  width: 100%;
-  column-gap: 16px;
-}
-
-.home-categories__track {
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 12px 4px;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-  -ms-overflow-style: none; /* IE/Edge */
-  scrollbar-width: none; /* Firefox */
-}
-.home-categories__track::-webkit-scrollbar { display: none; }
-
-/* Card */
-.cat-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 8px 4px;
-}
-
-.cat-card__avatar {
-  width: 136px;
-  height: 136px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-}
-
-.cat-card__img {
-  width: 122px;
-  height: 122px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.cat-card__name {
-  font-size: 0.95rem;
-  color: var(--color-text);
-  text-align: center;
-}
-
-/* Hover / focus */
-.cat-card:hover .cat-card__avatar,
-.cat-card:focus-visible .cat-card__avatar {
-  box-shadow: inset 0 0 0 2px var(--color-border);
-}
-
-/* Nav buttons */
-/* Header */
-.home-categories {
-  margin-block: 24px;
-}
-
-.home-categories__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.home-categories__title {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--color-text);
-}
-
-/* Viewport & Track */
-.home-categories__viewport {
   position: relative;
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
   overflow: hidden;
-  padding-inline: 0; /* grid contains chevrons outside the track */
+  width: 100%;
   column-gap: 16px;
 }
 
@@ -117,8 +37,7 @@
   position: relative;
   box-sizing: border-box;
   width: 100%;
-  min-height: 64px;
-  padding: 12px 4px; /* track sits between chevrons now */
+  padding: 12px 4px;
   overflow-x: auto;
   overflow-y: hidden;
   scroll-behavior: smooth;
@@ -132,85 +51,196 @@
 .home-categories__list {
   display: flex;
   flex-direction: row;
-  align-items: center;
-  gap: 86px;
+  align-items: stretch;
+  gap: 24px;
   transition: transform 300ms ease; /* smooth slide */
   will-change: transform;
 }
 
-/* Chevron controls sit outside the track via grid */
-.home-categories__btn {
-  position: static;
-  width: 64px;
-  height: 64px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 44px;
-  line-height: 1;
-  background: transparent;
+/* Card Redesign */
+.cat-card {
+  position: relative;
+  flex: 0 0 280px; /* Fixed width for portrait cards */
+  height: 400px;
+  display: flex;
+  flex-direction: column;
+  background: #f0f0f0;
   border: none;
-  color: var(--palette-primary);
   cursor: pointer;
+  border-radius: 4px;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  padding: 0;
+  text-align: left;
+}
+
+.cat-card:hover,
+.cat-card:focus-visible {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.15);
   outline: none;
-  z-index: 1;
-  user-select: none;
-  touch-action: pan-y;
 }
 
-.home-categories__btn--prev { justify-self: start; }
-.home-categories__btn--next { justify-self: end; }
-
-/* Responsive tweaks */
-@media (max-width: 1024px) {
-  .home-categories__list { gap: 72px; }
-  .home-categories__track { padding: 12px 84px; min-height: 56px; }
-  .home-categories__btn { width: 56px; height: 56px; font-size: 40px; }
+.cat-card__image-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
 }
 
-@media (max-width: 768px) {
-  .home-categories__list { gap: 60px; }
-  .home-categories__track { padding: 12px 72px; min-height: 48px; }
-  .home-categories__btn { width: 48px; height: 48px; font-size: 36px; }
+.cat-card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
 }
 
-@media (max-width: 768px) {
-  .home-categories__list { gap: 24px; }
-  .cat-card__avatar { width: 96px; height: 96px; }
-  .cat-card__img { width: 82px; height: 82px; }
-  .home-categories__title { font-size: 18px; }
+.cat-card:hover .cat-card__img {
+  transform: scale(1.05);
 }
+
+.cat-card__overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 24px;
+  pointer-events: none; /* Allow clicks to pass through to button logic if needed */
+}
+
+.cat-card__name {
+  width: 100%;
+  color: #fff;
+}
+
+.cat-card__name-default {
+  display: block;
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  transition: opacity 0.3s ease;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.cat-card__name-hover {
+  display: none; /* Hidden by default */
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #e0e0e0;
+}
+
+.cat-card__button {
+  display: block;
+  width: 100%;
+  padding: 12px 0;
+  background-color: rgba(16, 24, 32, 0.9); /* Dark background like screenshot */
+  color: #fff;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  border: 1px solid rgba(255,255,255,0.1);
+  opacity: 1; /* Always visible based on screenshot */
+  transition: background 0.3s, border-color 0.3s;
+  margin-top: 8px;
+}
+
+/* Hover State Logic */
+.cat-card:hover .cat-card__name-default {
+  /* Keep visible or hide? Screenshot implies title stays, but user said "shows Browse..." */
+  /* Let's keep the title but add the "Browse" hint or replace it. */
+  /* User said: "the words inform of the image cards must be name of category when on hover the card shows Browse ${category}" */
+  /* This implies REPLACEMENT */
+  display: none;
+}
+
+.cat-card:hover .cat-card__name-hover {
+  display: block;
+}
+
+.cat-card:hover .cat-card__button {
+  background-color: #fff;
+  color: #000;
+  border-color: #fff;
+}
+
 
 /* Skeleton placeholders */
 .skeleton-block {
-  background: linear-gradient(90deg, var(--color-surface), var(--color-bg), var(--color-surface));
+  background: linear-gradient(90deg, #e0e0e0, #f5f5f5, #e0e0e0);
   background-size: 200% 100%;
-  animation: shimmer 1.2s linear infinite;
-  border-radius: 8px;
-}
-
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  animation: shimmer 1.5s linear infinite;
 }
 
 .cat-card--skeleton {
   pointer-events: none;
 }
 
-.cat-card__avatar-skeleton {
+.cat-card__img-skeleton {
   width: 100%;
   height: 100%;
-  border-radius: 50%;
+  background-color: #ddd;
 }
 
 .cat-card__name-skeleton {
-  display: inline-block;
-  width: 90px;
-  height: 16px;
-  border-radius: 6px;
+  display: block;
+  width: 60%;
+  height: 24px;
+  margin-bottom: 16px;
+  background-color: rgba(255,255,255,0.3);
+}
+
+/* Chevron controls */
+.home-categories__btn {
+  position: static;
+  width: 56px;
+  height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 50%;
+  color: #333;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  transition: all 0.2s;
+  z-index: 2;
+}
+
+.home-categories__btn:hover:not(:disabled) {
+  background: #000;
+  color: #fff;
+  border-color: #000;
+}
+
+.home-categories__btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+
+/* Responsive tweaks */
+@media (max-width: 1024px) {
+  .cat-card {
+    flex: 0 0 240px;
+    height: 340px;
+  }
 }
 
 @media (max-width: 768px) {
-  .cat-card__name-skeleton { width: 72px; height: 14px; }
+  .home-categories__list { gap: 16px; }
+  .cat-card {
+    flex: 0 0 200px;
+    height: 280px;
+  }
+  .cat-card__name-default { font-size: 1.1rem; }
+  .cat-card__button { padding: 8px 0; font-size: 0.8rem; }
+  .home-categories__btn { width: 40px; height: 40px; font-size: 24px; }
 }

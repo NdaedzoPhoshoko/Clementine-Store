@@ -10,7 +10,7 @@
 
 .sponsored-banner__slides {
   position: relative;
-  height: 618px;
+  height: calc(100vh - var(--navbar-dropdown-top, 64px));
 }
 
 .sponsored-banner__slide {
@@ -137,7 +137,7 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .sponsored-banner__slides { height: 330px; }
+  /* .sponsored-banner__slides { height: 330px; } -- Removed to keep full height */
   .sponsored-banner__title { font-size: 30px; }
   .sponsored-banner__subtitle { font-size: 14px; }
 }

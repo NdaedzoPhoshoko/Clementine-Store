@@ -10,27 +10,39 @@ function CategoryCard({ name, image, isPlaceholder = false, onClick }) {
   const fallback = '/images/imageNoVnXXmDNi0.png';
   const src = image && image.length > 0 ? image : fallback;
   return (
-    <button
+    <div
       className={`cat-card ${isPlaceholder ? 'cat-card--skeleton' : ''}`}
       aria-label={isPlaceholder ? 'Loading category' : (name || 'Category')}
-      disabled={isPlaceholder ? true : undefined}
       onClick={isPlaceholder ? undefined : onClick}
+      role="button"
+      tabIndex={isPlaceholder ? -1 : 0}
+      onKeyDown={(e) => {
+        if (!isPlaceholder && (e.key === 'Enter' || e.key === ' ')) {
+          onClick();
+        }
+      }}
     >
-      <span className="cat-card__avatar" aria-hidden>
+      <div className="cat-card__image-container">
         {isPlaceholder ? (
-          <span className="cat-card__avatar-skeleton skeleton-block" />
+          <div className="cat-card__img-skeleton skeleton-block" />
         ) : (
           <img className="cat-card__img" src={src} alt="" />
         )}
-      </span>
-      <span className="cat-card__name">
-        {isPlaceholder ? (
-          <span className="cat-card__name-skeleton skeleton-block" aria-hidden="true"></span>
-        ) : (
-          name || '...'
-        )}
-      </span>
-    </button>
+      </div>
+      <div className="cat-card__overlay">
+        <span className="cat-card__name">
+          {isPlaceholder ? (
+            <span className="cat-card__name-skeleton skeleton-block" aria-hidden="true"></span>
+          ) : (
+            <>
+              <span className="cat-card__name-default">{name || 'Category'}</span>
+              <span className="cat-card__name-hover">Browse {name || 'Category'}</span>
+              <span className="cat-card__button">Go To Section</span>
+            </>
+          )}
+        </span>
+      </div>
+    </div>
   );
 }
 
