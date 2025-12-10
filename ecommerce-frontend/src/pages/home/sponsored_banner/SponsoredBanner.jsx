@@ -54,6 +54,7 @@ export default function SponsoredBanner() {
   ];
   const [index, setIndex] = useState(0);
   const timerRef = useRef(null);
+  const [ready, setReady] = useState(false);
 
   // Preload images to avoid flicker on Edge
   useEffect(() => {
@@ -62,6 +63,11 @@ export default function SponsoredBanner() {
       img.src = s.image;
     });
     // no cleanup needed
+  }, []);
+
+  useEffect(() => {
+    const t = setTimeout(() => setReady(true), 60);
+    return () => clearTimeout(t);
   }, []);
 
   useEffect(() => {
@@ -98,7 +104,7 @@ export default function SponsoredBanner() {
 
   return (
     <section
-      className="sponsored-banner"
+      className={`sponsored-banner ${ready ? 'is-ready' : ''}`}
       aria-label="Sponsored banners"
     >
       <div className="sponsored-banner__slides">

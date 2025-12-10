@@ -6,6 +6,9 @@
   background: #0f0f10;
   isolation: isolate;
   contain: paint;
+  filter: blur(8px);
+  transition: filter 600ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: filter;
 }
 
 .sponsored-banner__slides {
@@ -184,4 +187,11 @@
 /* Accessibility: reduce motion */
 @media (prefers-reduced-motion: reduce) {
   .sponsored-banner__slide { transition: none; }
+}
+.sponsored-banner.is-ready {
+  filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sponsored-banner { transition: none; filter: none; }
 }
