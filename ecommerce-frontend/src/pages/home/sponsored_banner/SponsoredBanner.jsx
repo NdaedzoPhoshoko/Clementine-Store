@@ -123,7 +123,12 @@ export default function SponsoredBanner() {
               <h3 className="sponsored-banner__title">{s.title}</h3>
               <p className="sponsored-banner__subtitle">{s.subtitle}</p>
               <button className="sponsored-banner__cta" type="button">
-                {s.cta} <span aria-hidden>›</span>
+                {s.cta}
+                <span className="sponsored-banner__cta-icon" aria-hidden>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </span>
               </button>
             </div>
           </div>
