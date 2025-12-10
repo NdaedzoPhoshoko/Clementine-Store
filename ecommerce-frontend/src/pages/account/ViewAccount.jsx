@@ -83,11 +83,10 @@ export default function ViewAccount() {
 
   React.useEffect(() => {
     if (selectedOrderId) {
-      setDetailMotion('entering');
+      setDetailMotion('open');
       setDetailInitialSkeleton(true);
-      const t = setTimeout(() => setDetailMotion('open'), 20);
       const s = setTimeout(() => setDetailInitialSkeleton(false), 450);
-      return () => { clearTimeout(t); clearTimeout(s); };
+      return () => { clearTimeout(s); };
     } else {
       setDetailMotion(null);
       setDetailInitialSkeleton(false);
@@ -440,20 +439,22 @@ export default function ViewAccount() {
                                 <div className="kv"><div className="kv__label">Postal Code</div><div className="kv__value">{selectedOrder.shipping.postal_code || '—'}</div></div>
                               </div>
                               <button type="button" className="account-card__link account-card__link--btn" onClick={openEditModal}>Edit shipping</button>
-                              <div className="order-detail__section-title">Tracking Order</div>
-                              <div className="status-timeline" role="list">
-                                {orderStatusSteps.map((label, i) => (
-                                  <React.Fragment key={label}>
-                                    <div className={`timeline-step ${i < statusIndex ? 'timeline-step--done' : ''} ${i === statusIndex ? 'timeline-step--current' : ''}`} role="listitem">
-                                      <div className="timeline-node" />
-                                      <div className="timeline-label">{label}</div>
-                                    </div>
-                                    {i < orderStatusSteps.length - 1 && <div className="timeline-connector" />}
-                                  </React.Fragment>
-                                ))}
-                              </div>
                             </div>
                           )}
+                          <div className="order-detail__section">
+                            <div className="order-detail__section-title">Tracking Order</div>
+                            <div className="status-timeline" role="list">
+                              {orderStatusSteps.map((label, i) => (
+                                <React.Fragment key={label}>
+                                  <div className={`timeline-step ${i < statusIndex ? 'timeline-step--done' : ''} ${i === statusIndex ? 'timeline-step--current' : ''}`} role="listitem">
+                                    <div className="timeline-node" />
+                                    <div className="timeline-label">{label}</div>
+                                  </div>
+                                  {i < orderStatusSteps.length - 1 && <div className="timeline-connector" />}
+                                </React.Fragment>
+                              ))}
+                            </div>
+                          </div>
                           <div className="order-detail__section">
                             <div className="order-detail__section-title">Items</div>
                             <div className="order-items">
