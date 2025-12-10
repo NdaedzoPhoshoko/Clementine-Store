@@ -7,6 +7,7 @@ import useCreatePaymentIntent from '../../hooks/payment/useCreatePaymentIntent.j
 import useConfirmPaymentIntent from '../../hooks/payment/useConfirmPaymentIntent.js'
 import useShippingReuseOptions from '../../hooks/payment/useShippingReuseOptions.js'
 import useSavedPaymentCards from '../../hooks/payment/useSavedPaymentCards.js'
+import useUpdateOrderShipping from '../../hooks/useUpdateOrderShipping.js'
 import SuccessModal from '../../components/modals/success_modal/SuccessModal.jsx'
 
 // Currency formatter (Rand)
@@ -16,7 +17,8 @@ export default function Checkout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { items: cartItems, refresh, hydrate, clearCart } = useCart();
-  const { items: shippingItems } = useFetchMyShippingDetails({ enabled: true });
+  const { items: shippingItems, loading: shippingLoading } = useFetchMyShippingDetails({ enabled: true });
+  const { update: updateOrderShipping } = useUpdateOrderShipping();
 
   // Payment method selection
   const [method, setMethod] = useState('card')
@@ -98,6 +100,16 @@ export default function Checkout() {
         const intentId = String(intentRes?.payment_intent_id || '')
         if (!intentId) throw new Error('Missing payment_intent_id')
         await confirmPaymentIntent({ orderId, paymentIntentId: intentId })
+        try {
+          await updateOrderShipping(orderId, {
+            name: String(shipping.name || ''),
+            address: String(shipping.address || ''),
+            city: String(shipping.city || ''),
+            province: String(shipping.province || ''),
+            postal_code: String(shipping.postal_code || ''),
+            phone_number: String(shipping.phone_number || '')
+          })
+        } catch (_) {}
         if (saveCardChecked) {
           try {
             const brand = detectBrand(card.number)
@@ -260,16 +272,50 @@ export default function Checkout() {
   const [modalOpen, setModalOpen] = useState(false)
   const [modalVariant, setModalVariant] = useState('success')
   const [modalMessage, setModalMessage] = useState('')
+  const [initialSkeleton, setInitialSkeleton] = useState(true)
+
+  useEffect(() => {
+    if (!reuseLoading && !shippingLoading) {
+      const t = setTimeout(() => setInitialSkeleton(false), 450)
+      return () => clearTimeout(t)
+    } else {
+      setInitialSkeleton(true)
+    }
+  }, [reuseLoading, shippingLoading])
 
   return (
-    <div className="checkout-page">
-      <div className="checkout-grid">
+    <div className="checkout__page">
+      <div className="checkout__grid">
         {/* Left: Payment */}
-        <section className="pay-card">
-          <h1 className="page-title">Payment</h1>
-          <p className="page-sub">Select Payment Method</p>
+        <section className={`checkout__pay-card ${initialSkeleton ? 'checkout__is-skeleton' : ''}`}>
+          {initialSkeleton && (
+            <div className="checkout__skeleton-wrap" aria-hidden="true">
+              <div className="checkout__skeleton-line checkout__skeleton-title" />
+              <div className="checkout__skeleton-line checkout__skeleton-text" />
+              <div className="checkout__skeleton-line checkout__skeleton-chip" />
+              <div className="checkout__saved-cards">
+                <div className="checkout__skeleton-line checkout__skeleton-text" />
+                <div className="checkout__saved-list">
+                  {[0,1].map((i) => (
+                    <div key={i} className="checkout__skeleton-card" />
+                  ))}
+                </div>
+              </div>
+              <div className="checkout__card-form">
+                <div className="checkout__row"><div className="checkout__skeleton-line checkout__skeleton-text" /></div>
+                <div className="checkout__row"><div className="checkout__skeleton-line checkout__skeleton-text" /></div>
+                <div className="checkout__grid-2">
+                  <div className="checkout__row"><div className="checkout__skeleton-line checkout__skeleton-text" /></div>
+                  <div className="checkout__row"><div className="checkout__skeleton-line checkout__skeleton-text" /></div>
+                </div>
+              </div>
+              <div className="checkout__skeleton-btn checkout__skeleton-pay" />
+            </div>
+          )}
+          <h1 className="checkout__title">Payment</h1>
+          <p className="checkout__sub">Select Payment Method</p>
           {/* Credit card option + form */}
-          <label className={`method-option ${method === 'card' ? 'selected' : ''}`}>
+          <label className={`checkout__method-option ${method === 'card' ? 'selected' : ''}`}>
             <input
               type="radio"
               name="paymethod"
@@ -277,26 +323,26 @@ export default function Checkout() {
               checked={method === 'card'}
               onChange={(e) => setMethod(e.target.value)}
             />
-            <div className="method-content">
-              <span className="method-title">Credit Card</span>
-              <div className="brandrow" aria-label="Accepted cards">
-                <img src="/icons/visa_inc_logo.png" alt="Visa" className="brand-img visa" />
-                <img src="/icons/master_card_logo.png" alt="Mastercard" className="brand-img mc" />
+            <div className="checkout__method-content">
+              <span className="checkout__method-title">Credit Card</span>
+              <div className="checkout__brandrow" aria-label="Accepted cards">
+                <img src="/icons/visa_inc_logo.png" alt="Visa" className="checkout__brand-img visa" />
+                <img src="/icons/master_card_logo.png" alt="Mastercard" className="checkout__brand-img mc" />
               </div>
             </div>
           </label>
 
           {/* Saved card options */}
-          <div className="saved-cards" aria-label="Saved cards">
-            <div className="saved-title">Saved Cards</div>
+          <div className="checkout__saved-cards" aria-label="Saved cards">
+            <div className="checkout__saved-title">Saved Cards</div>
             {savedCards.length === 0 ? (
-              <div className="saved-empty" role="status" aria-live="polite">No previous card was saved</div>
+              <div className="checkout__saved-empty" role="status" aria-live="polite">No previous card was saved</div>
             ) : (
-              <div className="saved-list">
+              <div className="checkout__saved-list">
                 {savedCards.map((sc) => (
                   <div
                     key={sc.id}
-                    className={`saved-card ${selectedSaved === sc.id ? 'selected' : ''}`}
+                    className={`checkout__saved-card ${selectedSaved === sc.id ? 'selected' : ''}`}
                     onClick={() => applySavedCard(sc)}
                     role="button"
                     tabIndex={0}
@@ -306,15 +352,15 @@ export default function Checkout() {
                     <img
                       src={sc.brand === 'visa' ? '/icons/visa_inc_logo.png' : '/icons/master_card_logo.png'}
                       alt={sc.brand === 'visa' ? 'Visa' : 'Mastercard'}
-                      className="brand-img"
+                      className="checkout__brand-img"
                     />
-                    <div className="saved-meta">
-                      <div className="mask">{maskCard(sc.number)}</div>
-                      <div className="meta">{sc.name} · Exp {sc.exp}</div>
+                    <div className="checkout__saved-meta">
+                      <div className="checkout__mask">{maskCard(sc.number)}</div>
+                      <div className="checkout__meta">{sc.name} · Exp {sc.exp}</div>
                     </div>
                     <button
                       type="button"
-                      className="remove-btn"
+                      className="checkout__remove-btn"
                       aria-label="Remove saved card"
                       onClick={(e) => { e.stopPropagation(); setPendingRemove(sc); setConfirmOpen(true) }}
                     >
@@ -328,7 +374,7 @@ export default function Checkout() {
 
 
           {method === 'card' && (
-            <div className="card-form">
+            <div className="checkout__card-form">
               <div className="row">
                 <label className="form-label" htmlFor="cc_name">Name on card</label>
                 <input
@@ -340,9 +386,9 @@ export default function Checkout() {
                 />
               </div>
 
-              <div className="row">
+              <div className="checkout__row">
                 <label className="form-label" htmlFor="cc_number">Card number</label>
-              <div className="with-brand">
+              <div className="checkout__with-brand">
                 <input
                   id="cc_number"
                   className="form-control"
@@ -357,17 +403,17 @@ export default function Checkout() {
                 {(() => {
                   const brand = detectBrand(card.number)
                   if (brand === 'visa') {
-                    return <img src="/icons/visa_inc_logo.png" alt="Visa" className="brand-img small" />
+                    return <img src="/icons/visa_inc_logo.png" alt="Visa" className="checkout__brand-img small" />
                   }
                   if (brand === 'mastercard') {
-                    return <img src="/icons/master_card_logo.png" alt="Mastercard" className="brand-img small" />
+                    return <img src="/icons/master_card_logo.png" alt="Mastercard" className="checkout__brand-img small" />
                   }
                   return null
                 })()}
               </div>
             </div>
 
-              <div className="grid-2">
+              <div className="checkout__grid-2">
                 <div>
                   <label className="form-label" htmlFor="cc_exp">Expire date</label>
                   <input
@@ -394,7 +440,7 @@ export default function Checkout() {
                     }}
                     aria-invalid={!!errors.exp}
                   />
-                  {errors.exp && <div className="error-text" role="alert">{errors.exp}</div>}
+                  {errors.exp && <div className="checkout__error-text" role="alert">{errors.exp}</div>}
                 </div>
                 <div>
                   <label className="form-label" htmlFor="cc_cvv">CVV</label>
@@ -423,10 +469,10 @@ export default function Checkout() {
                     }}
                     aria-invalid={!!errors.cvv}
                   />
-                  {errors.cvv && <div className="error-text" role="alert">{errors.cvv}</div>}
+                  {errors.cvv && <div className="checkout__error-text" role="alert">{errors.cvv}</div>}
                 </div>
               </div>
-              <div className="save-card">
+              <div className="checkout__save-card">
                 <input type="checkbox" id="save_card" checked={saveCardChecked} onChange={(e) => setSaveCardChecked(e.target.checked)} />
                 <label htmlFor="save_card">Save card for future use</label>
               </div>
@@ -435,7 +481,7 @@ export default function Checkout() {
           
 
           <button
-            className="pay-btn"
+            className="checkout__pay-btn"
             disabled={!(isValidExp(card.exp) && isValidCvv(card.cvv) && card.name.trim() && card.number.trim()) || paying || creatingIntent || confirmingIntent || !Number(location?.state?.orderId || 0)}
             aria-disabled={!(isValidExp(card.exp) && isValidCvv(card.cvv) && card.name.trim() && card.number.trim()) || paying || creatingIntent || confirmingIntent || !Number(location?.state?.orderId || 0)}
             onClick={handlePay}
@@ -462,9 +508,9 @@ export default function Checkout() {
           />
 
           {confirmOpen && (
-            <div className="modal-backdrop" onClick={cancelRemove}>
+            <div className="checkout__modal-backdrop" onClick={cancelRemove}>
               <div
-                className="modal"
+                className="checkout__modal"
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="confirm-title"
@@ -474,9 +520,9 @@ export default function Checkout() {
                 <p>
                   {pendingRemove ? `${pendingRemove.name} · ${maskCard(pendingRemove.number)} · Exp ${pendingRemove.exp}` : ''}
                 </p>
-                <div className="modal-actions">
-                  <button type="button" className="btn-cancel" onClick={cancelRemove}>Cancel</button>
-                  <button type="button" className="btn-danger" onClick={confirmRemove}>Remove</button>
+                <div className="checkout__modal-actions">
+                  <button type="button" className="checkout__btn-cancel" onClick={cancelRemove}>Cancel</button>
+                  <button type="button" className="checkout__btn-danger" onClick={confirmRemove}>Remove</button>
                 </div>
               </div>
             </div>
@@ -484,34 +530,69 @@ export default function Checkout() {
         </section>
 
         {/* Right: Order Summary */}
-        <aside className="summary-card">
-          <h2 className="summary-title">Order Summary</h2>
-          <p className="summary-sub">Make sure your order information is correct</p>
+        <aside className={`checkout__summary-card ${initialSkeleton ? 'checkout__is-skeleton' : ''}`}>
+          {initialSkeleton && (
+            <div className="checkout__skeleton-wrap" aria-hidden="true">
+              <div className="checkout__skeleton-line checkout__skeleton-title" />
+              <div className="checkout__skeleton-line checkout__skeleton-text" />
+              <div className="checkout__items-list">
+                {[0,1,2].map((i) => (
+                  <div key={i} className="checkout__item">
+                    <div className="checkout__thumb"><div className="checkout__skeleton-thumb" /></div>
+                    <div className="checkout__item-info" style={{ width: '100%' }}>
+                      <div className="checkout__skeleton-line checkout__skeleton-text" />
+                      <div className="checkout__qty"><div className="checkout__skeleton-line checkout__skeleton-chip" /></div>
+                    </div>
+                    <div className="checkout__price"><div className="checkout__skeleton-line checkout__skeleton-chip" /></div>
+                  </div>
+                ))}
+              </div>
+              <div className="checkout__shipping-block">
+                <div className="checkout__saved-shipping">
+                  <div className="checkout__skeleton-line checkout__skeleton-text" />
+                  <div className="checkout__saved-list">
+                    {[0,1,2].map((i) => (<div key={i} className="checkout__skeleton-chip" />))}
+                  </div>
+                </div>
+                <div className="checkout__ship-view">
+                  {[0,1,2,3,4,5].map((i) => (<div key={i} className="checkout__skeleton-line checkout__skeleton-text" />))}
+                </div>
+              </div>
+              <div className="checkout__totals">
+                <div className="checkout__rowline"><div className="checkout__skeleton-line checkout__skeleton-text" /><div className="checkout__skeleton-line checkout__skeleton-chip" /></div>
+                <div className="checkout__rowline"><div className="checkout__skeleton-line checkout__skeleton-text" /><div className="checkout__skeleton-line checkout__skeleton-chip" /></div>
+                <div className="checkout__rowline"><div className="checkout__skeleton-line checkout__skeleton-text" /><div className="checkout__skeleton-line checkout__skeleton-chip" /></div>
+                <div className="checkout__rowline checkout__rowline--total"><div className="checkout__skeleton-line checkout__skeleton-text" /><div className="checkout__skeleton-line checkout__skeleton-chip" /></div>
+              </div>
+            </div>
+          )}
+          <h2 className="checkout__summary-title">Order Summary</h2>
+          <p className="checkout__summary-sub">Make sure your order information is correct</p>
 
           {/* Items (preview first 2, expandable) */}
-          <div className={`items-list ${showAllItems ? 'scroll' : ''}`}>
+          <div className={`checkout__items-list ${showAllItems ? 'scroll' : ''}`}>
             {(showAllItems ? items : items.slice(0, 2)).map((it) => (
-              <div className="item" key={it.id}>
-                <div className="thumb">
+              <div className="checkout__item" key={it.id}>
+                <div className="checkout__thumb">
                   {it.image_url ? (
                     <img src={it.image_url} alt={it.title} />
                   ) : (
                     <span role="img" aria-label="package">📦</span>
                   )}
                 </div>
-                <div className="item-info">
-                  <div className="item-title">{it.title}</div>
-                  <div className="qty">
-                    <span className="qty-num">{it.qty}</span>
+                <div className="checkout__item-info">
+                  <div className="checkout__item-title">{it.title}</div>
+                  <div className="checkout__qty">
+                    <span className="checkout__qty-num">{it.qty}</span>
                   </div>
                 </div>
-                <div className="price">{format(it.price * it.qty)}</div>
+                <div className="checkout__price">{format(it.price * it.qty)}</div>
               </div>
             ))}
             {items.length > 2 && !showAllItems && (
               <button
                 type="button"
-                className="items-more"
+                className="checkout__items-more"
                 onClick={() => setShowAllItems(true)}
                 aria-label={`Show ${items.length - 2} more items`}
               >
@@ -521,7 +602,7 @@ export default function Checkout() {
             {items.length > 2 && showAllItems && (
               <button
                 type="button"
-                className="items-more"
+                className="checkout__items-more"
                 onClick={() => setShowAllItems(false)}
                 aria-label="Show fewer items"
               >
@@ -531,16 +612,16 @@ export default function Checkout() {
           </div>
 
           {/* Optional Shipping Details (view + edit) */}
-          <div className="shipping-block">
+          <div className="checkout__shipping-block">
             {(Array.isArray(reuseItems) && reuseItems.length > 0) && (
-              <div className={`saved-shipping ${reuseOpen ? 'open' : ''}`}>
-                <div className="saved-title">Saved Addresses</div>
-                <div className={`saved-list ${reuseOpen ? 'slider' : ''}`}>
+              <div className={`checkout__saved-shipping ${reuseOpen ? 'open' : ''}`}>
+                <div className="checkout__saved-title">Saved Addresses</div>
+                <div className={`checkout__saved-list ${reuseOpen ? 'checkout__saved-list--slider' : ''}`}>
                   {(reuseOpen ? reuseItems : reuseItems.slice(0, 3)).map((r, idx) => (
                     <button
                       key={`${r.city || ''}-${r.province || ''}-${r.postal_code || ''}-${idx}`}
                       type="button"
-                      className="saved-chip"
+                      className="checkout__saved-chip"
                       onClick={() => {
                         setShipping((prev) => ({
                           ...prev,
@@ -553,43 +634,43 @@ export default function Checkout() {
                         setReuseOpen(false)
                       }}
                     >
-                      <span className="chip-title">{[r.city, r.province, r.postal_code].filter(Boolean).join(', ')}</span>
-                      <span className="chip-sub">{[r.address, r.phone_number].filter(Boolean).join(' · ')}</span>
+                      <span className="checkout__chip-title">{[r.city, r.province, r.postal_code].filter(Boolean).join(', ')}</span>
+                      <span className="checkout__chip-sub">{[r.address, r.phone_number].filter(Boolean).join(' · ')}</span>
                     </button>
                   ))}
                 </div>
                 {reuseItems.length > 3 && !reuseOpen && (
-                  <button type="button" className="items-more" onClick={() => setReuseOpen(true)}>
+                  <button type="button" className="checkout__items-more" onClick={() => setReuseOpen(true)}>
                     + {reuseItems.length - 3} more
                   </button>
                 )}
                 {reuseOpen && (
-                  <button type="button" className="items-more" onClick={() => setReuseOpen(false)}>
+                  <button type="button" className="checkout__items-more" onClick={() => setReuseOpen(false)}>
                     Close
                   </button>
                 )}
               </div>
             )}
-            <div className="block-top">
-              <span className="block-title">Shipping Details</span>
-              <button className="link-btn" onClick={() => setEditingShip((v) => !v)}>
+            <div className="checkout__block-top">
+              <span className="checkout__block-title">Shipping Details</span>
+              <button className="checkout__link-btn" onClick={() => setEditingShip((v) => !v)}>
                 {editingShip ? 'Close' : 'Edit'}
               </button>
             </div>
             {!editingShip ? (
-              <div className="ship-view">
-                <div><span className="field-label">Email:</span> <span className="field-value">{email}</span></div>
-                <div><span className="field-label">Recipient:</span> <span className="field-value">{shipping.name}</span></div>
-                <div><span className="field-label">Address:</span> <span className="field-value">{shipping.address}</span></div>
-                <div><span className="field-label">City:</span> <span className="field-value">{shipping.city}</span></div>
-                <div><span className="field-label">Province:</span> <span className="field-value">{shipping.province}</span></div>
-                <div><span className="field-label">Postal code:</span> <span className="field-value">{shipping.postal_code}</span></div>
+              <div className="checkout__ship-view">
+                <div><span className="checkout__field-label">Email:</span> <span className="checkout__field-value">{email}</span></div>
+                <div><span className="checkout__field-label">Recipient:</span> <span className="checkout__field-value">{shipping.name}</span></div>
+                <div><span className="checkout__field-label">Address:</span> <span className="checkout__field-value">{shipping.address}</span></div>
+                <div><span className="checkout__field-label">City:</span> <span className="checkout__field-value">{shipping.city}</span></div>
+                <div><span className="checkout__field-label">Province:</span> <span className="checkout__field-value">{shipping.province}</span></div>
+                <div><span className="checkout__field-label">Postal code:</span> <span className="checkout__field-value">{shipping.postal_code}</span></div>
                 {shipping.phone_number && (
-                  <div><span className="field-label">Phone:</span> <span className="field-value">{shipping.phone_number}</span></div>
+                  <div><span className="checkout__field-label">Phone:</span> <span className="checkout__field-value">{shipping.phone_number}</span></div>
                 )}
               </div>
             ) : (
-              <div className="ship-edit">
+              <div className="checkout__ship-edit">
                 <input
                   className="form-control"
                   type="email"
@@ -619,7 +700,7 @@ export default function Checkout() {
                   value={shipping.city}
                   onChange={(e) => setShipping({ ...shipping, city: e.target.value })}
                 />
-                <div className="grid-2">
+                <div className="checkout__grid-2">
                   <input
                     className="form-control"
                     placeholder="Province"
@@ -656,22 +737,22 @@ export default function Checkout() {
           </div>
 
           {/* Totals */}
-          <div className="totals">
-            <div className="rowline">
+          <div className="checkout__totals">
+            <div className="checkout__rowline">
               <span>Subtotal:</span>
               <span>{format(subtotal)}</span>
             </div>
-            <div className="rowline">
+            <div className="checkout__rowline">
               <span>Shipping:</span>
-              <span className="free">FREE</span>
+              <span className="checkout__free">FREE</span>
             </div>
-            <div className="rowline">
+            <div className="checkout__rowline">
               <span>Tax:</span>
               <span>{format(tax)}</span>
             </div>
-            <div className="rowline total">
+            <div className="checkout__rowline checkout__rowline--total">
               <span>Total:</span>
-              <span className="grand">{format(total)}</span>
+              <span className="checkout__grand">{format(total)}</span>
             </div>
           </div>
         </aside>
