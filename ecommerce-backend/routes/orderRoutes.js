@@ -1,5 +1,5 @@
 import express from "express";
-import { createOrder, getUserOrders, updateOrderShipping, getTrackOrder } from "../controllers/orderController.js";
+import { createOrder, patchPendingOrder, getUserOrders, updateOrderShipping, getTrackOrder } from "../controllers/orderController.js";
 import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -88,6 +88,86 @@ const router = express.Router();
  *         description: Server error while creating order
 */
 router.post("/", protect, createOrder);
+
+/**
+ * @swagger
+ * /api/orders:
+ *   patch:
+ *     summary: Patch the user's latest PENDING order to continue checkout
+ *     description: Reuses the most recent PENDING order instead of creating a new one. Optionally updates shipping details and marks the cart as CHECKOUT_IN_PROGRESS.
+ *     tags: [Checkouts & Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               shipping:
+ *                 type: object
+ *                 properties:
+ *                   name: { type: string }
+ *                   address: { type: string }
+ *                   city: { type: string }
+ *                   province: { type: string }
+ *                   postal_code: { type: string }
+ *                   phone_number: { type: string }
+ *     responses:
+ *       200:
+ *         description: Pending order patched and returned
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 order:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: integer }
+ *                     user_id: { type: integer }
+ *                     total_price: { type: number }
+ *                     payment_status: { type: string }
+ *                     created_at: { type: string, format: date-time }
+ *                 items:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       order_item_id: { type: integer }
+ *                       product_id: { type: integer }
+ *                       quantity: { type: integer }
+ *                       price: { type: number }
+ *                       size: { type: string }
+ *                       color_hex: { type: string }
+ *                       name: { type: string }
+ *                       image_url: { type: string }
+ *                 shipping:
+ *                   type: object
+ *                   nullable: true
+ *                   properties:
+ *                     id: { type: integer }
+ *                     name: { type: string }
+ *                     address: { type: string }
+ *                     city: { type: string }
+ *                     province: { type: string }
+ *                     postal_code: { type: string }
+ *                     phone_number: { type: string }
+ *                     delivery_status: { type: string }
+ *                 meta:
+ *                   type: object
+ *                   properties:
+ *                     itemsCount: { type: integer }
+ *                     total: { type: number }
+ *       401:
+ *         description: Not authorized
+ *       404:
+ *         description: No pending order found
+ *       500:
+ *         description: Server error while patching order
+ */
+router.patch("/", protect, patchPendingOrder);
 
 /**
  * @swagger

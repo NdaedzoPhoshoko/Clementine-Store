@@ -122,6 +122,138 @@ export const createOrder = async (req, res) => {
   }
 };
 
+export const patchPendingOrder = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { shipping } = req.body || {};
+    const userId = parseInt(req.user?.id, 10);
+    if (!userId || userId <= 0) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
+
+    const pendingRes = await client.query(
+      `SELECT id, user_id, total_price, payment_status, created_at
+       FROM orders
+       WHERE user_id=$1 AND payment_status='PENDING'
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [userId]
+    );
+    if (pendingRes.rows.length === 0) {
+      return res.status(404).json({ message: "No pending order found" });
+    }
+    const order = pendingRes.rows[0];
+
+    await client.query("BEGIN");
+
+    if (shipping && typeof shipping === "object") {
+      const {
+        name,
+        address,
+        city,
+        province,
+        postal_code,
+        phone_number,
+      } = shipping;
+
+      const shipExists = await client.query(
+        "SELECT id FROM shipping_details WHERE order_id=$1",
+        [order.id]
+      );
+
+      if (shipExists.rows.length === 0) {
+        if (name && address && city) {
+          await client.query(
+            `INSERT INTO shipping_details (order_id, user_id, name, address, city, province, postal_code, phone_number)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            [
+              order.id,
+              userId,
+              name,
+              address,
+              city,
+              province || null,
+              postal_code || null,
+              phone_number || null,
+            ]
+          );
+        }
+      } else {
+        const allowed = {
+          name,
+          address,
+          city,
+          province,
+          postal_code,
+          phone_number,
+        };
+        const sets = [];
+        const vals = [];
+        let idx = 1;
+        Object.entries(allowed).forEach(([k, v]) => {
+          if (typeof v !== "undefined") {
+            sets.push(`${k}=$${idx++}`);
+            vals.push(v);
+          }
+        });
+        if (sets.length > 0) {
+          vals.push(order.id);
+          await client.query(
+            `UPDATE shipping_details SET ${sets.join(", ")} WHERE order_id=$${idx}`,
+            vals
+          );
+        }
+      }
+    }
+
+    const cartRes = await client.query(
+      `SELECT id, status FROM cart
+       WHERE user_id=$1 AND status IN ('ACTIVE','CHECKOUT_IN_PROGRESS')
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [userId]
+    );
+    if (cartRes.rows.length > 0) {
+      await client.query("UPDATE cart SET status='CHECKOUT_IN_PROGRESS' WHERE id=$1", [cartRes.rows[0].id]);
+    }
+
+    await client.query("COMMIT");
+
+    const orderItemsRes = await pool.query(
+      `SELECT oi.id AS order_item_id, oi.product_id, oi.quantity, oi.price, oi.size, oi.color_hex,
+              p.name, p.image_url
+       FROM order_items oi
+       JOIN products p ON p.id = oi.product_id
+       WHERE oi.order_id = $1
+       ORDER BY oi.id ASC`,
+      [order.id]
+    );
+    const orderItems = orderItemsRes.rows;
+
+    const shippingRes = await pool.query(
+      `SELECT id, name, address, city, province, postal_code, phone_number, delivery_status
+       FROM shipping_details
+       WHERE order_id = $1`,
+      [order.id]
+    );
+    const shippingDetails = shippingRes.rows[0] || null;
+
+    const itemsCount = orderItems.reduce((acc, it) => acc + Number(it.quantity), 0);
+
+    return res.status(200).json({
+      order,
+      items: orderItems,
+      shipping: shippingDetails,
+      meta: { itemsCount, total: Number(order.total_price) },
+    });
+  } catch (err) {
+    try { await client.query("ROLLBACK"); } catch (_) {}
+    return res.status(500).json({ message: "Error patching pending order" });
+  } finally {
+    client.release();
+  }
+};
+
 export const getUserOrders = async (req, res) => {
   try {
     const userId = parseInt(req.user?.id, 10);

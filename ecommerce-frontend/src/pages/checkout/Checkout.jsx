@@ -15,7 +15,7 @@ const format = (n) => `R${Number(n).toLocaleString(undefined, { minimumFractionD
 export default function Checkout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { items: cartItems } = useCart();
+  const { items: cartItems, refresh, hydrate, clearCart } = useCart();
   const { items: shippingItems } = useFetchMyShippingDetails({ enabled: true });
 
   // Payment method selection
@@ -125,6 +125,9 @@ export default function Checkout() {
         setPaymentDone(true)
         setModalVariant('success')
         setModalMessage(`Payment successful. Order #${orderId} is now paid.`)
+        try { clearCart() } catch {}
+        try { window && window.dispatchEvent && window.dispatchEvent(new Event('cart:refresh')) } catch {}
+        try { await refresh() } catch {}
         setModalOpen(true)
       } catch (_) {
         setPaying(false)

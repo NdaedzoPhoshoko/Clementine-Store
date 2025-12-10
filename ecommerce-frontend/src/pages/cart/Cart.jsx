@@ -12,6 +12,7 @@ import ErrorModal from '../../components/modals/ErrorModal.jsx'
 // SuccessModal removed for retrieve action per request
 import useRevertCheckout from '../../hooks/for_cart/useRevertCheckout.js'
 import useCreateOrder from '../../hooks/for_cart/useCreateOrder.js'
+import usePatchPendingOrder from '../../hooks/for_cart/usePatchPendingOrder.js'
 import useLatestOrder from '../../hooks/for_cart/useLatestOrder.js'
 
 const toNumber = (v) => (typeof v === 'string' ? parseFloat(v) : Number(v));
@@ -48,6 +49,7 @@ export default function Cart() {
 
   const navigate = useNavigate();
   const { createOrder, loading: creatingOrder } = useCreateOrder();
+  const { patchPendingOrder, loading: patchingOrder } = usePatchPendingOrder();
 
   // Local visible items to support optimistic removal controlled at the page level
   const [visibleItems, setVisibleItems] = useState(items);
@@ -115,7 +117,7 @@ export default function Cart() {
   const onCheckout = async () => {
     const list = Array.isArray((ctxItems || [])) ? ctxItems : [];
     try {
-      const payload = await createOrder({});
+      const payload = showCheckoutBanner ? await patchPendingOrder({}) : await createOrder({});
       const nextItems = Array.isArray(payload?.items) ? payload.items : list;
       const orderId = payload?.order?.id;
       const total = payload?.meta?.total;
@@ -319,7 +321,7 @@ export default function Cart() {
                 </div>
 
                 <div className="details-cta">
-                  <button className="checkout-btn" disabled={!canCheckout || creatingOrder} onClick={onCheckout}>
+                  <button className="checkout-btn" disabled={!canCheckout || creatingOrder || patchingOrder} onClick={onCheckout}>
                     Checkout
                   </button>
                 </div>

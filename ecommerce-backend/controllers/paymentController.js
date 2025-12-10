@@ -232,11 +232,27 @@ export const stripeWebhook = async (req, res) => {
           );
           if (payRes.rows.length > 0) {
             const orderId = payRes.rows[0].order_id;
+            await pool.query("BEGIN");
             await pool.query("UPDATE payments SET payment_status='SUCCEEDED' WHERE transaction_id=$1", [txId]);
             await pool.query("UPDATE orders SET payment_status='PAID' WHERE id=$1", [orderId]);
+            const ordUserRes = await pool.query("SELECT user_id FROM orders WHERE id=$1", [orderId]);
+            const userId = ordUserRes.rows[0]?.user_id;
+            if (userId) {
+              const cartRes = await pool.query(
+                "SELECT id FROM cart WHERE user_id=$1 AND status='CHECKOUT_IN_PROGRESS' ORDER BY created_at DESC LIMIT 1",
+                [userId]
+              );
+              if (cartRes.rows.length > 0) {
+                const cartId = cartRes.rows[0].id;
+                await pool.query("DELETE FROM cart_items WHERE cart_id=$1", [cartId]);
+                await pool.query("UPDATE cart SET status='ACTIVE' WHERE id=$1", [cartId]);
+              }
+            }
+            await pool.query("COMMIT");
           }
         } catch (e) {
           console.error("Webhook update failed:", e.message);
+          try { await pool.query("ROLLBACK"); } catch (_) {}
         }
         break;
       }
@@ -309,8 +325,19 @@ export const confirmPaymentIntent = async (req, res) => {
       return res.status(400).json({ message: "OrderId metadata mismatch" });
     }
 
+    await pool.query("BEGIN");
     await pool.query("UPDATE payments SET payment_status='SUCCEEDED' WHERE transaction_id=$1", [intentId]);
     await pool.query("UPDATE orders SET payment_status='PAID' WHERE id=$1", [orderId]);
+    const cartRes = await pool.query(
+      "SELECT id FROM cart WHERE user_id=$1 AND status='CHECKOUT_IN_PROGRESS' ORDER BY created_at DESC LIMIT 1",
+      [userId]
+    );
+    if (cartRes.rows.length > 0) {
+      const cartId = cartRes.rows[0].id;
+      await pool.query("DELETE FROM cart_items WHERE cart_id=$1", [cartId]);
+      await pool.query("UPDATE cart SET status='ACTIVE' WHERE id=$1", [cartId]);
+    }
+    await pool.query("COMMIT");
 
     const payRes = await pool.query(
       `SELECT id, order_id, amount, method, transaction_id, payment_status, created_at FROM payments WHERE transaction_id=$1`,
@@ -321,6 +348,7 @@ export const confirmPaymentIntent = async (req, res) => {
     return res.status(200).json({ order: { id: order.id, payment_status: 'PAID', total_price: Number(order.total_price) }, payment });
   } catch (err) {
     console.error("Confirm PaymentIntent error:", err.message);
+    try { await pool.query("ROLLBACK"); } catch (_) {}
     return res.status(500).json({ message: "Error confirming payment" });
   }
 };

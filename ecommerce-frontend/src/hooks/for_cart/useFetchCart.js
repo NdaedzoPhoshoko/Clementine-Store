@@ -78,11 +78,16 @@ export default function useFetchCart({ enabled = true } = {}) {
       if (!e || !e.key) return;
       if (e.key === 'auth:user' || e.key === 'auth:accessToken') setRefreshKey((k) => k + 1);
     };
+    const onCartRefresh = () => {
+      setRefreshKey((k) => k + 1);
+    };
     try { window.addEventListener('auth:changed', onAuthChanged); } catch {}
     try { window.addEventListener('storage', onStorage); } catch {}
+    try { window.addEventListener('cart:refresh', onCartRefresh); } catch {}
     return () => {
       try { window.removeEventListener('auth:changed', onAuthChanged); } catch {}
       try { window.removeEventListener('storage', onStorage); } catch {}
+      try { window.removeEventListener('cart:refresh', onCartRefresh); } catch {}
     };
   }, []);
 
