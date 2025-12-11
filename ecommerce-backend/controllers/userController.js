@@ -56,7 +56,16 @@ export const loginUser = async (req, res) => {
     // omit password_hash
     const { password_hash, ...safeUser } = user;
     const { accessToken } = setLoginCookiesAndTokens(res, user.id, user.token_version || 0);
-    res.status(200).json({ user: safeUser, token: accessToken, accessToken });
+    const ids = String(process.env.ADMIN_USER_IDS || "")
+      .split(",")
+      .map((v) => parseInt(v.trim(), 10))
+      .filter((v) => Number.isInteger(v) && v > 0);
+    const emails = String(process.env.ADMIN_EMAILS || "")
+      .split(",")
+      .map((v) => v.trim())
+      .filter((v) => v);
+    const isAdmin = ids.includes(Number(safeUser.id)) || (emails.length > 0 && emails.includes(safeUser.email));
+    res.status(200).json({ user: { ...safeUser, isAdmin }, token: accessToken, accessToken });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error logging in" });
@@ -76,7 +85,17 @@ export const getMe = async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "User not found" });
     }
-    res.status(200).json(result.rows[0]);
+    const user = result.rows[0];
+    const ids = String(process.env.ADMIN_USER_IDS || "")
+      .split(",")
+      .map((v) => parseInt(v.trim(), 10))
+      .filter((v) => Number.isInteger(v) && v > 0);
+    const emails = String(process.env.ADMIN_EMAILS || "")
+      .split(",")
+      .map((v) => v.trim())
+      .filter((v) => v);
+    const isAdmin = ids.includes(Number(userId)) || (emails.length > 0 && emails.includes(user.email));
+    res.status(200).json({ ...user, isAdmin });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching profile" });
