@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import "./navbar.css";
 import AccountAvatar from "../account_avatar/AccountAvatar.jsx";
+import EnterAdminToggle from "../enter_admin_toggle/EnterAdminToggle.jsx";
 import { authStorage } from "../../hooks/use_auth/authStorage.js";
 import useAuthLogOut from "../../hooks/use_auth/useAuthLogOut.js";
 import useFetchCategoryNames from "../../hooks/useFetchCategoryNames.js";
@@ -503,6 +504,7 @@ const Navbar = () => {
         </div>
 
         <div className="nav-right">
+          <EnterAdminToggle />
           <div
             className="nav-account"
             ref={accountRef}

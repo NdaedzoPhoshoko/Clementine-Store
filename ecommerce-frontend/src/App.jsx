@@ -20,6 +20,8 @@ import { useEffect } from 'react'
 import useAuthRefresh from './hooks/use_auth/useAuthRefresh.js'
 import Support from './pages/support/Support.jsx'
 
+import AdminDashboard from './pages/admin/dashboard/AdminDashboard.jsx'
+
 function AppShell() {
   const location = useLocation();
   const isSupport = location.pathname.startsWith('/support');
@@ -40,6 +42,9 @@ function AppShell() {
           <Route path="/auth/login" element={<Login />} />
           <Route path="/auth/signup" element={<Signup />} />
           <Route path="/account" element={<ViewAccount />} />
+
+          {/* Admin ROutes */}
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
           
           <Route path="*" element={<Home />} />
         </Routes>
