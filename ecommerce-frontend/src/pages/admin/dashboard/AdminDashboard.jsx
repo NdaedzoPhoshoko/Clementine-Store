@@ -101,8 +101,32 @@ export default function AdminDashboard() {
             )}
             <div className="admin_dashboard__header_right">
               <div className="admin_dashboard__search">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input className="admin_dashboard__search_input" placeholder="Search inventory" aria-label="Search" />
+                <input
+                  type="text"
+                  className="admin_dashboard__search_input"
+                  placeholder="Search Category"
+                  aria-label="Search"
+                  value={invSearch}
+                  onChange={(e) => setInvSearch(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                />
+                <button className="admin_dashboard__search_btn" aria-label="Search" onMouseDown={(e) => e.currentTarget.blur()}>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <circle cx="11" cy="11" r="7" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                </button>
               </div>
               <div className="admin_dashboard__header_actions">
                 <button className="admin_dashboard__icon_btn" aria-label="Notifications" />
@@ -232,7 +256,25 @@ export default function AdminDashboard() {
                   onChange={(e) => setInvSearch(e.target.value)}
                   placeholder="Search by name, type or product ID"
                   aria-label="Search inventory logs"
+                  onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
                 />
+                <button className="admin_dashboard__bar_search_btn" aria-label="Search" onMouseDown={(e) => e.currentTarget.blur()}>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <circle cx="11" cy="11" r="7" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                </button>
               </div>
             </div>
             <div className="admin_dashboard__bar_list">

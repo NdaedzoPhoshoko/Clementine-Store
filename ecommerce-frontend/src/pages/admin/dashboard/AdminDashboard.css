@@ -22,10 +22,14 @@
 .admin_dashboard__header_right { display: inline-flex; align-items: center; gap: 12px; }
 
 .admin_dashboard__search { position: relative; display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--color-surface); border-radius: 999px; border: 1px solid var(--color-border); transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease; }
+.admin_dashboard__search, .admin_dashboard__bar_search { max-height: 30px; max-width: clamp(260px, 32vw, 440px); }
 .admin_dashboard__search:focus-within { background: var(--color-bg); border-color: var(--palette-secondary); box-shadow: 0 0 0 3px rgba(255, 58, 149, 0.12); }
 .admin_dashboard__search svg { width: 16px; height: 16px; stroke: var(--color-muted); fill: none; stroke-width: 2; }
 .admin_dashboard__search_input { border: none; outline: none; background: transparent; min-width: 280px; font-size: 14px; color: var(--color-text); }
 .admin_dashboard__search_input:focus { color: var(--color-primary); }
+.admin_dashboard__search_btn { width: 32px; height: 32px; border-radius: 50%; border: none; cursor: pointer; color: var(--color-bg); display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(180deg, var(--color-accent), var(--palette-deep)); box-shadow: 0 6px 12px var(--shadow-primary-color); transition: filter 160ms ease, box-shadow 160ms ease, background 160ms ease; }
+.admin_dashboard__search_btn:hover { background: linear-gradient(180deg, var(--palette-deep), var(--color-accent)); filter: brightness(1.06); box-shadow: 0 8px 16px rgba(255, 58, 149, 0.35); }
+.admin_dashboard__search_btn svg { width: 20px; height: 20px; stroke: var(--color-bg); }
 .admin_dashboard__icon_btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--color-border); background: var(--color-bg); }
 
 .admin_dashboard__top { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 20px; align-items: stretch; }
@@ -107,8 +111,11 @@
 .admin_dashboard__bar_sub { font-size: 12px; color: var(--color-muted); }
 .admin_dashboard__bar_search { position: relative; display: flex; align-items: center; gap: 8px; width: clamp(260px, 32vw, 440px); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 999px; padding: 6px 8px; transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease; }
 .admin_dashboard__bar_search:focus-within { background: var(--color-bg); border-color: var(--palette-secondary); box-shadow: 0 0 0 3px rgba(255, 58, 149, 0.12); }
-.admin_dashboard__bar_search_input { height: 32px; padding: 6px 10px; border-radius: 999px; border: none; outline: none; background: transparent; color: var(--color-text); width: 100%; }
+.admin_dashboard__bar_search_input { height: 28px; padding: 6px 10px; border-radius: 999px; border: none; outline: none; background: transparent; color: var(--color-text); width: 100%; }
 .admin_dashboard__bar_search_input:focus { color: var(--color-primary); }
+.admin_dashboard__bar_search_btn { width: 32px; height: 32px; border-radius: 50%; border: none; cursor: pointer; color: var(--color-bg); display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(180deg, var(--color-accent), var(--palette-deep)); box-shadow: 0 6px 12px var(--shadow-primary-color); transition: filter 160ms ease, box-shadow 160ms ease, background 160ms ease; }
+.admin_dashboard__bar_search_btn:hover { background: linear-gradient(180deg, var(--palette-deep), var(--color-accent)); filter: brightness(1.06); box-shadow: 0 8px 16px rgba(255, 58, 149, 0.35); }
+.admin_dashboard__bar_search_btn svg { width: 20px; height: 20px; stroke: var(--color-bg); }
 .admin_dashboard__bar_list { overflow: auto; max-height: 62vh; border: 1px solid var(--color-border); border-radius: 12px; }
 .admin_dashboard__table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
 .admin_dashboard__thead { position: sticky; top: 0; background: var(--color-surface); }
