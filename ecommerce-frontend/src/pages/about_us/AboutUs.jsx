@@ -8,7 +8,7 @@ export default function AboutUs() {
   const visionRef = useRef(null);
   const storyRef = useRef(null);
 
-  // Scroll to hash targets when navigating via /about#section
+  // Scroll to hash targets when navigating via /about-us#section
   useEffect(() => {
     if (location && location.hash) {
       const target = document.querySelector(location.hash);

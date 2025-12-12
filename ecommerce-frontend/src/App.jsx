@@ -35,7 +35,7 @@ function AppShell() {
         <Breadcrumbs />
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/about" element={<AboutUs />} />
+          <Route path="/about-us" element={<AboutUs />} />
           <Route path="/shop-all" element={<ShopAll />} />
           <Route path="/support" element={<Support />} />
           <Route path="/product/:slug" element={<ProductPage />} />
@@ -45,8 +45,8 @@ function AppShell() {
           <Route path="/auth/signup" element={<Signup />} />
           <Route path="/account" element={<ViewAccount />} />
 
-          <Route path="/admin/dashboard" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
-          <Route path="/admin/settings" element={<RequireAdmin><Settings /></RequireAdmin>} />
+          <Route path="/admin-dashboard" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
+          <Route path="/admin-settings" element={<RequireAdmin><Settings /></RequireAdmin>} />
           
           <Route path="*" element={<Home />} />
         </Routes>

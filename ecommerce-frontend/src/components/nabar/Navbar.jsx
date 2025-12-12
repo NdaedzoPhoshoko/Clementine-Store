@@ -88,7 +88,15 @@ const Navbar = () => {
   const { names, loading: namesLoading, error: namesError } = useFetchCategoryNames({ page: 1, limit: 40 });
   const { bucket, categories, total, loading: autoLoading, error: autoError } = useFetchAutocomplete({ q: searchQuery, limit: 16, enabled: !!searchQuery.trim() });
   const slugify = (s) => s.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
+  const [authTick, setAuthTick] = useState(0);
+  useEffect(() => {
+    const onAuthChanged = () => setAuthTick((t) => t + 1);
+    try { window.addEventListener('auth:changed', onAuthChanged); } catch {}
+    return () => { try { window.removeEventListener('auth:changed', onAuthChanged); } catch {} };
+  }, []);
   const authed = authStorage.isAuthenticated();
+  const cachedUser = authStorage.getUser();
+  const isAdminCached = !!cachedUser?.isAdmin;
   const { data: me, loading: meLoading } = useFetchMe({ enabled: authed });
   const isAdmin = Boolean(me?.isAdmin);
 
@@ -446,7 +454,7 @@ const Navbar = () => {
 
             <div className="nav-item">
               <Link
-                to="/about"
+                to="/about-us"
                 aria-haspopup="menu"
                 aria-expanded={activeMenu === "us"}
                 aria-controls="menu-us"
@@ -466,9 +474,9 @@ const Navbar = () => {
                   <p>We craft quality essentials with care and purpose, pieces that fit, last, and make everyday dressing effortless. Explore our mission to deliver modern, wearable fashion; our vision for transparent, joyful shopping; and our story about the small‑maker roots that shaped Clementine Store.</p>
                 </div>
                 <div className="mega-right">
-                  <Link to="/about#mission" className="mega-tag" onClick={() => setActiveMenu(null)}>Mission</Link>
-                  <Link to="/about#vision" className="mega-tag" onClick={() => setActiveMenu(null)}>Vision</Link>
-                  <Link to="/about#story" className="mega-tag" onClick={() => setActiveMenu(null)}>Our Story</Link>
+                  <Link to="/about-us#mission" className="mega-tag" onClick={() => setActiveMenu(null)}>Mission</Link>
+                  <Link to="/about-us#vision" className="mega-tag" onClick={() => setActiveMenu(null)}>Vision</Link>
+                  <Link to="/about-us#story" className="mega-tag" onClick={() => setActiveMenu(null)}>Our Story</Link>
                 </div>
               </div>
               )}
@@ -503,9 +511,9 @@ const Navbar = () => {
               </div>
               )}
             </div>
-            {authed && !meLoading && isAdmin ? (
+            {authed && (isAdminCached || (!meLoading && isAdmin)) ? (
               <div className="nav-item">
-                <Link to="/admin/dashboard" aria-label="Admin Dashboard">
+                <Link to="/admin-dashboard" aria-label="Admin Dashboard">
                   Dashboard
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
                 </Link>
@@ -515,7 +523,7 @@ const Navbar = () => {
         </div>
 
         <div className="nav-right">
-          {authed && !meLoading && isAdmin ? (
+          {authed && (isAdminCached || (!meLoading && isAdmin)) ? (
             <span className="nav-admin-label" aria-label="Admin Mode">Admin Mode</span>
           ) : null}
           <div

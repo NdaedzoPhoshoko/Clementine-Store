@@ -9,6 +9,14 @@ function capitalize(word) {
   return word.charAt(0).toUpperCase() + word.slice(1);
 }
 
+function titleCase(text) {
+  if (!text) return "";
+  return text
+    .split(/\s+/)
+    .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : ""))
+    .join(" ");
+}
+
 export default function Breadcrumbs() {
   const location = useLocation();
   const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
@@ -52,7 +60,7 @@ export default function Breadcrumbs() {
     // Fallback: show capitalized segments
     pathSegments.forEach((seg, i) => {
       const to = "/" + pathSegments.slice(0, i + 1).join("/");
-      const label = capitalize(seg.replace(/[-_]/g, " "));
+      const label = titleCase(seg.replace(/[-_]/g, " "));
       items.push({ label, to });
     });
   }
