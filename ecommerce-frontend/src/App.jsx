@@ -5,7 +5,8 @@ import ScrollToTop from './components/ScrollToTop'
 import Footer from './components/footer/Footer'
 import Home from './pages/home/Home'
 import ViewAccount from './pages/account/ViewAccount.jsx'
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
+import useFetchMe from './hooks/useFetchMe.js'
 import ShopAll from './pages/shopping/ShopAll'
 import Breadcrumbs from './components/breadcrumbs/Breadcrumbs'
 import ProductPage from './pages/product_page/ProductPage'
@@ -21,6 +22,14 @@ import useAuthRefresh from './hooks/use_auth/useAuthRefresh.js'
 import Support from './pages/support/Support.jsx'
 
 import AdminDashboard from './pages/admin/dashboard/AdminDashboard.jsx'
+import Settings from './pages/admin/settings/Settings.jsx'
+
+function AdminOnly({ children }) {
+  const { data } = useFetchMe();
+  const isAdmin = !!(data?.isAdmin || (Array.isArray(data?.roles) && data.roles.includes('admin')) || data?.role === 'admin' || data?.role === 'super_admin');
+  if (!isAdmin) return <Navigate to="/" replace />;
+  return children;
+}
 
 function AppShell() {
   const location = useLocation();
@@ -43,8 +52,9 @@ function AppShell() {
           <Route path="/auth/signup" element={<Signup />} />
           <Route path="/account" element={<ViewAccount />} />
 
-          {/* Admin ROutes */}
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          {/* Admin Routes */}
+          <Route path="/admin/dashboard" element={<AdminOnly><AdminDashboard /></AdminOnly>} />
+          <Route path="/admin/settings" element={<AdminOnly><Settings /></AdminOnly>} />
           
           <Route path="*" element={<Home />} />
         </Routes>

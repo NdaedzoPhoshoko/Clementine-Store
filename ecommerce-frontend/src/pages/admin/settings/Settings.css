@@ -1,0 +1,49 @@
+@import url('../dashboard/AdminDashboard.css');
+
+.admin_settings__page { padding: 16px; }
+.admin_settings__panel { background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 18px; box-shadow: var(--shadow-soft); padding: 16px; display: grid; gap: 16px; }
+
+.admin_settings__header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.admin_settings__titles { display: flex; flex-direction: column; }
+.admin_settings__title { margin: 0; font-size: 20px; font-weight: 800; color: var(--color-text); }
+.admin_settings__sub { font-size: 12px; color: var(--color-muted); }
+.admin_settings__header_right { display: inline-flex; align-items: center; gap: 10px; }
+
+.admin_settings__search { display: inline-flex; align-items: center; width: clamp(260px, 32vw, 440px); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 999px; padding: 4px 8px; }
+.admin_settings__search:focus-within { background: var(--color-bg); border-color: var(--palette-secondary); box-shadow: 0 0 0 3px rgba(255, 58, 149, 0.12); }
+.admin_settings__search svg { width: 18px; height: 18px; color: var(--color-muted); }
+.admin_settings__search_input { height: 32px; padding: 6px 10px; border-radius: 999px; border: none; outline: none; background: transparent; color: var(--color-text); width: 100%; }
+
+.admin_settings__add_btn { height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); font-weight: 700; cursor: pointer; }
+
+.admin_settings__add_form { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; }
+.admin_settings__field { height: 32px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); }
+.admin_settings__submit { height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--color-border); background: var(--color-bg); color: var(--color-text); font-weight: 700; cursor: pointer; }
+
+.admin_settings__list { overflow: auto; border: 1px solid var(--color-border); border-radius: 12px; }
+.admin_settings__table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
+.admin_settings__thead { position: sticky; top: 0; background: var(--color-surface); }
+.admin_settings__row { }
+.admin_settings__cell { padding: 10px 12px; font-size: 13px; color: var(--color-text); border-bottom: 1px solid var(--color-border); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+.admin_settings__cell--th { font-weight: 700; color: var(--color-muted); text-align: left; }
+.admin_settings__cell--id { width: 90px; }
+.admin_settings__cell--name { width: 20%; }
+.admin_settings__cell--email { width: 30%; }
+.admin_settings__cell--role { width: 140px; }
+.admin_settings__cell--status { width: 120px; }
+.admin_settings__cell--actions { width: 240px; }
+.admin_settings__tbody .admin_settings__row:last-child .admin_settings__cell { border-bottom: none; }
+
+.admin_settings__badge { display: inline-flex; align-items: center; justify-content: center; height: 24px; padding: 0 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+.admin_settings__badge--active { background: linear-gradient(180deg, var(--color-accent), var(--palette-deep)); color: var(--color-bg); }
+.admin_settings__badge--disabled { background: var(--color-surface); color: var(--color-muted); border: 1px solid var(--color-border); }
+
+.admin_settings__btn { height: 28px; padding: 0 10px; border-radius: 12px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); font-weight: 700; cursor: pointer; margin-right: 6px; }
+.admin_settings__btn--primary { background: var(--color-bg); }
+.admin_settings__btn--muted { background: var(--color-surface); }
+.admin_settings__btn--danger { background: #fee2e2; color: #9b1c1c; border-color: #fca5a5; }
+
+@media (max-width: 900px) {
+  .admin_settings__cell--actions { width: 200px; }
+  .admin_settings__add_form { grid-template-columns: 1fr; }
+}
