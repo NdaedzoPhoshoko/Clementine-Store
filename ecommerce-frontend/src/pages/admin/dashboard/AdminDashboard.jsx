@@ -1,15 +1,17 @@
 import React from 'react';
 import './AdminDashboard.css';
-import useFetchMe from '../../../hooks/useFetchMe.js';
+import useAuthUser from '../../../hooks/use_auth/useAuthUser.js';
+import ErrorModal from '../../../components/modals/ErrorModal.jsx';
 import { useNavigate, Link } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 import apiFetch from '../../../utils/apiFetch.js';
+import useFetchTopCategories from '../../../hooks/admin_dashboard/useFetchTopCategories.js';
 
 const ph = '/images/imageNoVnXXmDNi0.png';
 
 export default function AdminDashboard() {
-  const { data } = useFetchMe();
-  const name = data?.name ? data.name.split(' ')[0] : 'Admin';
+  const { user: authUser } = useAuthUser();
+  const name = authUser?.name ? authUser.name.split(' ')[0] : '';
   const navigate = useNavigate();
   const [invItems, setInvItems] = useState([]);
   const [invMeta, setInvMeta] = useState(null);
@@ -18,6 +20,7 @@ export default function AdminDashboard() {
   const [invSearch, setInvSearch] = useState('');
   const [page, setPage] = useState(1);
   const limit = 20;
+  const [catsErrorMsg, setCatsErrorMsg] = useState('');
 
   const demoInv = [
     { id: 101, product_id: 501, product_name: 'Aurora Jacket', change_type: 'RESTOCK', quantity_changed: 40, created_at: new Date(Date.now() - 86400000).toISOString() },
@@ -69,12 +72,33 @@ export default function AdminDashboard() {
     });
   }, [sourceItems, invSearch]);
 
+  const { items: topCats, trendyProduct, loading: topCatsLoading, error: topCatsError } = useFetchTopCategories({ period: 'all_time', paidOnly: true, page: 1, limit: 12 });
+  const tp = trendyProduct;
+  const tpTitle = String(tp?.product_name || '').trim();
+  const heroTitle = tpTitle.length > 40 ? tpTitle.slice(0, 40) + '…' : tpTitle;
+  const heroDesc = String(tp?.product_description || '').trim();
+  const heroNotes = String(tp?.sustainability_notes?.description || '').trim();
+
+  useEffect(() => {
+    if (topCatsError) {
+      const msg = String(topCatsError?.message || 'Failed to load top categories').trim();
+      setCatsErrorMsg(msg);
+    }
+  }, [topCatsError]);
+
   return (
     <div className="admin_dashboard__page">
       <div className="admin_dashboard__panel">
         <div className="admin_dashboard__content">
+          {catsErrorMsg && (
+            <ErrorModal message={catsErrorMsg} onClose={() => setCatsErrorMsg('')} />
+          )}
           <div className="admin_dashboard__header">
-            <h1 className="admin_dashboard__greeting">Hello, <span className="admin_dashboard__greeting_accent">{name}</span>!</h1>
+            {name ? (
+              <h1 className="admin_dashboard__greeting">Hello, <span className="admin_dashboard__greeting_accent">{name}</span>!</h1>
+            ) : (
+              <span className="skeleton-block admin_dashboard__header_skel_title" aria-hidden="true"></span>
+            )}
             <div className="admin_dashboard__header_right">
               <div className="admin_dashboard__search">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -88,15 +112,25 @@ export default function AdminDashboard() {
           </div>
 
           <div className="admin_dashboard__top">
-            <div className="admin_dashboard__hero">
-              <div className="admin_dashboard__badge">Latest Trendy Product</div>
-              <div className="admin_dashboard__hero_title">Turn Heads with Clementine</div>
-              <div className="admin_dashboard__hero_sub">Bold, confident apparel crafted for everyday style. Discover this week’s featured pieces.</div>
-              <button className="admin_dashboard__hero_cta" aria-label="Manage products" onClick={() => navigate('/admin/product_management')}>
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-                Manage Products
-              </button>
-              <img src={ph} alt="Featured collection" className="admin_dashboard__hero_img" />
+            <div className={`admin_dashboard__hero ${topCatsLoading || !tp ? 'admin_dashboard__hero--loading' : ''}`}>
+              {topCatsLoading || !tp ? (
+                <span className="skeleton-block admin_dashboard__hero_skel_full" aria-hidden="true"></span>
+              ) : (
+                <>
+                  <div className="admin_dashboard__badge">Latest Trendy Product</div>
+                  <div className="admin_dashboard__hero_title">{heroTitle}</div>
+                  {heroDesc && <div className="admin_dashboard__hero_desc">{heroDesc}</div>}
+                  {heroNotes && <div className="admin_dashboard__hero_sub">{heroNotes}</div>}
+                  <div className="admin_dashboard__hero_actions">
+                    <button className="admin_dashboard__hero_cta" aria-label="Manage products" onClick={() => navigate('/admin/product_management')}>
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                      Manage Products
+                    </button>
+                    <span className="admin_dashboard__hero_reviews">Reviews: {Number(tp?.product_review_count || 0)}</span>
+                  </div>
+                  <img src={tp?.product_image || ph} alt="Featured collection" className="admin_dashboard__hero_img" />
+                </>
+              )}
             </div>
             <div className="admin_dashboard__list">
               <div className="admin_dashboard__list_header">
@@ -104,22 +138,43 @@ export default function AdminDashboard() {
                 <button className="admin_dashboard__see_more" aria-label="See more">See More</button>
               </div>
               <ul className="admin_dashboard__chips" aria-label="Top categories">
-                {[
-                  { n: 'Outerwear', m: '1.2k Items' },
-                  { n: 'Dresses', m: '980 Items' },
-                  { n: 'Denim', m: '860 Items' },
-                  { n: 'Basics', m: '1.6k Items' },
-                  { n: 'Footwear', m: '740 Items' },
-                  { n: 'Accessories', m: '520 Items' },
-                ].map((c) => (
-                  <li key={c.n} className="admin_dashboard__chip">
+                {topCatsLoading ? (
+                  Array.from({ length: 12 }).map((_, i) => (
+                    <li key={`chips-skel-${i}`} className="admin_dashboard__chip">
+                      <span className="skeleton-block admin_dashboard__chip_skel_avatar" aria-hidden="true"></span>
+                      <div className="admin_dashboard__chip_text">
+                        <span className="skeleton-block admin_dashboard__chip_skel_name" aria-hidden="true"></span>
+                        <span className="skeleton-block admin_dashboard__chip_skel_meta" aria-hidden="true"></span>
+                      </div>
+                    </li>
+                  ))
+                ) : topCatsError ? (
+                  <li className="admin_dashboard__chip">
                     <img src={ph} alt="" className="admin_dashboard__chip_avatar" />
                     <div className="admin_dashboard__chip_text">
-                      <span className="admin_dashboard__chip_name">{c.n}</span>
-                      <span className="admin_dashboard__chip_meta">{c.m}</span>
+                      <span className="admin_dashboard__chip_name">Error loading</span>
+                      <span className="admin_dashboard__chip_meta">Try again later</span>
                     </div>
                   </li>
-                ))}
+                ) : Array.isArray(topCats) && topCats.length > 0 ? (
+                  topCats.map((c) => (
+                    <li key={String(c.category_id || c.id || c.category_name)} className="admin_dashboard__chip">
+                      <img src={ph} alt="" className="admin_dashboard__chip_avatar" />
+                      <div className="admin_dashboard__chip_text">
+                        <span className="admin_dashboard__chip_name">{c.category_name || c.name}</span>
+                        <span className="admin_dashboard__chip_meta">{typeof c.items_sold === 'number' ? `${c.items_sold} Items` : String(c.items_sold || '0') + ' Items'}</span>
+                      </div>
+                    </li>
+                  ))
+                ) : (
+                  <li className="admin_dashboard__chip">
+                    <img src={ph} alt="" className="admin_dashboard__chip_avatar" />
+                    <div className="admin_dashboard__chip_text">
+                      <span className="admin_dashboard__chip_name">No categories</span>
+                      <span className="admin_dashboard__chip_meta">No sales data</span>
+                    </div>
+                  </li>
+                )}
               </ul>
             </div>
           </div>
@@ -130,12 +185,12 @@ export default function AdminDashboard() {
           </div>
           <div className="admin_dashboard__grid">
             {[
-              { key: 'orders', label: 'Order Management', to: '/admin/orders' },
-              { key: 'inventory', label: 'Product/Inventory', to: '/admin/product_management' },
-              { key: 'customers', label: 'Customers', to: '/admin/customers' },
-              { key: 'analytics', label: 'Analytics/Reporting', to: '/admin/analytics' },
-              { key: 'marketing', label: 'Marketing', to: '/admin/marketing' },
-              { key: 'settings', label: 'Settings', to: '/admin/settings' },
+              { key: 'orders', label: 'Order Management', to: '/admin-orders' },
+              { key: 'inventory', label: 'Product/Inventory', to: '/admin-product_management' },
+              { key: 'customers', label: 'Customers', to: '/admin-customers' },
+              { key: 'analytics', label: 'Analytics/Reporting', to: '/admin-analytics' },
+              { key: 'marketing', label: 'Marketing', to: '/admin-marketing' },
+              { key: 'settings', label: 'Settings', to: '/admin-settings' },
             ].map((c) => (
               <Link key={c.key} to={c.to} className="admin_dashboard__control_card">
                 <span className={`admin_dashboard__control_icon admin_dashboard__control_icon--${c.key}`} aria-hidden="true">

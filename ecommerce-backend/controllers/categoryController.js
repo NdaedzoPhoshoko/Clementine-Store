@@ -467,6 +467,38 @@ export const getCategorySalesSummary = async (req, res) => {
     `;
     const itemsResult = await pool.query(itemsQuery, [...params, limitNum, offset]);
     const items = itemsResult.rows;
+
+    const topProductQuery = `
+      SELECT 
+        p.id AS product_id,
+        p.name AS product_name,
+        p.description AS product_description,
+        p.sustainability_notes AS sustainability_notes,
+        COALESCE(pi.image_url, p.image_url) AS product_image,
+        COALESCE(SUM(CASE WHEN o.id IS NOT NULL THEN oi.quantity ELSE 0 END), 0)::int AS items_sold,
+        COALESCE(COUNT(r.id), 0)::int AS product_review_count
+      FROM products p
+      LEFT JOIN order_items oi ON oi.product_id = p.id
+      LEFT JOIN orders o ON o.id = oi.order_id${joinOn}
+      LEFT JOIN reviews r ON r.product_id = p.id
+      LEFT JOIN LATERAL (
+        SELECT image_url FROM product_images WHERE product_id = p.id ORDER BY id DESC LIMIT 1
+      ) pi ON true
+      GROUP BY p.id, p.name, p.description, p.sustainability_notes, pi.image_url
+      ORDER BY items_sold DESC, p.name ASC
+      LIMIT 1
+    `;
+    const topProductResult = await pool.query(topProductQuery, params);
+    const trendy_product = topProductResult.rows.length
+      ? {
+          product_id: topProductResult.rows[0].product_id,
+          product_name: topProductResult.rows[0].product_name,
+          product_review_count: topProductResult.rows[0].product_review_count,
+          product_description: topProductResult.rows[0].product_description,
+          sustainability_notes: topProductResult.rows[0].sustainability_notes || null,
+          product_image: topProductResult.rows[0].product_image || null,
+        }
+      : null;
     const pages = Math.max(Math.ceil(total / limitNum), 1);
     const meta = {
       page: pageNum,
@@ -477,7 +509,7 @@ export const getCategorySalesSummary = async (req, res) => {
       endDate: endDate ? endDate.toISOString() : null,
       period: period || (startDate || endDate ? 'custom' : 'all_time'),
     };
-    return res.status(200).json({ items, meta });
+    return res.status(200).json({ items, meta, trendy_product });
   } catch (err) {
     console.error('Category sales summary error:', err.message);
     return res.status(500).json({ message: 'Error fetching category sales summary' });

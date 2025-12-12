@@ -137,7 +137,17 @@ router.get("/with-images", listCategoriesWithImages);
  *                     startDate: { type: string, format: date-time }
  *                     endDate: { type: string, format: date-time }
  *                     period: { type: string }
- */
+  *                 trendy_product:
+  *                   type: object
+  *                   nullable: true
+  *                   properties:
+  *                     product_id: { type: integer }
+  *                     product_name: { type: string }
+  *                     product_review_count: { type: integer }
+  *                     product_description: { type: string }
+  *                     sustainability_notes: { type: object, nullable: true }
+  *                     product_image: { type: string, nullable: true }
+*/
 router.get("/sales", protect, requireAdmin, getCategorySalesSummary);
 
 /**
