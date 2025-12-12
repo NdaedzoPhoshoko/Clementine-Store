@@ -288,3 +288,10 @@ BEGIN
       UNIQUE (user_id, brand, last4, exp_month, exp_year, cardholder_name);
   END IF;
 END $$;
+
+BEGIN;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INT;
+UPDATE users SET token_version = 0 WHERE token_version IS NULL;
+ALTER TABLE users ALTER COLUMN token_version SET DEFAULT 0, ALTER COLUMN token_version SET NOT NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE;
+COMMIT;

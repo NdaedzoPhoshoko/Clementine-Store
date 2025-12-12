@@ -39,7 +39,7 @@ export const loginUser = async (req, res) => {
     }
 
     const result = await pool.query(
-      "SELECT id, name, email, password_hash, created_at, token_version FROM users WHERE email=$1",
+      "SELECT id, name, email, password_hash, created_at, token_version, is_admin FROM users WHERE email=$1",
       [email]
     );
 
@@ -64,7 +64,7 @@ export const loginUser = async (req, res) => {
       .split(",")
       .map((v) => v.trim())
       .filter((v) => v);
-    const isAdmin = ids.includes(Number(safeUser.id)) || (emails.length > 0 && emails.includes(safeUser.email));
+    const isAdmin = !!safeUser.is_admin || ids.includes(Number(safeUser.id)) || (emails.length > 0 && emails.includes(safeUser.email));
     res.status(200).json({ user: { ...safeUser, isAdmin }, token: accessToken, accessToken });
   } catch (error) {
     console.error(error);
@@ -79,7 +79,7 @@ export const getMe = async (req, res) => {
       return res.status(401).json({ message: "Not authorized" });
     }
     const result = await pool.query(
-      "SELECT id, name, email, created_at FROM users WHERE id=$1",
+      "SELECT id, name, email, created_at, is_admin FROM users WHERE id=$1",
       [userId]
     );
     if (result.rows.length === 0) {
@@ -94,8 +94,8 @@ export const getMe = async (req, res) => {
       .split(",")
       .map((v) => v.trim())
       .filter((v) => v);
-    const isAdmin = ids.includes(Number(userId)) || (emails.length > 0 && emails.includes(user.email));
-    res.status(200).json({ ...user, isAdmin });
+    const isAdmin = !!user.is_admin || ids.includes(Number(userId)) || (emails.length > 0 && emails.includes(user.email));
+    res.status(200).json({ id: user.id, name: user.name, email: user.email, created_at: user.created_at, isAdmin });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching profile" });
@@ -104,8 +104,30 @@ export const getMe = async (req, res) => {
 
 export const getUsers = async (req, res) => {
   try {
-    const result = await pool.query("SELECT id, name, email, created_at FROM users");
-    res.status(200).json(result.rows);
+    const onlyAdmins = String(req.query.onlyAdmins || '').toLowerCase();
+    const isAdminsOnly = onlyAdmins === 'true' || onlyAdmins === '1';
+    let page = parseInt(req.query.page, 10);
+    let limit = parseInt(req.query.limit, 10);
+    page = Number.isInteger(page) && page > 0 ? page : 1;
+    limit = Number.isInteger(limit) && limit > 0 ? Math.min(limit, 200) : 20;
+    const offset = (page - 1) * limit;
+
+    const where = isAdminsOnly ? 'WHERE is_admin = TRUE' : '';
+    const totalResult = await pool.query(`SELECT COUNT(*)::int AS total FROM users ${where}`);
+    const total = totalResult.rows[0]?.total || 0;
+    const rowsResult = await pool.query(
+      `SELECT id, name, email, created_at, is_admin FROM users ${where} ORDER BY id ASC LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+    const items = rowsResult.rows.map((u) => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      created_at: u.created_at,
+      isAdmin: !!u.is_admin,
+    }));
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    res.status(200).json({ items, meta: { page, limit, total, totalPages } });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching users" });
@@ -119,20 +141,53 @@ export const getUserById = async (req, res) => {
     if (!Number.isInteger(userId) || userId <= 0) {
       return res.status(400).json({ message: "Invalid user id" });
     }
-
     const result = await pool.query(
       "SELECT id, name, email, created_at FROM users WHERE id=$1",
       [userId]
     );
-
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "User not found" });
     }
-
-    return res.status(200).json(result.rows[0]);
+    res.status(200).json(result.rows[0]);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching user" });
+  }
+};
+
+export const getAdmins = async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT id, name, email, created_at FROM users WHERE is_admin = TRUE ORDER BY id ASC"
+    );
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching admins" });
+  }
+};
+
+export const createAdmin = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: "Name, email and password required" });
+    }
+    const existing = await pool.query("SELECT id FROM users WHERE email=$1", [email]);
+    if (existing.rows.length > 0) {
+      return res.status(409).json({ message: "Email already in use" });
+    }
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+    const insert = await pool.query(
+      "INSERT INTO users (name, email, password_hash, is_admin) VALUES ($1, $2, $3, TRUE) RETURNING id, name, email, created_at, is_admin",
+      [name, email, passwordHash]
+    );
+    const user = insert.rows[0];
+    res.status(201).json({ id: user.id, name: user.name, email: user.email, created_at: user.created_at, isAdmin: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error creating admin" });
   }
 };
 

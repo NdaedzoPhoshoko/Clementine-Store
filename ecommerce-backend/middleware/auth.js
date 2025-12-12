@@ -25,25 +25,22 @@ export const requireAdmin = async (req, res, next) => {
   try {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ message: "Not authorized" });
-
+    const result = await pool.query("SELECT is_admin, email FROM users WHERE id=$1", [userId]);
+    const row = result.rows[0];
+    if (row?.is_admin === true) return next();
     const ids = String(process.env.ADMIN_USER_IDS || "")
       .split(",")
       .map((v) => parseInt(v.trim(), 10))
       .filter((v) => Number.isInteger(v) && v > 0);
-
     if (ids.includes(Number(userId))) return next();
-
     const emails = String(process.env.ADMIN_EMAILS || "")
       .split(",")
       .map((v) => v.trim())
       .filter((v) => v);
-
     if (emails.length > 0) {
-      const result = await pool.query("SELECT email FROM users WHERE id=$1", [userId]);
-      const email = result.rows[0]?.email;
+      const email = row?.email;
       if (email && emails.includes(email)) return next();
     }
-
     return res.status(403).json({ message: "Admin privilege required" });
   } catch (err) {
     console.error("Admin check failed:", err.message);
