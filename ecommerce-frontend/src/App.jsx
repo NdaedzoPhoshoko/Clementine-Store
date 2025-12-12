@@ -5,14 +5,14 @@ import ScrollToTop from './components/ScrollToTop'
 import Footer from './components/footer/Footer'
 import Home from './pages/home/Home'
 import ViewAccount from './pages/account/ViewAccount.jsx'
-import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
-import useFetchMe from './hooks/useFetchMe.js'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import ShopAll from './pages/shopping/ShopAll'
 import Breadcrumbs from './components/breadcrumbs/Breadcrumbs'
 import ProductPage from './pages/product_page/ProductPage'
 import Login from './pages/auth/Login'
 import Signup from './pages/auth/Signup'
 import SessionExpiryHandler from './components/auth/SessionExpiryHandler'
+import RequireAdmin from './components/auth/RequireAdmin.jsx'
 import Cart from './pages/cart/Cart'
 import { CartProvider } from './hooks/for_cart/CartContext.jsx'
 import AboutUs from './pages/about_us/AboutUs.jsx'
@@ -23,13 +23,6 @@ import Support from './pages/support/Support.jsx'
 
 import AdminDashboard from './pages/admin/dashboard/AdminDashboard.jsx'
 import Settings from './pages/admin/settings/Settings.jsx'
-
-function AdminOnly({ children }) {
-  const { data } = useFetchMe();
-  const isAdmin = !!(data?.isAdmin || (Array.isArray(data?.roles) && data.roles.includes('admin')) || data?.role === 'admin' || data?.role === 'super_admin');
-  if (!isAdmin) return <Navigate to="/" replace />;
-  return children;
-}
 
 function AppShell() {
   const location = useLocation();
@@ -52,9 +45,8 @@ function AppShell() {
           <Route path="/auth/signup" element={<Signup />} />
           <Route path="/account" element={<ViewAccount />} />
 
-          {/* Admin Routes */}
-          <Route path="/admin/dashboard" element={<AdminOnly><AdminDashboard /></AdminOnly>} />
-          <Route path="/admin/settings" element={<AdminOnly><Settings /></AdminOnly>} />
+          <Route path="/admin/dashboard" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
+          <Route path="/admin/settings" element={<RequireAdmin><Settings /></RequireAdmin>} />
           
           <Route path="*" element={<Home />} />
         </Routes>

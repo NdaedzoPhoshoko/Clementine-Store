@@ -34,6 +34,10 @@
 
 .nav-center { margin-left: 8px; }
 .nav-right { margin-left: auto; }
+.nav-admin-label {
+  color: var(--palette-primary);
+  font-weight: 700;
+}
 
 /* (Removed) account icon wrapper */
 

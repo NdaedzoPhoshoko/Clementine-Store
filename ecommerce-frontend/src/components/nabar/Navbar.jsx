@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import "./navbar.css";
 import AccountAvatar from "../account_avatar/AccountAvatar.jsx";
-import EnterAdminToggle from "../enter_admin_toggle/EnterAdminToggle.jsx";
+import useFetchMe from "../../hooks/useFetchMe.js";
 import { authStorage } from "../../hooks/use_auth/authStorage.js";
 import useAuthLogOut from "../../hooks/use_auth/useAuthLogOut.js";
 import useFetchCategoryNames from "../../hooks/useFetchCategoryNames.js";
@@ -88,6 +88,9 @@ const Navbar = () => {
   const { names, loading: namesLoading, error: namesError } = useFetchCategoryNames({ page: 1, limit: 40 });
   const { bucket, categories, total, loading: autoLoading, error: autoError } = useFetchAutocomplete({ q: searchQuery, limit: 16, enabled: !!searchQuery.trim() });
   const slugify = (s) => s.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
+  const authed = authStorage.isAuthenticated();
+  const { data: me, loading: meLoading } = useFetchMe({ enabled: authed });
+  const isAdmin = Boolean(me?.isAdmin);
 
   // Recent cache load & persist
   const RECENT_KEY = 'recent-searches:v1';
@@ -500,11 +503,21 @@ const Navbar = () => {
               </div>
               )}
             </div>
+            {authed && !meLoading && isAdmin ? (
+              <div className="nav-item">
+                <Link to="/admin/dashboard" aria-label="Admin Dashboard">
+                  Dashboard
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                </Link>
+              </div>
+            ) : null}
           </nav>
         </div>
 
         <div className="nav-right">
-          <EnterAdminToggle />
+          {authed && !meLoading && isAdmin ? (
+            <span className="nav-admin-label" aria-label="Admin Mode">Admin Mode</span>
+          ) : null}
           <div
             className="nav-account"
             ref={accountRef}
