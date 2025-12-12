@@ -391,3 +391,95 @@ export const deleteCategory = async (req, res) => {
     return res.status(500).json({ message: "Error deleting category" });
   }
 };
+
+export const getCategorySalesSummary = async (req, res) => {
+  try {
+    const period = String(req.query.period || '').toLowerCase();
+    const paidOnly = String(req.query.paidOnly || 'true').toLowerCase();
+    const pageNum = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limitNum = Math.min(Math.max(parseInt(req.query.limit, 10) || 12, 1), 200);
+    const offset = (pageNum - 1) * limitNum;
+
+    const startParam = req.query.startDate ? new Date(req.query.startDate) : null;
+    const endParam = req.query.endDate ? new Date(req.query.endDate) : null;
+
+    let startDate = null;
+    let endDate = null;
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    if (startParam && !isNaN(startParam.getTime())) startDate = startParam;
+    if (endParam && !isNaN(endParam.getTime())) endDate = endParam;
+    if (!startDate && !endDate) {
+      if (period === 'last_month') {
+        const s = new Date(startOfMonth);
+        s.setMonth(s.getMonth() - 1);
+        startDate = s;
+        endDate = startOfMonth;
+      } else if (period === 'last_2_months') {
+        const s = new Date(startOfMonth);
+        s.setMonth(s.getMonth() - 2);
+        startDate = s;
+        endDate = startOfMonth;
+      } else if (period === 'last_3_months') {
+        const s = new Date(startOfMonth);
+        s.setMonth(s.getMonth() - 3);
+        startDate = s;
+        endDate = startOfMonth;
+      } else if (period === 'prev_quarter') {
+        const q = Math.floor(now.getMonth() / 3);
+        const prevQ = (q + 3 - 1) % 4;
+        const year = q === 0 ? now.getFullYear() - 1 : now.getFullYear();
+        const startMonth = prevQ * 3;
+        const endMonth = startMonth + 3;
+        startDate = new Date(year, startMonth, 1);
+        endDate = new Date(year, endMonth, 1);
+      }
+    }
+
+    const params = [];
+    const onFilters = [];
+    if (paidOnly === 'true' || paidOnly === '1') {
+      onFilters.push(`o.payment_status IS NOT NULL AND o.payment_status <> 'PENDING'`);
+    }
+    if (startDate) {
+      params.push(startDate.toISOString());
+      onFilters.push(`o.created_at >= $${params.length}`);
+    }
+    if (endDate) {
+      params.push(endDate.toISOString());
+      onFilters.push(`o.created_at < $${params.length}`);
+    }
+    const joinOn = onFilters.length ? ` AND ${onFilters.join(' AND ')}` : '';
+
+    const totalQuery = `SELECT COUNT(*)::int AS total FROM categories c`;
+    const totalResult = await pool.query(totalQuery);
+    const total = totalResult.rows[0]?.total || 0;
+
+    const itemsQuery = `
+      SELECT c.id AS category_id, c.name AS category_name, COALESCE(SUM(CASE WHEN o.id IS NOT NULL THEN oi.quantity ELSE 0 END), 0)::int AS items_sold
+      FROM categories c
+      LEFT JOIN products p ON p.category_id = c.id
+      LEFT JOIN order_items oi ON oi.product_id = p.id
+      LEFT JOIN orders o ON o.id = oi.order_id${joinOn}
+      GROUP BY c.id, c.name
+      ORDER BY items_sold DESC, c.name ASC
+      LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+    `;
+    const itemsResult = await pool.query(itemsQuery, [...params, limitNum, offset]);
+    const items = itemsResult.rows;
+    const pages = Math.max(Math.ceil(total / limitNum), 1);
+    const meta = {
+      page: pageNum,
+      limit: limitNum,
+      total,
+      totalPages: pages,
+      startDate: startDate ? startDate.toISOString() : null,
+      endDate: endDate ? endDate.toISOString() : null,
+      period: period || (startDate || endDate ? 'custom' : 'all_time'),
+    };
+    return res.status(200).json({ items, meta });
+  } catch (err) {
+    console.error('Category sales summary error:', err.message);
+    return res.status(500).json({ message: 'Error fetching category sales summary' });
+  }
+};
