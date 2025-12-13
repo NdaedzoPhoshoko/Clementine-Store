@@ -186,7 +186,7 @@ export default function AdminDashboard() {
                       <img src={ph} alt="" className="admin_dashboard__chip_avatar" />
                       <div className="admin_dashboard__chip_text">
                         <span className="admin_dashboard__chip_name">{c.category_name || c.name}</span>
-                        <span className="admin_dashboard__chip_meta">{typeof c.items_sold === 'number' ? `${c.items_sold} Items` : String(c.items_sold || '0') + ' Items'}</span>
+                        <span className="admin_dashboard__chip_meta">{typeof c.items_sold === 'number' ? `${c.items_sold}+ Items` : String(c.items_sold || '0') + '+ Items'}</span>
                       </div>
                     </li>
                   ))

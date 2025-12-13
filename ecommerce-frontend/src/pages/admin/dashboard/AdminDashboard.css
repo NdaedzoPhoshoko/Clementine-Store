@@ -32,6 +32,10 @@
 .admin_dashboard__search_btn svg { width: 20px; height: 20px; stroke: var(--color-bg); }
 .admin_dashboard__icon_btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--color-border); background: var(--color-bg); }
 
+.admin_dashboard__header_actions{
+  display: none;
+}
+
 .admin_dashboard__top { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 20px; align-items: stretch; }
 
 .admin_dashboard__hero { position: relative; background: radial-gradient(1200px 400px at 0% 0%, var(--shadow-primary-color), transparent), linear-gradient(180deg, var(--palette-deep), var(--palette-dark)); color: var(--color-bg); border-radius: 18px; padding: 18px; overflow: visible; min-height: 220px; display: grid; grid-template-rows: auto auto auto auto; gap: 8px; }

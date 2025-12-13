@@ -45,7 +45,7 @@ function AppShell() {
           <Route path="/auth/signup" element={<Signup />} />
           <Route path="/account" element={<ViewAccount />} />
 
-          <Route path="/admin-dashboard" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
+          <Route path="/admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
           <Route path="/admin-settings" element={<RequireAdmin><Settings /></RequireAdmin>} />
           
           <Route path="*" element={<Home />} />
