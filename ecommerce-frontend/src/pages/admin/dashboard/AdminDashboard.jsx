@@ -186,7 +186,7 @@ export default function AdminDashboard() {
                       <img src={ph} alt="" className="admin_dashboard__chip_avatar" />
                       <div className="admin_dashboard__chip_text">
                         <span className="admin_dashboard__chip_name">{c.category_name || c.name}</span>
-                        <span className="admin_dashboard__chip_meta">{typeof c.items_sold === 'number' ? `${c.items_sold}+ Items` : String(c.items_sold || '0') + '+ Items'}</span>
+                        <span className="admin_dashboard__chip_meta">{typeof c.items_sold === 'number' ? `Sold ${c.items_sold} Items` : 'Sold '+ String(c.items_sold || '0') + ' Items'}</span>
                       </div>
                     </li>
                   ))
@@ -214,7 +214,7 @@ export default function AdminDashboard() {
               { key: 'customers', label: 'Customers', to: '/admin-customers' },
               { key: 'analytics', label: 'Analytics/Reporting', to: '/admin-analytics' },
               { key: 'marketing', label: 'Marketing', to: '/admin-marketing' },
-              { key: 'settings', label: 'Settings', to: '/admin-settings' },
+              { key: 'settings', label: 'Settings', to: '/admin/settings' },
             ].map((c) => (
               <Link key={c.key} to={c.to} className="admin_dashboard__control_card">
                 <span className={`admin_dashboard__control_icon admin_dashboard__control_icon--${c.key}`} aria-hidden="true">

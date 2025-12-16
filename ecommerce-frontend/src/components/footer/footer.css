@@ -1,9 +1,9 @@
 /* Footer styles aligned with navbar palette and spacing */
 .site-footer {
-  background: var(--color-surface);
+  /* background: var(--color-surface); */
   /* Removed border-top */
   margin-top: 48px;
-  box-shadow: 0 -6px 14px rgba(0, 0, 0, 0.04);
+  /* box-shadow: 0 -6px 14px rgba(0, 0, 0, 0.04); */
 }
 
 .footer-inner {

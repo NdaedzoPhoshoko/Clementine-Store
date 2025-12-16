@@ -1,0 +1,3 @@
+I must add also the endpoint to count number of active cart items, inactive carts
+number of pending orders and date they were created,
+number of paid orders, and total revenew of the paid orders

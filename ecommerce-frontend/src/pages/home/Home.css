@@ -29,14 +29,17 @@
 .home__company-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 24px;
+  gap: 44px;
+  padding-top: 24px;
+  padding-bottom: 54px;
 }
 
 .company-card {
-  background: var(--color-surface);
+  /* background: var(--color-surface); */
   border: none;
   border-radius: 12px;
   padding: 16px;
+  box-shadow: 0 -6px 14px rgba(0, 0, 0, 0.04);
 }
 
 .company-card h3 {

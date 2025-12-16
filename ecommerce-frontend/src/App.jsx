@@ -23,6 +23,7 @@ import Support from './pages/support/Support.jsx'
 
 import AdminDashboard from './pages/admin/dashboard/AdminDashboard.jsx'
 import Settings from './pages/admin/settings/Settings.jsx'
+import ManageProducts from './pages/admin/manage_products/ManageProducts.jsx'
 
 function AppShell() {
   const location = useLocation();
@@ -46,7 +47,8 @@ function AppShell() {
           <Route path="/account" element={<ViewAccount />} />
 
           <Route path="/admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
-          <Route path="/admin-settings" element={<RequireAdmin><Settings /></RequireAdmin>} />
+          <Route path="/admin/settings" element={<RequireAdmin><Settings /></RequireAdmin>} />
+          <Route path="/admin/product_management" element={<RequireAdmin><ManageProducts /></RequireAdmin>} />
           
           <Route path="*" element={<Home />} />
         </Routes>
