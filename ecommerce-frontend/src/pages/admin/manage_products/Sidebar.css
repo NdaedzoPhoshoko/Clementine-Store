@@ -1,4 +1,4 @@
-.admin_products__sidebar { background: var(--color-bg); border-right: 1px solid var(--color-border); padding: 16px; }
+.admin_products__sidebar { background: var(--color-bg); border-right: 1px solid var(--color-border); padding: 16px; position: sticky; top: calc(var(--navbar-dropdown-top, 64px) + 12px); }
 .admin_products__brand { font-weight: 800; color: var(--color-text); margin-bottom: 12px; }
 .admin_products__nav { display: flex; flex-direction: column; gap: 6px; }
 .admin_products__nav_item {
