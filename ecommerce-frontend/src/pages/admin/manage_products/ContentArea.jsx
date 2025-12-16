@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, Suspense } from 'react';
 import './ContentArea.css';
 import useManageProducts from './ManageProductsContext.jsx';
+const Products = React.lazy(() => import('./view_components/Products/Products.jsx'));
 
 export default function ContentArea() {
   const { activeSection, status, stock, innerAction } = useManageProducts();
@@ -33,7 +34,13 @@ export default function ContentArea() {
         <div className="admin_products__content_actions">{hint}</div>
       </div>
       <div className="admin_products__content_body">
-        <div className="admin_products__empty_state">No {activeSection} yet · {status} · {stock}</div>
+        {activeSection === 'products' && (innerAction || 'all') === 'all' ? (
+          <Suspense fallback={<div className="admin_products__empty_state">Loading products…</div>}>
+            <Products />
+          </Suspense>
+        ) : (
+          <div className="admin_products__empty_state">No {activeSection} yet · {status} · {stock}</div>
+        )}
       </div>
     </section>
   );
