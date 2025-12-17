@@ -21,6 +21,7 @@
   gap: 1.25rem;
   align-items: start;
 }
+.admin__edit__fullrow { grid-column: 1 / -1; }
 .admin__edit__left,
 .admin__edit__right { display: grid; gap: .9rem; }
 
@@ -29,13 +30,38 @@
 .selector-row { display: flex; gap: .5rem; align-items: center; }
 .admin__edit__sublabel { color: var(--color-muted); font-size: .85rem; }
 
+/* Below columns horizontal form rows */
+.admin__edit__below { margin-top: 1rem; }
+.form-row--dual {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+.size-palette {
+  display: grid;
+  grid-template-columns: repeat(3, 56px);
+  grid-auto-rows: 56px;
+  gap: .5rem;
+}
+.size-tile {
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-weight: 700;
+  border-radius: 0;
+}
+.size-tile:hover { border-color: var(--color-accent); cursor: pointer; }
+.size-tile.is-selected { border-color: var(--color-accent); background: var(--color-surface); color: var(--color-accent); }
+
 /* Square inputs & selects only for this page */
 .admin__edit__page .form-control,
 .admin__edit__page .form-select {
   border-radius: 0;
 }
 .admin__edit__page textarea.form-control {
-  min-height: 140px;
+  min-height: 120px;
   resize: vertical;
 }
 
@@ -156,6 +182,10 @@
   cursor: pointer;
 }
 
+@media (max-width: 1024px) {
+  .form-row--dual { grid-template-columns: 1fr; }
+}
+
 /* Chips */
 .chip-grid { display: flex; flex-wrap: wrap; gap: .35rem; }
 .chip {
@@ -199,6 +229,114 @@
   border: 1px solid var(--color-border);
   border-radius: 0;
   padding: 0;
+}
+
+.color-chip-grid {
+  display: flex;
+  gap: .35rem;
+  overflow-x: auto;
+  padding-bottom: .25rem;
+  scroll-snap-type: x mandatory;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.color-chip-grid::-webkit-scrollbar { display: none; }
+.color-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  height: 24px;
+  padding: 0 .55rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-weight: 600;
+  font-size: .82rem;
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+}
+.color-chip-swatch {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+}
+.color-controls { display: flex; justify-content: space-between; align-items: center; gap: .5rem;}
+.color-controls__hint { color: var(--color-muted); font-size: .85rem; }
+.color-controls__buttons { display: flex; gap: .5rem; }
+.color-btn {
+  height: var(--control-height);
+  padding: 0 .8rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  border-radius: 0;
+}
+.color-btn:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  cursor: pointer;
+}
+.color-picker-row {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: .75rem;
+  align-items: start;
+}
+.color-picker .react-colorful {
+  width: 100%;
+  height: 180px;
+  /* border: 1px solid var(--color-border); */
+  border-radius: 0;
+  box-shadow: none;
+}
+.color-fields { display: grid; gap: .5rem; }
+.color-preview {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+}
+.selector-row--color-name .form-control { flex: 1; }
+.btn-add-color {
+  height: var(--control-height);
+  padding: 0 .8rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  border-radius: 0;
+}
+.btn-add-color:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  cursor: pointer;
+}
+.btn-add-note {
+  height: var(--control-height);
+  padding: 0 .8rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  border-radius: 0;
+}
+.btn-add-note:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  cursor: pointer;
+}
+.note-remove-btn {
+  height: var(--control-height);
+  padding: 0 .8rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  border-radius: 0;
+}
+.note-remove-btn:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  cursor: pointer;
 }
 
 /* Responsive */
