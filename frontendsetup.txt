@@ -3,3 +3,4 @@ npm install @emailjs/browser
 npm install react-inner-image-zoom
 npm install lucide-react
 npm install framer-motion
+npm run install react-colorful
