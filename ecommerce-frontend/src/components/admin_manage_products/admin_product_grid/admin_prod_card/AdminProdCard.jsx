@@ -1,8 +1,8 @@
 import React from 'react'
 import './AdminProdCard.css'
-import { Pencil, Star } from 'lucide-react'
+import { Pencil, Star, Eye } from 'lucide-react'
 
-export default function AdminProdCard({ product = {}, onEdit }) {
+export default function AdminProdCard({ product = {}, onEdit, onView }) {
   const {
     id,
     name = 'Untitled Product',
@@ -13,7 +13,7 @@ export default function AdminProdCard({ product = {}, onEdit }) {
     reviewCount = 0,
   } = product || {}
 
-  const priceText = typeof price === 'number' ? `$${price.toFixed(2)}` : (price || '—')
+  const priceText = typeof price === 'number' ? `R${price.toFixed(2)}` : (price || '—')
   const imgAlt = name || 'Product image'
   const roundedRating = Math.max(0, Math.min(5, Math.round(rating)))
 
@@ -30,8 +30,18 @@ export default function AdminProdCard({ product = {}, onEdit }) {
           className="admin__admin_prod_card_edit"
           aria-label="Edit product"
           onClick={() => onEdit && onEdit(id)}
+          onMouseUp={(e) => e.currentTarget.blur()}
         >
           <Pencil size={18} />
+        </button>
+        <button
+          type="button"
+          className="admin__admin_prod_card_view"
+          aria-label="View product"
+          onClick={() => onView && onView(id)}
+          onMouseUp={(e) => e.currentTarget.blur()}
+        >
+          <Eye size={18} />
         </button>
       </div>
       <div className="admin__admin_prod_card_body">
@@ -41,7 +51,7 @@ export default function AdminProdCard({ product = {}, onEdit }) {
         ) : (
           <span className="admin__admin_prod_card_desc skeleton-block" aria-hidden="true" />
         )}
-        <div className="admin__admin_prod_card_price_rating">
+          <div className="admin__admin_prod_card_price_rating">
           <p className="admin__admin_prod_card_price">{priceText}</p>
           <div className="admin__admin_prod_card_rating" aria-label={`Rating ${roundedRating} out of 5`}>
             {Array.from({ length: 5 }).map((_, i) => (
@@ -49,6 +59,8 @@ export default function AdminProdCard({ product = {}, onEdit }) {
                 key={`star-${i}`}
                 size={14}
                 className="admin__admin_prod_card_star"
+                fill="currentColor"
+                stroke="none"
                 style={{ opacity: i < roundedRating ? 1 : 0.3 }}
                 aria-hidden="true"
               />
