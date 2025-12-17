@@ -6,7 +6,7 @@ import AdminProdGrid from '../../../../../components/admin_manage_products/admin
 import PaginationBar from '../../../../../components/pagination/PaginationBar.jsx'
 
 export default function Products() {
-  const { query, stock } = useManageProducts()
+  const { query, stock, setInnerAction, setCurrentProductId } = useManageProducts()
 
   const getDefaultItemsPerPage = () => {
     const w = typeof window !== 'undefined' ? window.innerWidth : 1200
@@ -59,7 +59,11 @@ export default function Products() {
 
   const isActuallyLoading = loading || loadingMore || !Array.isArray(pageItems)
 
-  const handleEdit = (id) => {}
+  const handleEdit = (id) => {
+    if (!id) return
+    setCurrentProductId(id)
+    setInnerAction('edit')
+  }
   const totalPages = meta?.pages || 1
   const hasPrev = typeof meta?.hasPrev !== 'undefined' ? !!meta?.hasPrev : page > 1
   const hasNext = typeof meta?.hasNext !== 'undefined' ? !!meta?.hasNext : !!hasMore

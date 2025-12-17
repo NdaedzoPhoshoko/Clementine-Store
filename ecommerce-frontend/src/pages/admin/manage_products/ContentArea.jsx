@@ -2,9 +2,10 @@ import React, { useMemo, Suspense } from 'react';
 import './ContentArea.css';
 import useManageProducts from './ManageProductsContext.jsx';
 const Products = React.lazy(() => import('./view_components/Products/Products.jsx'));
+const Edit = React.lazy(() => import('./view_components/Products/Edit/Edit.jsx'));
 
 export default function ContentArea() {
-  const { activeSection, status, stock, innerAction } = useManageProducts();
+  const { activeSection, status, stock, innerAction, currentProductId } = useManageProducts();
   const hint = useMemo(() => {
     const ia = innerAction || 'all';
     if (activeSection === 'products') {
@@ -34,10 +35,18 @@ export default function ContentArea() {
         <div className="admin_products__content_actions">{hint}</div>
       </div>
       <div className="admin_products__content_body">
-        {activeSection === 'products' && (innerAction || 'all') === 'all' ? (
-          <Suspense fallback={<div className="admin_products__empty_state">Loading products…</div>}>
-            <Products />
-          </Suspense>
+        {activeSection === 'products' ? (
+          (innerAction || 'all') === 'all' ? (
+            <Suspense fallback={<div className="admin_products__empty_state">Loading products…</div>}>
+              <Products />
+            </Suspense>
+          ) : (innerAction === 'edit' ? (
+            <Suspense fallback={<div className="admin_products__empty_state">Loading editor…</div>}>
+              <Edit productId={currentProductId} />
+            </Suspense>
+          ) : (
+            <div className="admin_products__empty_state">No {activeSection} yet · {status} · {stock}</div>
+          ))
         ) : (
           <div className="admin_products__empty_state">No {activeSection} yet · {status} · {stock}</div>
         )}

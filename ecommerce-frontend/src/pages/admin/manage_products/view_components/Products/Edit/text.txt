@@ -1,0 +1,3 @@
+Add success/error toasts on save and upload.
+
+diting this page must also update the path of the r\url there to show that it is is editing "/editproduct

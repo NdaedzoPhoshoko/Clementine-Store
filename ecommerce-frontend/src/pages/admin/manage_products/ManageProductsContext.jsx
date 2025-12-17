@@ -9,6 +9,8 @@ export function ManageProductsProvider({ children }) {
   const [stock, setStock] = useState('All Stock');
   const [stars, setStars] = useState('All Stars');
   const [reviewRange, setReviewRange] = useState('All Counts');
+  const [innerAction, setInnerAction] = useState('all');
+  const [currentProductId, setCurrentProductId] = useState(null);
 
   const value = useMemo(() => ({
     activeSection, setActiveSection,
@@ -17,7 +19,10 @@ export function ManageProductsProvider({ children }) {
     stock, setStock,
     stars, setStars,
     reviewRange, setReviewRange,
-  }), [activeSection, query, status, stock, stars, reviewRange]);
+    innerAction, setInnerAction,
+    currentProductId, setCurrentProductId,
+  }), [activeSection, query, status, stock, stars, reviewRange
+  , innerAction, currentProductId]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
