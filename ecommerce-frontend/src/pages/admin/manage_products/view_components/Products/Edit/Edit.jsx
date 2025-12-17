@@ -37,6 +37,7 @@ export default function Edit({ productId: propProductId }) {
   const [placeholderIndex, setPlaceholderIndex] = useState(null)
   const [replaceIndex, setReplaceIndex] = useState(null)
   const [localImages, setLocalImages] = useState([])
+  const imagesScrollRef = useRef(null)
 
   useEffect(() => {
     if (!product) return
@@ -260,6 +261,12 @@ export default function Edit({ productId: propProductId }) {
     arr.splice(idx, 0, '__placeholder__')
     return arr
   }, [localImages, placeholderIndex])
+  const TILE_SIZE = 160
+  const TILE_GAP = 12
+  const scrollByTiles = (n) => {
+    if (!imagesScrollRef?.current) return
+    imagesScrollRef.current.scrollBy({ left: n * (TILE_SIZE + TILE_GAP), behavior: 'smooth' })
+  }
 
   return (
     <div className="admin__edit__page">
@@ -284,7 +291,7 @@ export default function Edit({ productId: propProductId }) {
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Enter product name"
                 />
-                <div className="admin__edit__sublabel">please do not exceed more than 20 characters</div>
+                <div className="admin__edit__sublabel">Please do not exceed more than 20 characters</div>
               </div>
 
               <div className="form-group">
@@ -310,7 +317,7 @@ export default function Edit({ productId: propProductId }) {
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Write a brief description"
                 />
-                <div className="admin__edit__sublabel">do not exceed 200 characters</div>
+                <div className="admin__edit__sublabel">Please do not exceed 200 characters</div>
               </div>
             </div>
 
@@ -318,7 +325,8 @@ export default function Edit({ productId: propProductId }) {
               <div className="form-row">
                 <label className="form-label">Product Images</label>
                 <div
-                  className="images-grid"
+                  className="images-scroll"
+                  ref={imagesScrollRef}
                   onDragOver={preventDefaults}
                   onDrop={(e) => {
                     setReplaceIndex(null)
@@ -424,6 +432,13 @@ export default function Edit({ productId: propProductId }) {
                       setReplaceIndex(null)
                     }}
                   />
+                </div>
+                <div className="images-controls">
+                  <span className="images-controls__hint">Use these controls to view more images and attach more.</span>
+                  <div className="images-controls__buttons">
+                    <button type="button" className="images-btn" onClick={() => scrollByTiles(-3)}>Prev</button>
+                    <button type="button" className="images-btn" onClick={() => scrollByTiles(3)}>Next</button>
+                  </div>
                 </div>
                 <div className="admin__edit__sublabel">
                   You need to add at least 4 images. Pay attention to the quality of the pictures you add, comply with the background color standards. Pictures must be in certain dimensions. Notice that the product shows all the details. The image labeled "thumbnail" will be shown in product lists/grids.
