@@ -1,23 +1,16 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
-import './Edit.css'
-import { useParams, useNavigate } from 'react-router-dom'
-import useFetchProductDetails from '../../../../../../hooks/useFetchProductDetails'
-import { Save, X, Upload, Image as ImageIcon, CheckCircle, Loader, Palette } from 'lucide-react'
+import React, { useMemo, useRef, useState } from 'react'
+import './New.css'
+import { useNavigate } from 'react-router-dom'
+import { X, Image as ImageIcon, Loader } from 'lucide-react'
 import { HexColorPicker } from 'react-colorful'
 import useFetchCategoryNames from '../../../../../../hooks/useFetchCategoryNames.js'
-import useUpdateProduct from '../../../../../../hooks/admin_dashboard/products/useUpdateProduct.js'
+import useCreateProduct from '../../../../../../hooks/admin_dashboard/products/useCreateProduct.js'
 import useUploadProductImages from '../../../../../../hooks/admin_dashboard/products/useUploadProductImages.js'
-import useSetPrimaryImage from '../../../../../../hooks/admin_dashboard/products/useSetPrimaryImage.js'
-import useDeleteAllProductImages from '../../../../../../hooks/admin_dashboard/products/useDeleteAllProductImages.js'
-import useDeleteProductImage from '../../../../../../hooks/admin_dashboard/products/useDeleteProductImage.js'
 
-export default function Edit({ productId: propProductId }) {
-  const { id } = useParams()
+export default function New() {
   const navigate = useNavigate()
-  const productId = propProductId ?? id
-  const { product, category, images, details, dimensions, sizeChart, careNotes, sustainabilityNotes, colorVariants, loading, error, refetch } =
-    useFetchProductDetails({ productId, enabled: true })
-
+  
+  // State
   const [name, setName] = useState('')
   const [price, setPrice] = useState('')
   const [stock, setStock] = useState('')
@@ -55,80 +48,16 @@ export default function Edit({ productId: propProductId }) {
   const [uploadedFilesMeta, setUploadedFilesMeta] = useState([])
   const [blobMetaByUrl, setBlobMetaByUrl] = useState({})
   const [queuedFiles, setQueuedFiles] = useState([])
-  const [sessionUploadedUrls, setSessionUploadedUrls] = useState([])
   const [placeholderIndex, setPlaceholderIndex] = useState(null)
   const [replaceIndex, setReplaceIndex] = useState(null)
   const [localImages, setLocalImages] = useState([])
   const imagesScrollRef = useRef(null)
   const colorScrollRef = useRef(null)
-  const { update, pending: updatePending, error: updateError } = useUpdateProduct()
+
+  const { create, pending: createPending } = useCreateProduct()
   const { upload: uploadProductImages } = useUploadProductImages()
-  const { setPrimary: setPrimaryImage } = useSetPrimaryImage()
-  const { removeAll, pending: removingAll } = useDeleteAllProductImages()
-  const { remove, pending: removingOne } = useDeleteProductImage()
 
-  useEffect(() => {
-    if (!product) return
-    setName(product.name || '')
-    setShortDescription(product.description || '')
-    setPrice(product.price != null ? String(product.price) : '')
-    setStock(product.stock != null ? String(product.stock) : '')
-    setCategoryId(product.category_id != null ? String(product.category_id) : (category?.id != null ? String(category.id) : ''))
-    setCategoryName(category?.name ?? '')
-    setPrimaryImageUrl(product.image_url || '')
-    
-    // Parse details
-    if (product.details) {
-      setMaterial(product.details.material || '')
-      if (Array.isArray(product.details.features)) {
-        // Handle if features is array of strings (legacy) or objects
-        setFeatures(product.details.features.map(f => {
-          if (typeof f === 'string') return f
-          return f.value || ''
-        }))
-      } else if (typeof product.details.features === 'object' && product.details.features !== null) {
-        // Handle if features is an object (key-value)
-        setFeatures(Object.entries(product.details.features).map(([k, v]) => String(v)))
-      } else {
-        setFeatures([])
-      }
-    } else {
-      setMaterial('')
-      setFeatures([])
-    }
-
-    if (product.dimensions) {
-      setDimWidth(product.dimensions.width || '')
-      setDimHeight(product.dimensions.height || '')
-      setDimLength(product.dimensions.length || '')
-    } else {
-      setDimWidth('')
-      setDimHeight('')
-      setDimLength('')
-    }
-    // Extract description from sustainability_notes JSON
-    if (product.sustainability_notes && typeof product.sustainability_notes === 'object') {
-      setSustainabilityText(product.sustainability_notes.description || '')
-    } else {
-      setSustainabilityText('')
-    }
-  }, [product])
-
-  useEffect(() => {
-    setCareNotesList(Array.isArray(careNotes) ? careNotes : [])
-  }, [careNotes])
-
-  useEffect(() => {
-    setVariants(Array.isArray(colorVariants) ? colorVariants : [])
-  }, [colorVariants])
-
-  useEffect(() => {
-    const sc = Array.isArray(sizeChart)
-      ? sizeChart
-      : (sizeChart && typeof sizeChart === 'object' ? Object.keys(sizeChart) : [])
-    setSizes(sc)
-  }, [sizeChart])
-
+  // Parsed values
   const parsedDetails = useMemo(() => {
     const m = material.trim()
     const f = features.filter(x => x && x.trim())
@@ -148,7 +77,6 @@ export default function Edit({ productId: propProductId }) {
   }, [dimWidth, dimHeight, dimLength])
 
   const parsedSustainability = useMemo(() => {
-    // Return null if empty so it doesn't try to save
     if (!sustainabilityText.trim()) return null
     return { description: sustainabilityText.trim() }
   }, [sustainabilityText])
@@ -161,8 +89,8 @@ export default function Edit({ productId: propProductId }) {
     XL: '34 cm',
     '2XL': '36 cm',
   }
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
 
+  // Handlers
   const onRemoveSize = (idx) => {
     setSizes(sizes.filter((_, i) => i !== idx))
   }
@@ -200,7 +128,6 @@ export default function Edit({ productId: propProductId }) {
     setCareNotesList(careNotesList.filter((_, i) => i !== idx))
   }
 
-
   const onAddVariant = () => {
     setVariants([...variants, { name: '', hex: '#000000' }])
   }
@@ -230,13 +157,11 @@ export default function Edit({ productId: propProductId }) {
     setNewVariantHex('#000000')
   }
 
+  // Image handling for New Product
   const onUploadImages = async (files, existingPreviews = null) => {
-    if (!productId || !files?.length) return
+    if (!files?.length) return
     try {
       const all = Array.from(files)
-      // Filter out files that have already been processed (based on name/size in uploadedFilesMeta)
-      // Note: If existingPreviews is provided, we assume the caller has already decided these files are valid for UI
-      // but we still want to avoid double-queuing if they are already in the queue.
       const newFiles = []
       const newPreviews = []
 
@@ -252,7 +177,6 @@ export default function Edit({ productId: propProductId }) {
 
       if (!newFiles.length) return
 
-      // If no existing previews were provided, generate them now
       const urls = (existingPreviews && existingPreviews.length === all.length) 
         ? newPreviews 
         : newFiles.map((f) => URL.createObjectURL(f))
@@ -277,118 +201,48 @@ export default function Edit({ productId: propProductId }) {
     if (uploadInputRef?.current) uploadInputRef.current.value = ''
   }
 
-  const [deletingSet, setDeletingSet] = useState(new Set())
-  const [pendingDeletes, setPendingDeletes] = useState(new Set())
-  const markDeleting = (key) => {
-    setDeletingSet((prev) => {
-      const next = new Set(prev)
-      next.add(key)
-      return next
-    })
-  }
-  const unmarkDeleting = (key) => {
-    setDeletingSet((prev) => {
-      const next = new Set(prev)
-      next.delete(key)
-      return next
-    })
-  }
-
-  const onSetPrimaryImage = async (url) => {
-    if (!productId || !url) return
-    setPending(true)
-    try {
-      await setPrimaryImage(productId, url)
-      setPrimaryImageUrl(url)
-    } catch (e) {
-    } finally {
-      setPending(false)
-    }
-  }
-
   const onDeleteAllImages = async () => {
-    if (!productId) return
-    setPending(true)
+    // Just clear local state since no server images yet
+    setLocalImages([])
+    setQueuedFiles([])
+    setUploadedFilesMeta([])
+    setBlobMetaByUrl({})
+    setPlaceholderIndex(null)
+    setReplaceIndex(null)
+    setPrimaryImageUrl('')
+  }
+
+  const isBlobUrl = (u) => typeof u === 'string' && u.startsWith('blob:')
+  const revokeBlobUrls = (urls) => {
     try {
-      await removeAll(productId)
-      setLocalImages((prev) => prev.filter((u) => isBlobUrl(u)))
-      setPrimaryImageUrl((prev) => {
-        if (!prev || isBlobUrl(prev)) return prev || ''
-        const blobs = localImages.filter((u) => isBlobUrl(u))
-        return blobs[0] || ''
+      urls.forEach((u) => {
+        if (isBlobUrl(u)) {
+          try { URL.revokeObjectURL(u) } catch {}
+        }
       })
-      setPlaceholderIndex(null)
-      setReplaceIndex(null)
-    } catch (e) {
-    } finally {
-      setPending(false)
-    }
+    } catch {}
   }
 
   const onSubmit = async (e) => {
     e.preventDefault()
-    if (parsedDetails === '__invalid__' || parsedDimensions === '__invalid__' || parsedSustainability === '__invalid__') return
+    // Validations
+    if (!name.trim()) return
+    if (name.length > 50) return
+    if (shortDescription.length > 250) return
+    if (!categoryId) return
 
     setPending(true)
     try {
-      // 1. Upload queued images first
-      let currentUploadedUrls = []
-      if (queuedFiles.length) {
-        setUploading(true)
-        try {
-          const resp = await uploadProductImages(productId, queuedFiles)
-          currentUploadedUrls = Array.isArray(resp?.images)
-            ? resp.images.map((i) => (typeof i === 'string' ? i : i?.url)).filter(Boolean)
-            : []
-        } finally {
-          setUploading(false)
-        }
-      }
-
-      // 2. Resolve final image list (map blobs to new URLs)
-      const resolvedImages = localImages.map((img) => {
-        if (isBlobUrl(img)) {
-          const meta = blobMetaByUrl[img]
-          if (meta) {
-            const fileIdx = queuedFiles.findIndex((f) => f.name === meta.name && f.size === meta.size)
-            if (fileIdx !== -1 && currentUploadedUrls[fileIdx]) {
-              return currentUploadedUrls[fileIdx]
-            }
-          }
-          return null
-        }
-        return img
-      }).filter(Boolean)
-
-      // Determine final primary image URL
-      let finalPrimaryUrl = primaryImageUrl
-      if (primaryImageUrl && isBlobUrl(primaryImageUrl)) {
-        const meta = blobMetaByUrl[primaryImageUrl]
-        if (meta) {
-          const fileIdx = queuedFiles.findIndex((f) => f.name === meta.name && f.size === meta.size)
-          if (fileIdx !== -1 && currentUploadedUrls[fileIdx]) {
-            finalPrimaryUrl = currentUploadedUrls[fileIdx]
-          } else {
-            finalPrimaryUrl = ''
-          }
-        } else {
-          finalPrimaryUrl = resolvedImages[0] || ''
-        }
-      } else if (!primaryImageUrl && resolvedImages.length > 0) {
-        finalPrimaryUrl = resolvedImages[0]
-      }
-
-      // 3. Construct Payload
+      // 1. Construct Payload
       const payload = {}
       if (name.trim()) payload.name = name.trim()
       if (shortDescription.trim()) payload.description = shortDescription.trim()
       if (price !== '') payload.price = parseFloat(price)
       if (stock !== '') payload.stock = parseInt(stock, 10)
       if (categoryId !== '') payload.category_id = parseInt(categoryId, 10)
-      if (finalPrimaryUrl) payload.image_url = finalPrimaryUrl
-
-      if (parsedDetails !== '__invalid__') payload.details = parsedDetails
-      const dimsObj = parsedDimensions !== '__invalid__' ? (parsedDimensions || {}) : {}
+      
+      if (parsedDetails) payload.details = parsedDetails
+      const dimsObj = parsedDimensions || {}
       if (sizes && sizes.length) {
         const chart = {}
         sizes.forEach((s) => {
@@ -400,68 +254,53 @@ export default function Edit({ productId: propProductId }) {
       }
       if (Object.keys(dimsObj).length) payload.dimensions = dimsObj
       if (careNotesList && careNotesList.length) payload.care_notes = careNotesList.filter(Boolean)
-      if (parsedSustainability !== '__invalid__') payload.sustainability_notes = parsedSustainability
+      if (parsedSustainability) payload.sustainability_notes = parsedSustainability
       if (variants && variants.length) payload.color_variants = variants.filter((v) => v && (v.name || v.hex))
 
-      console.log('[Edit] Submitting update', { productId, payload })
+      console.log('[New] Creating product', { payload })
 
-      // 4. Update Product
-      const res = await update(productId, payload)
-      console.log('[Edit] Update response', res)
+      // 2. Create Product
+      const res = await create(payload)
+      console.log('[New] Create response', res)
+      
+      const newId = res?.id || (res?.data && res.data.id)
+      if (!newId) throw new Error('Product created but no ID returned')
 
-      // 5. Cleanup
-      setLocalImages(resolvedImages)
-      setPrimaryImageUrl(finalPrimaryUrl || '')
-      setQueuedFiles([])
-      setUploadedFilesMeta([])
-      setBlobMetaByUrl({})
-
-      // Process pending deletes
-      if (pendingDeletes.size > 0) {
-        const deletes = Array.from(pendingDeletes)
-        await Promise.all(deletes.map((u) => remove(productId, u)))
-        setPendingDeletes(new Set())
+      // 3. Upload Images if any
+      let finalPrimaryUrl = ''
+      if (queuedFiles.length) {
+        setUploading(true)
+        try {
+          const uploadResp = await uploadProductImages(newId, queuedFiles)
+          const uploadedUrls = Array.isArray(uploadResp?.images)
+            ? uploadResp.images.map((i) => (typeof i === 'string' ? i : i?.url)).filter(Boolean)
+            : []
+            
+          if (uploadedUrls.length > 0) {
+             finalPrimaryUrl = uploadedUrls[0]
+          }
+        } finally {
+          setUploading(false)
+        }
       }
 
-      if (refetch) {
-        await refetch()
-      }
+      navigate(-1)
     } catch (e) {
-      console.error('[Edit] Update error', e)
+      console.error('[New] Create error', e)
     } finally {
       setPending(false)
     }
   }
 
-  const onCancel = async () => {
-    if (productId && sessionUploadedUrls.length) {
-      try {
-        setPending(true)
-        for (const url of sessionUploadedUrls) {
-          try {
-            await remove(productId, url)
-          } catch {}
-        }
-      } catch {}
-    }
-    setSessionUploadedUrls([])
+  const onCancel = () => {
     navigate(-1)
-    setPending(false)
   }
 
-  const displayedImages = useMemo(() => {
-    const arr = Array.isArray(images) ? images : []
-    const uniq = Array.from(new Set([...(primaryImageUrl ? [primaryImageUrl] : []), ...arr].filter(Boolean)))
-    return uniq
-  }, [images, primaryImageUrl])
-  const additionalImages = useMemo(() => displayedImages.filter((u) => u !== primaryImageUrl), [displayedImages, primaryImageUrl])
-  useEffect(() => {
-    setLocalImages(displayedImages)
-  }, [displayedImages])
   const preventDefaults = (e) => {
     e.preventDefault()
     e.stopPropagation()
   }
+
   const onDropFiles = (e, insertIdx = null) => {
     preventDefaults(e)
     const fl = e.dataTransfer?.files
@@ -482,15 +321,18 @@ export default function Edit({ productId: propProductId }) {
     
     onUploadImages(files, previews)
   }
+
   const browse = (ref) => {
     if (ref?.current) ref.current.click()
   }
+
   const tiles = useMemo(() => {
     const arr = [...localImages]
     const idx = placeholderIndex != null ? Math.min(placeholderIndex, arr.length) : arr.length
     arr.splice(idx, 0, '__placeholder__')
     return arr
   }, [localImages, placeholderIndex])
+
   const TILE_SIZE = 160
   const TILE_GAP = 12
   const scrollByTiles = (n) => {
@@ -502,25 +344,13 @@ export default function Edit({ productId: propProductId }) {
     if (!colorScrollRef?.current) return
     colorScrollRef.current.scrollBy({ left: px, behavior: 'smooth' })
   }
-  const isBlobUrl = (u) => typeof u === 'string' && u.startsWith('blob:')
-  const revokeBlobUrls = (urls) => {
-    try {
-      urls.forEach((u) => {
-        if (isBlobUrl(u)) {
-          try { URL.revokeObjectURL(u) } catch {}
-        }
-      })
-    } catch {}
-  }
 
   return (
     <div className="admin__edit__page">
       <div className="admin__edit__header">
-        <h1 className="admin__edit__title">Edit Products</h1>
+        <h1 className="admin__edit__title">New Product</h1>
         <p className="admin__edit__subtitle">
-          The most important feature in the product editing section is the product adding part.
-          When adding products here, do not ignore to fill all the required fields completely
-          and follow the product adding rules.
+          Add a new product to your store. Fill all required fields.
         </p>
         <div className="admin__edit__header_actions">
           <button
@@ -528,21 +358,21 @@ export default function Edit({ productId: propProductId }) {
             className="admin__edit__btn"
             onClick={onCancel}
           >
-            Back
+            Cancel
           </button>
           <button
             type="submit"
             form="admin__edit__form"
             className="admin__edit__btn admin__edit__btn--update"
-            disabled={pending || updatePending}
+            disabled={pending || createPending}
           >
-            {pending || updatePending ? (
+            {pending || createPending ? (
               <>
                 <Loader size={16} className="btn-spinner" />
-                Updating…
+                Creating…
               </>
             ) : (
-              'Update'
+              'Create'
             )}
           </button>
         </div>
@@ -555,22 +385,24 @@ export default function Edit({ productId: propProductId }) {
                 <div className="form-group">
                   <label className="form-label">Product Name</label>
                   <input
-                    className="form-control"
+                    className={`form-control ${name.length > 50 ? 'is-invalid' : ''}`}
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Enter product name"
                   />
+                  {name.length > 50 && <div className="admin__edit__error">Name too long</div>}
                 </div>
                 <div className="form-group">
                   <label className="form-label">Short Description</label>
                   <input
-                    className="form-control"
+                    className={`form-control ${shortDescription.length > 250 ? 'is-invalid' : ''}`}
                     type="text"
                     value={shortDescription}
                     onChange={(e) => setShortDescription(e.target.value)}
                     placeholder="Short description"
                   />
+                  {shortDescription.length > 250 && <div className="admin__edit__error">Description too long</div>}
                 </div>
                 <div className="admin__edit__sublabel">Please keep these fields short</div>
               </div>
@@ -578,7 +410,7 @@ export default function Edit({ productId: propProductId }) {
               <div className="form-group">
                 <label className="form-label">Category</label>
                 <select
-                  className="form-select"
+                  className={`form-select ${!categoryId ? 'is-invalid' : ''}`}
                   value={categoryId}
                   onChange={(e) => {
                     const val = e.target.value
@@ -590,25 +422,16 @@ export default function Edit({ productId: propProductId }) {
                   <option value="">Select category</option>
               {(() => {
                 const list = Array.isArray(allCategories) ? allCategories : []
-                const hasCurrent = categoryId && list.some((c) => String(c.id) === String(categoryId))
-                return (
-                  <>
-                    {!hasCurrent && categoryId ? (
-                      <option value={String(categoryId)}>
-                        {categoryName || `Category #${categoryId}`}
-                      </option>
-                    ) : null}
-                    {list.map((c) => (
-                      <option key={String(c.id)} value={String(c.id)}>
-                        {c.name || `Category #${c.id}`}
-                      </option>
-                    ))}
-                  </>
-                )
+                return list.map((c) => (
+                  <option key={String(c.id)} value={String(c.id)}>
+                    {c.name || `Category #${c.id}`}
+                  </option>
+                ))
               })()}
                 </select>
                 {categoriesLoading ? <div className="category-hint">Loading categories…</div> : null}
                 {categoriesError ? <div className="category-hint">Failed to load categories</div> : null}
+                {!categoryId && <div className="admin__edit__error">Category is required</div>}
               </div>
 
               <div className="form-group">
@@ -679,7 +502,6 @@ export default function Edit({ productId: propProductId }) {
                         key={t + i}
                         className="image-tile has-image"
                         onClick={() => {
-                          if (deletingSet.has(t)) return
                           setReplaceIndex(i)
                           browse(uploadInputRef)
                         }}
@@ -692,17 +514,10 @@ export default function Edit({ productId: propProductId }) {
                           className="image-remove"
                           onClick={(e) => {
                             e.stopPropagation()
-                            // Update local state IMMEDIATELY
-                            // This ensures the UI feels instant even if the server request is still pending
                             const imgUrl = t;
                             const nextImages = localImages.filter((_, idx) => idx !== i)
                             setLocalImages(nextImages)
                             revokeBlobUrls([imgUrl])
-
-                            // If the removed image was the primary one, promote the first available image immediately
-                            if (imgUrl === primaryImageUrl) {
-                              setPrimaryImageUrl(nextImages.length > 0 ? nextImages[0] : '')
-                            }
 
                             if (isBlobUrl(imgUrl)) {
                               const meta = blobMetaByUrl[imgUrl]
@@ -713,38 +528,16 @@ export default function Edit({ productId: propProductId }) {
                                   delete next[imgUrl]
                                   return next
                                 })
+                                setQueuedFiles(prev => prev.filter(f => !(f.name === meta.name && f.size === meta.size)))
                               }
                             }
-                            setSessionUploadedUrls((prev) => prev.filter((u) => u !== t))
-                            unmarkDeleting(t)
-
-                            ;(async () => {
-                              try {
-                                let didServerDelete = false
-                                // Only attempt server delete if it's NOT a blob URL
-                                if (productId && imgUrl && !isBlobUrl(imgUrl)) {
-                                  try {
-                                    markDeleting(imgUrl)
-                                    await remove(productId, imgUrl)
-                                    didServerDelete = true
-                                  } catch (err) {
-                                    console.error("Failed to delete image", err)
-                                    // Optionally revert UI state here if needed, but for "immediate feel" we usually don't
-                                  }
-                                }
-                              } catch (err) {
-                                console.error("Error in delete process", err)
-                              }
-                            })()
                           }}
-                          aria-label={deletingSet.has(t) ? 'Removing…' : 'Remove image'}
-                          disabled={deletingSet.has(t)}
                         >
-                          {deletingSet.has(t) ? <Loader size={14} className="spin" /> : <X size={14} />}
+                          <X size={14} />
                         </button>
                         <img src={t} alt={`Image ${i + 1}`} />
-                        <div className={deletingSet.has(t) ? 'image-overlay is-active' : 'image-overlay'}>
-                          <span>{deletingSet.has(t) ? 'Removing…' : 'Tap to replace'}</span>
+                        <div className="image-overlay">
+                          <span>Tap to replace</span>
                         </div>
                       </div>
                     )
@@ -761,19 +554,7 @@ export default function Edit({ productId: propProductId }) {
                       const files = Array.from(fl)
                       let previews = []
                       try {
-                        // Create previews immediately for UI responsiveness
                         previews = files.map((f) => URL.createObjectURL(f))
-
-                        if (replaceIndex != null && previews.length) {
-                          const oldUrl = localImages[replaceIndex]
-                          if (oldUrl && !isBlobUrl(oldUrl)) {
-                            setPendingDeletes((pd) => {
-                              const n = new Set(pd)
-                              n.add(oldUrl)
-                              return n
-                            })
-                          }
-                        }
 
                         setBlobMetaByUrl((prev) => {
                           const next = { ...prev }
@@ -797,9 +578,8 @@ export default function Edit({ productId: propProductId }) {
                           }
                           return next
                         })
+                        setQueuedFiles(prev => [...prev, ...files])
                       } catch {}
-                      onUploadImages(files, previews)
-                      setReplaceIndex(null)
                     }}
                   />
                 </div>
@@ -812,9 +592,8 @@ export default function Edit({ productId: propProductId }) {
                       type="button"
                       className="images-btn"
                       onClick={onDeleteAllImages}
-                      disabled={pending || updatePending || uploading || removingAll}
                     >
-                      {removingAll ? (<><Loader size={14} className="btn-spinner" /> Deleting…</>) : 'Delete All'}
+                      Delete All
                     </button>
                   </div>
                 </div>
@@ -1052,7 +831,6 @@ export default function Edit({ productId: propProductId }) {
                 <div className="admin__edit__sublabel">Click an added note to remove it.</div>
               </div>
             </div>
-            {/* Sustainability Notes section removed as it is now handled by Main Description */}
           </div>
         </div>
       </form>
