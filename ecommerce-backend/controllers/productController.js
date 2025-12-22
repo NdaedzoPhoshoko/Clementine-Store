@@ -576,6 +576,13 @@ export const updateProduct = async (req, res) => {
       }
     }
 
+    // Ensure JSONB fields are stringified consistently (matching createProduct)
+    const detailsOut = existing.details !== null ? JSON.stringify(existing.details) : null;
+    const dimensionsOut = existing.dimensions !== null ? JSON.stringify(existing.dimensions) : null;
+    const careNotesOut = existing.care_notes !== null ? JSON.stringify(existing.care_notes) : null;
+    const sustainabilityNotesOut = existing.sustainability_notes !== null ? JSON.stringify(existing.sustainability_notes) : null;
+    const colorVariantsOut = existing.color_variants !== null ? JSON.stringify(existing.color_variants) : null;
+
     const updateQuery = `
       UPDATE products
       SET name=$1, description=$2, price=$3, image_url=$4, stock=$5, category_id=$6, details=$7, dimensions=$8, care_notes=$9, sustainability_notes=$10, color_variants=$11
@@ -589,11 +596,11 @@ export const updateProduct = async (req, res) => {
       existing.image_url,
       existing.stock,
       existing.category_id,
-      existing.details,
-      existing.dimensions,
-      existing.care_notes,
-      existing.sustainability_notes,
-      existing.color_variants,
+      detailsOut,
+      dimensionsOut,
+      careNotesOut,
+      sustainabilityNotesOut,
+      colorVariantsOut,
       id,
     ];
     const result = await pool.query(updateQuery, updateParams);

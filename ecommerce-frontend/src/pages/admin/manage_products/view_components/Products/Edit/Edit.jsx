@@ -5,6 +5,9 @@ import useFetchProductDetails from '../../../../../../hooks/useFetchProductDetai
 import { Save, X, Upload, Image as ImageIcon, CheckCircle, Loader, Palette } from 'lucide-react'
 import { HexColorPicker } from 'react-colorful'
 import useFetchCategoryNames from '../../../../../../hooks/useFetchCategoryNames.js'
+import useUpdateProduct from '../../../../../../hooks/admin_dashboard/products/useUpdateProduct.js'
+import useUploadProductImages from '../../../../../../hooks/admin_dashboard/products/useUploadProductImages.js'
+import useSetPrimaryImage from '../../../../../../hooks/admin_dashboard/products/useSetPrimaryImage.js'
 
 export default function Edit({ productId: propProductId }) {
   const { id } = useParams()
@@ -52,6 +55,9 @@ export default function Edit({ productId: propProductId }) {
   const [localImages, setLocalImages] = useState([])
   const imagesScrollRef = useRef(null)
   const colorScrollRef = useRef(null)
+  const { update, pending: updatePending, error: updateError } = useUpdateProduct()
+  const { upload: uploadProductImages } = useUploadProductImages()
+  const { setPrimary: setPrimaryImage } = useSetPrimaryImage()
 
   useEffect(() => {
     if (!product) return
@@ -109,7 +115,9 @@ export default function Edit({ productId: propProductId }) {
   }, [colorVariants])
 
   useEffect(() => {
-    const sc = Array.isArray(sizeChart) ? sizeChart : []
+    const sc = Array.isArray(sizeChart)
+      ? sizeChart
+      : (sizeChart && typeof sizeChart === 'object' ? Object.keys(sizeChart) : [])
     setSizes(sc)
   }, [sizeChart])
 
@@ -117,13 +125,9 @@ export default function Edit({ productId: propProductId }) {
     const m = material.trim()
     const f = features.filter(x => x && x.trim())
     if (!m && !f.length) return null
-    
-    // Construct features as array of objects for consistency with backend
-    const featuresList = f.map(x => ({ name: 'Feature', value: x.trim() }))
-    
     return {
       material: m,
-      features: featuresList
+      features: f.map(x => x.trim())
     }
   }, [material, features])
 
@@ -141,6 +145,14 @@ export default function Edit({ productId: propProductId }) {
     return { description: sustainabilityText.trim() }
   }, [sustainabilityText])
 
+  const DEFAULT_SIZE_CHART_CM = {
+    XS: '26 cm',
+    S: '28 cm',
+    M: '30 cm',
+    L: '32 cm',
+    XL: '34 cm',
+    '2XL': '36 cm',
+  }
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
 
   const onRemoveSize = (idx) => {
@@ -218,15 +230,7 @@ export default function Edit({ productId: propProductId }) {
     } catch {}
     setUploading(true)
     try {
-      const formData = new FormData()
-      if (files.length === 1) formData.append('image', files[0])
-      else Array.from(files).forEach((f) => formData.append('images', f))
-      const res = await fetch(`http://localhost:5000/api/products/${productId}/images`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        body: formData,
-      })
-      if (!res.ok) throw new Error('Upload failed')
+      await uploadProductImages(productId, files)
       if (uploadInputRef?.current) uploadInputRef.current.value = ''
     } catch (e) {
     } finally {
@@ -238,16 +242,7 @@ export default function Edit({ productId: propProductId }) {
     if (!productId || !url) return
     setPending(true)
     try {
-      const res = await fetch(`http://localhost:5000/api/products/${productId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ image_url: url }),
-      })
-      if (!res.ok) throw new Error('Failed to set primary image')
+      await setPrimaryImage(productId, url)
       setPrimaryImageUrl(url)
     } catch (e) {
     } finally {
@@ -264,27 +259,29 @@ export default function Edit({ productId: propProductId }) {
     if (price !== '') payload.price = parseFloat(price)
     if (stock !== '') payload.stock = parseInt(stock, 10)
     if (categoryId !== '') payload.category_id = parseInt(categoryId, 10)
+    if (primaryImageUrl) payload.image_url = primaryImageUrl
     if (parsedDetails !== '__invalid__') payload.details = parsedDetails
     const dimsObj = parsedDimensions !== '__invalid__' ? (parsedDimensions || {}) : {}
-    if (sizes && sizes.length) dimsObj.size_chart = sizes
+    if (sizes && sizes.length) {
+      const chart = {}
+      sizes.forEach((s) => {
+        const key = String(s).toUpperCase()
+        const val = DEFAULT_SIZE_CHART_CM[key] || null
+        if (val) chart[s] = val
+      })
+      if (Object.keys(chart).length) dimsObj.size_chart = chart
+    }
     if (Object.keys(dimsObj).length) payload.dimensions = dimsObj
     if (careNotesList && careNotesList.length) payload.care_notes = careNotesList.filter(Boolean)
     if (parsedSustainability !== '__invalid__') payload.sustainability_notes = parsedSustainability
     if (variants && variants.length) payload.color_variants = variants.filter((v) => v && (v.name || v.hex))
-
     setPending(true)
     try {
-      const res = await fetch(`http://localhost:5000/api/products/${productId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(payload),
-      })
-      if (!res.ok) throw new Error('Update failed')
+      console.log('[Edit] Submitting update', { productId, payload })
+      const res = await update(productId, payload)
+      console.log('[Edit] Update response', res)
     } catch (e) {
+      console.error('[Edit] Update error', e)
     } finally {
       setPending(false)
     }
@@ -356,11 +353,19 @@ export default function Edit({ productId: propProductId }) {
             type="submit"
             form="admin__edit__form"
             className="admin__edit__btn admin__edit__btn--update"
-            disabled={pending}
+            disabled={pending || updatePending}
           >
-            Update
+            {pending || updatePending ? (
+              <>
+                <Loader size={16} className="btn-spinner" />
+                Updating…
+              </>
+            ) : (
+              'Update'
+            )}
           </button>
         </div>
+        {(pending || updatePending) ? <div className="update-hint">Submitting product update…</div> : null}
       </div>
       <form id="admin__edit__form" className="admin__edit__form" onSubmit={onSubmit}>
           <div className="admin__edit__body">
