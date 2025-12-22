@@ -339,6 +339,23 @@ export default function Edit({ productId: propProductId }) {
           When adding products here, do not ignore to fill all the required fields completely
           and follow the product adding rules.
         </p>
+        <div className="admin__edit__header_actions">
+          <button
+            type="button"
+            className="admin__edit__btn"
+            onClick={onCancel}
+          >
+            Back
+          </button>
+          <button
+            type="submit"
+            form="admin__edit__form"
+            className="admin__edit__btn admin__edit__btn--update"
+            disabled={pending}
+          >
+            Update
+          </button>
+        </div>
       </div>
       <form id="admin__edit__form" className="admin__edit__form" onSubmit={onSubmit}>
           <div className="admin__edit__body">

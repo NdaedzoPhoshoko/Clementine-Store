@@ -385,3 +385,32 @@
   flex-direction: column;
   gap: 0.5rem;
 }
+
+.admin__edit__header_actions {
+  display: flex;
+  gap: .75rem;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: .75rem;
+}
+.admin__edit__btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  padding: .5rem .85rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity .15s ease;
+}
+.admin__edit__btn:hover {
+  color: inherit;
+  opacity: .85;
+}
+.admin__edit__btn:disabled {
+  cursor: not-allowed;
+  opacity: .6;
+}
+.admin__edit__btn--update {
+  color: var(--color-accent);
+}
