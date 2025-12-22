@@ -346,3 +346,13 @@
   .image-drop-stack { flex: 0 0 auto; }
   .admin__images_row { flex-direction: column; }
 }
+
+/* Feature text items */
+.feature-text-item {
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.feature-text-item:hover {
+  color: #ef4444;
+  text-decoration: line-through;
+}

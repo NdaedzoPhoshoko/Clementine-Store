@@ -13,12 +13,15 @@ export default function Edit({ productId: propProductId }) {
     useFetchProductDetails({ productId, enabled: true })
 
   const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
   const [price, setPrice] = useState('')
   const [stock, setStock] = useState('')
   const [categoryId, setCategoryId] = useState('')
 
-  const [detailsText, setDetailsText] = useState('')
+  // Details fields
+  const [material, setMaterial] = useState('')
+  const [features, setFeatures] = useState([])
+  const [newFeature, setNewFeature] = useState('')
+
   const [dimensionsText, setDimensionsText] = useState('')
   const [sustainabilityText, setSustainabilityText] = useState('')
   const [careNotesList, setCareNotesList] = useState([])
@@ -28,7 +31,7 @@ export default function Edit({ productId: propProductId }) {
   const [newSize, setNewSize] = useState('')
   const [shortDescription, setShortDescription] = useState('')
   const [newVariantName, setNewVariantName] = useState('')
-  const [newVariantHex, setNewVariantHex] = useState('#000000')
+  const [newVariantHex, setNewVariantHex] = useState('#293b0c')
   const DEFAULT_SIZE_OPTIONS = ['XS', 'S', 'M', 'L', 'XL', '2XL']
 
   const [primaryImageUrl, setPrimaryImageUrl] = useState('')
@@ -45,14 +48,39 @@ export default function Edit({ productId: propProductId }) {
   useEffect(() => {
     if (!product) return
     setName(product.name || '')
-    setDescription(product.description || '')
+    setShortDescription(product.description || '')
     setPrice(product.price != null ? String(product.price) : '')
     setStock(product.stock != null ? String(product.stock) : '')
     setCategoryId(product.category_id != null ? String(product.category_id) : '')
     setPrimaryImageUrl(product.image_url || '')
-    setDetailsText(product.details ? JSON.stringify(product.details, null, 2) : '')
+    
+    // Parse details
+    if (product.details) {
+      setMaterial(product.details.material || '')
+      if (Array.isArray(product.details.features)) {
+        // Handle if features is array of strings (legacy) or objects
+        setFeatures(product.details.features.map(f => {
+          if (typeof f === 'string') return f
+          return f.value || ''
+        }))
+      } else if (typeof product.details.features === 'object' && product.details.features !== null) {
+        // Handle if features is an object (key-value)
+        setFeatures(Object.entries(product.details.features).map(([k, v]) => String(v)))
+      } else {
+        setFeatures([])
+      }
+    } else {
+      setMaterial('')
+      setFeatures([])
+    }
+
     setDimensionsText(product.dimensions ? JSON.stringify(product.dimensions, null, 2) : '')
-    setSustainabilityText(product.sustainability_notes ? JSON.stringify(product.sustainability_notes, null, 2) : '')
+    // Extract description from sustainability_notes JSON
+    if (product.sustainability_notes && typeof product.sustainability_notes === 'object') {
+      setSustainabilityText(product.sustainability_notes.description || '')
+    } else {
+      setSustainabilityText('')
+    }
   }, [product])
 
   useEffect(() => {
@@ -69,13 +97,18 @@ export default function Edit({ productId: propProductId }) {
   }, [sizeChart])
 
   const parsedDetails = useMemo(() => {
-    try {
-      if (!detailsText.trim()) return null
-      return JSON.parse(detailsText)
-    } catch {
-      return '__invalid__'
+    const m = material.trim()
+    const f = features.filter(x => x && x.trim())
+    if (!m && !f.length) return null
+    
+    // Construct features as array of objects for consistency with backend
+    const featuresList = f.map(x => ({ name: 'Feature', value: x.trim() }))
+    
+    return {
+      material: m,
+      features: featuresList
     }
-  }, [detailsText])
+  }, [material, features])
 
   const parsedDimensions = useMemo(() => {
     try {
@@ -87,12 +120,9 @@ export default function Edit({ productId: propProductId }) {
   }, [dimensionsText])
 
   const parsedSustainability = useMemo(() => {
-    try {
-      if (!sustainabilityText.trim()) return null
-      return JSON.parse(sustainabilityText)
-    } catch {
-      return '__invalid__'
-    }
+    // Return null if empty so it doesn't try to save
+    if (!sustainabilityText.trim()) return null
+    return { description: sustainabilityText.trim() }
   }, [sustainabilityText])
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
@@ -110,6 +140,17 @@ export default function Edit({ productId: propProductId }) {
   const onToggleSize = (s) => {
     const exists = sizes.includes(s)
     setSizes(exists ? sizes.filter((x) => x !== s) : [...sizes, s])
+  }
+
+  const onAddFeature = () => {
+    const val = newFeature.trim()
+    if (!val) return
+    setFeatures([...features, val])
+    setNewFeature('')
+  }
+
+  const onRemoveFeature = (idx) => {
+    setFeatures(features.filter((_, i) => i !== idx))
   }
 
   const onAddCareNote = () => {
@@ -205,7 +246,7 @@ export default function Edit({ productId: propProductId }) {
     if (parsedDetails === '__invalid__' || parsedDimensions === '__invalid__' || parsedSustainability === '__invalid__') return
     const payload = {}
     if (name.trim()) payload.name = name.trim()
-    if (description.trim()) payload.description = description.trim()
+    if (shortDescription.trim()) payload.description = shortDescription.trim()
     if (price !== '') payload.price = parseFloat(price)
     if (stock !== '') payload.stock = parseInt(stock, 10)
     if (categoryId !== '') payload.category_id = parseInt(categoryId, 10)
@@ -333,13 +374,13 @@ export default function Edit({ productId: propProductId }) {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Description</label>
+                <label className="form-label">Main Description</label>
                 <textarea
                   className="form-control"
                   rows={5}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Write a brief description"
+                  value={sustainabilityText}
+                  onChange={(e) => setSustainabilityText(e.target.value)}
+                  placeholder="Write a main description"
                 />
                 <div className="admin__edit__sublabel">Please do not exceed 250 characters</div>
               </div>
@@ -574,15 +615,50 @@ export default function Edit({ productId: propProductId }) {
             </div>
             <div className="form-row form-row--dual admin__edit__fullrow">
               <div className="form-group">
-                <label className="form-label">Details (JSON)</label>
-                <textarea
-                  className="form-control"
-                  rows={6}
-                  value={detailsText}
-                  onChange={(e) => setDetailsText(e.target.value)}
-                  placeholder='{"material":"cotton","fit":"regular"}'
-                />
-                <div className="admin__edit__sublabel">Provide valid JSON for product details</div>
+                <label className="form-label">Material</label>
+                <div className="selector-row" style={{ marginBottom: '10px' }}>
+                  <input
+                    className="form-control"
+                    type="text"
+                    placeholder="e.g. Cotton"
+                    value={material}
+                    onChange={(e) => setMaterial(e.target.value)}
+                  />
+                </div>
+                <label className="form-label" style={{ fontSize: '0.85rem', color: '#666', marginTop: '5px' }}>Features</label>
+                <div className="selector-row">
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Feature value (e.g. Waterproof)"
+                    value={newFeature}
+                    onChange={(e) => setNewFeature(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), onAddFeature())}
+                    style={{ flex: 1 }}
+                  />
+                  <button type="button" className="btn-add-note" onClick={onAddFeature}>Add</button>
+                </div>
+                
+                <div style={{ marginTop: '0.75rem' }}>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--color-text)', lineHeight: '1.5' }}>
+                    <span style={{ fontWeight: 600 }}>Features: </span>
+                    {features.length > 0 ? (
+                      features.map((f, idx) => (
+                        <span 
+                          key={idx} 
+                          className="feature-text-item"
+                          onClick={() => onRemoveFeature(idx)}
+                          title="Click to remove"
+                        >
+                          {f}{idx < features.length - 1 ? ', ' : ''}
+                        </span>
+                      ))
+                    ) : (
+                      <span style={{ color: 'var(--color-muted)', fontStyle: 'italic' }}>None</span>
+                    )}
+                  </div>
+                  <div className="admin__edit__sublabel">Click an added feature to remove it.</div>
+                </div>
               </div>
               <div className="form-group">
                 <label className="form-label">Dimensions (JSON)</label>
@@ -618,17 +694,7 @@ export default function Edit({ productId: propProductId }) {
                 <button type="button" className="btn-add-note" onClick={onAddCareNote}>Add Note</button>
               </div>
             </div>
-            <div className="form-group admin__edit__fullrow">
-              <label className="form-label">Sustainability Notes (JSON)</label>
-              <textarea
-                className="form-control"
-                rows={6}
-                value={sustainabilityText}
-                onChange={(e) => setSustainabilityText(e.target.value)}
-                placeholder='{"recycled_materials":true,"certifications":["GOTS"]}'
-              />
-              <div className="admin__edit__sublabel">Provide valid JSON for sustainability info</div>
-            </div>
+            {/* Sustainability Notes section removed as it is now handled by Main Description */}
           </div>
         </div>
       </form>

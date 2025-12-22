@@ -1,3 +1,21 @@
 Add success/error toasts on save and upload.
 
 diting this page must also update the path of the r\url there to show that it is is editing "/editproduct
+
+"details": {
+      "features": [
+        "breathable",
+        "durable"
+      ],
+      "material": "cotton"
+    },
+    "dimensions": {
+      "width": "5cm",
+      "height": "2cm",
+      "length": "10cm"
+    },
+    "care_notes": [
+      "Machine wash cold",
+      "Tumble dry low",
+      "Do not bleach"
+    ]
