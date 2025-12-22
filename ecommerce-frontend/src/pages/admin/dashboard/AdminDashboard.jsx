@@ -209,11 +209,11 @@ export default function AdminDashboard() {
           </div>
           <div className="admin_dashboard__grid">
             {[
-              { key: 'orders', label: 'Order Management', to: '/admin-orders' },
-              { key: 'inventory', label: 'Product/Inventory', to: '/admin-product_management' },
-              { key: 'customers', label: 'Customers', to: '/admin-customers' },
-              { key: 'analytics', label: 'Analytics/Reporting', to: '/admin-analytics' },
-              { key: 'marketing', label: 'Marketing', to: '/admin-marketing' },
+              { key: 'orders', label: 'Order Management', to: '/admin/orders' },
+              { key: 'inventory', label: 'Product/Inventory', to: '/admin/product_management' },
+              { key: 'customers', label: 'Customers', to: '/admin/customers' },
+              { key: 'analytics', label: 'Analytics/Reporting', to: '/admin/analytics' },
+              { key: 'marketing', label: 'Marketing', to: '/admin/marketing' },
               { key: 'settings', label: 'Settings', to: '/admin/settings' },
             ].map((c) => (
               <Link key={c.key} to={c.to} className="admin_dashboard__control_card">
