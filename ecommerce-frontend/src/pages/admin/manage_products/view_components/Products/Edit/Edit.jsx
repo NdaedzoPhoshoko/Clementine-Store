@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import useFetchProductDetails from '../../../../../../hooks/useFetchProductDetails'
 import { Save, X, Upload, Image as ImageIcon, CheckCircle, Loader, Palette } from 'lucide-react'
 import { HexColorPicker } from 'react-colorful'
+import useFetchCategoryNames from '../../../../../../hooks/useFetchCategoryNames.js'
 
 export default function Edit({ productId: propProductId }) {
   const { id } = useParams()
@@ -16,6 +17,9 @@ export default function Edit({ productId: propProductId }) {
   const [price, setPrice] = useState('')
   const [stock, setStock] = useState('')
   const [categoryId, setCategoryId] = useState('')
+  const [categoryName, setCategoryName] = useState('')
+
+  const { categories: allCategories, loading: categoriesLoading, error: categoriesError } = useFetchCategoryNames({ page: 1, limit: 100 })
 
   // Details fields
   const [material, setMaterial] = useState('')
@@ -55,7 +59,8 @@ export default function Edit({ productId: propProductId }) {
     setShortDescription(product.description || '')
     setPrice(product.price != null ? String(product.price) : '')
     setStock(product.stock != null ? String(product.stock) : '')
-    setCategoryId(product.category_id != null ? String(product.category_id) : '')
+    setCategoryId(product.category_id != null ? String(product.category_id) : (category?.id != null ? String(category.id) : ''))
+    setCategoryName(category?.name ?? '')
     setPrimaryImageUrl(product.image_url || '')
     
     // Parse details
@@ -390,13 +395,35 @@ export default function Edit({ productId: propProductId }) {
                 <select
                   className="form-select"
                   value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value
+                    setCategoryId(val)
+                    const found = (Array.isArray(allCategories) ? allCategories : []).find((c) => String(c.id) === String(val))
+                    setCategoryName(found?.name ?? '')
+                  }}
                 >
                   <option value="">Select category</option>
-                  {category?.id != null && (
-                    <option value={String(category.id)}>{category?.name ?? `Category #${category.id}`}</option>
-                  )}
+              {(() => {
+                const list = Array.isArray(allCategories) ? allCategories : []
+                const hasCurrent = categoryId && list.some((c) => String(c.id) === String(categoryId))
+                return (
+                  <>
+                    {!hasCurrent && categoryId ? (
+                      <option value={String(categoryId)}>
+                        {categoryName || `Category #${categoryId}`}
+                      </option>
+                    ) : null}
+                    {list.map((c) => (
+                      <option key={String(c.id)} value={String(c.id)}>
+                        {c.name || `Category #${c.id}`}
+                      </option>
+                    ))}
+                  </>
+                )
+              })()}
                 </select>
+                {categoriesLoading ? <div className="category-hint">Loading categories…</div> : null}
+                {categoriesError ? <div className="category-hint">Failed to load categories</div> : null}
               </div>
 
               <div className="form-group">

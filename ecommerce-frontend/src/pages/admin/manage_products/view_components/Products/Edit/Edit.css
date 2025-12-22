@@ -414,3 +414,9 @@
 .admin__edit__btn--update {
   color: var(--color-accent);
 }
+
+.category-hint {
+  margin-top: .25rem;
+  font-size: .85rem;
+  color: var(--color-muted);
+}
