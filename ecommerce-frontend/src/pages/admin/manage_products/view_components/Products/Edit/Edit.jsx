@@ -10,6 +10,7 @@ import useUploadProductImages from '../../../../../../hooks/admin_dashboard/prod
 import useSetPrimaryImage from '../../../../../../hooks/admin_dashboard/products/useSetPrimaryImage.js'
 import useDeleteAllProductImages from '../../../../../../hooks/admin_dashboard/products/useDeleteAllProductImages.js'
 import useDeleteProductImage from '../../../../../../hooks/admin_dashboard/products/useDeleteProductImage.js'
+import ErrorModal from '../../../../../../components/modals/ErrorModal.jsx'
 
 export default function Edit({ productId: propProductId }) {
   const { id } = useParams()
@@ -18,8 +19,12 @@ export default function Edit({ productId: propProductId }) {
   const { product, category, images, details, dimensions, sizeChart, careNotes, sustainabilityNotes, colorVariants, loading, error, refetch } =
     useFetchProductDetails({ productId, enabled: true })
 
+  const [showErrors, setShowErrors] = useState(false)
+  const [errorModalMessage, setErrorModalMessage] = useState('')
+
   const [name, setName] = useState('')
   const [price, setPrice] = useState('')
+
   const [stock, setStock] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [categoryName, setCategoryName] = useState('')
@@ -44,7 +49,7 @@ export default function Edit({ productId: propProductId }) {
   const [newSize, setNewSize] = useState('')
   const [shortDescription, setShortDescription] = useState('')
   const [newVariantName, setNewVariantName] = useState('')
-  const [newVariantHex, setNewVariantHex] = useState('#293b0c')
+  const [newVariantHex, setNewVariantHex] = useState('#5f9ae2')
   const DEFAULT_SIZE_OPTIONS = ['XS', 'S', 'M', 'L', 'XL', '2XL']
 
   const [primaryImageUrl, setPrimaryImageUrl] = useState('')
@@ -327,6 +332,20 @@ export default function Edit({ productId: propProductId }) {
 
   const onSubmit = async (e) => {
     e.preventDefault()
+    setShowErrors(true)
+    
+    if (!name.trim()) return
+    if (!categoryId) return
+    if (price === '') return
+    if (stock === '') return
+    
+    // Check if we have any images (either existing or queued)
+    const hasImages = localImages.length > 0 || queuedFiles.length > 0
+    if (!hasImages) {
+        setErrorModalMessage('At least one image is required')
+        return
+    }
+
     if (parsedDetails === '__invalid__' || parsedDimensions === '__invalid__' || parsedSustainability === '__invalid__') return
 
     setPending(true)
@@ -428,6 +447,7 @@ export default function Edit({ productId: propProductId }) {
       }
     } catch (e) {
       console.error('[Edit] Update error', e)
+      setErrorModalMessage('Failed to update product. Please try again.')
     } finally {
       setPending(false)
     }
@@ -553,7 +573,7 @@ export default function Edit({ productId: propProductId }) {
             <div className="admin__edit__left">
               <div className="form-row form-row--dual">
                 <div className="form-group">
-                  <label className="form-label">Product Name</label>
+                  <label className="form-label">Product Name{(showErrors && !name.trim()) && <span className="error-star">*</span>}</label>
                   <input
                     className="form-control"
                     type="text"
@@ -576,7 +596,7 @@ export default function Edit({ productId: propProductId }) {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Category</label>
+                <label className="form-label">Category{(showErrors && !categoryId) && <span className="error-star">*</span>}</label>
                 <select
                   className="form-select"
                   value={categoryId}
@@ -626,7 +646,7 @@ export default function Edit({ productId: propProductId }) {
 
             <div className="admin__edit__right">
               <div className="form-row">
-                <label className="form-label">Product Images</label>
+                <label className="form-label">Product Images{(showErrors && !localImages.length) && <span className="error-star">*</span>}</label>
                 <div
                   className="images-scroll"
                   ref={imagesScrollRef}
@@ -826,7 +846,7 @@ export default function Edit({ productId: propProductId }) {
             </div>
             <div className="form-row form-row--dual admin__edit__fullrow">
               <div className="form-group">
-                <label className="form-label">Price</label>
+                <label className="form-label">Price{(showErrors && price === '') && <span className="error-star">*</span>}</label>
                 <input
                   className="form-control"
                   type="number"
@@ -839,7 +859,7 @@ export default function Edit({ productId: propProductId }) {
                 <div className="admin__edit__sublabel">Use numeric value, e.g. 49.99</div>
               </div>
               <div className="form-group">
-                <label className="form-label">Stock</label>
+                <label className="form-label">Stock{(showErrors && stock === '') && <span className="error-star">*</span>}</label>
                 <input
                   className="form-control"
                   type="number"
@@ -1056,6 +1076,12 @@ export default function Edit({ productId: propProductId }) {
           </div>
         </div>
       </form>
+      {errorModalMessage && (
+        <ErrorModal
+          message={errorModalMessage}
+          onClose={() => setErrorModalMessage('')}
+        />
+      )}
     </div>
   )
 }

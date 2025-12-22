@@ -7,12 +7,16 @@ import useFetchCategoryNames from '../../../../../../hooks/useFetchCategoryNames
 import useCreateProduct from '../../../../../../hooks/admin_dashboard/products/useCreateProduct.js'
 import useUploadProductImages from '../../../../../../hooks/admin_dashboard/products/useUploadProductImages.js'
 import UploadImages from './UploadImages.jsx'
+import ErrorModal from '../../../../../../components/modals/ErrorModal.jsx'
 
 export default function New() {
   const navigate = useNavigate()
   
   // State
   const [createdProductId, setCreatedProductId] = useState(null)
+  const [showErrors, setShowErrors] = useState(false)
+  const [errorModalMessage, setErrorModalMessage] = useState('')
+
   const [name, setName] = useState('')
   const [price, setPrice] = useState('')
   const [stock, setStock] = useState('')
@@ -39,7 +43,7 @@ export default function New() {
   const [newSize, setNewSize] = useState('')
   const [shortDescription, setShortDescription] = useState('')
   const [newVariantName, setNewVariantName] = useState('')
-  const [newVariantHex, setNewVariantHex] = useState('#293b0c')
+  const [newVariantHex, setNewVariantHex] = useState('#5f9ae2')
   const DEFAULT_SIZE_OPTIONS = ['XS', 'S', 'M', 'L', 'XL', '2XL']
 
   // Image handling: Single thumbnail only
@@ -181,15 +185,19 @@ export default function New() {
 
   const onSubmit = async (e) => {
     e.preventDefault()
+    setShowErrors(true)
+
     // Validations
     if (!name.trim()) return
     if (name.length > 50) return
     if (shortDescription.length > 250) return
     if (!categoryId) return
+    if (price === '') return
+    if (stock === '') return
     
     // Image validation
     if (!queuedFiles.length) {
-      alert('Image file is required')
+      setErrorModalMessage('Image file is required')
       return
     }
 
@@ -236,6 +244,7 @@ export default function New() {
       setCreatedProductId(newId)
     } catch (e) {
       console.error('[New] Create error', e)
+      setErrorModalMessage('Failed to create product. Please try again.')
     } finally {
       setPending(false)
     }
@@ -302,7 +311,7 @@ export default function New() {
             <div className="admin__edit__left">
               <div className="form-row form-row--dual">
                 <div className="form-group">
-                  <label className="form-label">Product Name</label>
+                  <label className="form-label">Product Name{(showErrors && !name.trim()) && <span className="error-star">*</span>}</label>
                   <input
                     className={`form-control ${name.length > 50 ? 'is-invalid' : ''}`}
                     type="text"
@@ -327,7 +336,7 @@ export default function New() {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Category</label>
+                <label className="form-label">Category{(showErrors && !categoryId) && <span className="error-star">*</span>}</label>
                 <select
                   className={`form-select ${!categoryId ? 'is-invalid' : ''}`}
                   value={categoryId}
@@ -350,7 +359,7 @@ export default function New() {
                 </select>
                 {categoriesLoading ? <div className="category-hint">Loading categories…</div> : null}
                 {categoriesError ? <div className="category-hint">Failed to load categories</div> : null}
-                {!categoryId && <div className="admin__edit__error">Category is required</div>}
+                {!categoryId && <div className="admin__edit__error">Category is required. To assign a new category you will nee to add it first.</div>}
               </div>
 
               <div className="form-group">
@@ -368,7 +377,7 @@ export default function New() {
 
             <div className="admin__edit__right">
               <div className="form-row">
-                <label className="form-label">Product Thumbnail</label>
+                <label className="form-label">Product Thumbnail{(showErrors && !queuedFiles.length) && <span className="error-star">*</span>}</label>
                 <div 
                   className="image-tile-single"
                   onClick={() => !primaryImageUrl && browse(uploadInputRef)}
@@ -426,33 +435,33 @@ export default function New() {
                 </div>
               </div>
 
-            </div>
-            <div className="form-row form-row--dual admin__edit__fullrow">
-              <div className="form-group">
-                <label className="form-label">Price</label>
-                <input
-                  className="form-control"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  placeholder="Enter price"
-                />
-                <div className="admin__edit__sublabel">Use numeric value, e.g. 49.99</div>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Stock</label>
-                <input
-                  className="form-control"
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={stock}
-                  onChange={(e) => setStock(e.target.value)}
-                  placeholder="Enter stock quantity"
-                />
-                <div className="admin__edit__sublabel">Units available in inventory</div>
+              <div className="form-row form-row--dual">
+                <div className="form-group">
+                  <label className="form-label">Price{(showErrors && price === '') && <span className="error-star">*</span>}</label>
+                  <input
+                    className="form-control"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    placeholder="Enter price"
+                  />
+                  <div className="admin__edit__sublabel">Use numeric value, e.g. 49.99</div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Stock{(showErrors && stock === '') && <span className="error-star">*</span>}</label>
+                  <input
+                    className="form-control"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={stock}
+                    onChange={(e) => setStock(e.target.value)}
+                    placeholder="Enter stock quantity"
+                  />
+                  <div className="admin__edit__sublabel">Units available in inventory</div>
+                </div>
               </div>
             </div>
             <div className="form-row form-row--dual admin__edit__fullrow">
@@ -658,6 +667,12 @@ export default function New() {
           </div>
         </div>
       </form>
+      {errorModalMessage && (
+        <ErrorModal
+          message={errorModalMessage}
+          onClose={() => setErrorModalMessage('')}
+        />
+      )}
     </div>
   )
 }

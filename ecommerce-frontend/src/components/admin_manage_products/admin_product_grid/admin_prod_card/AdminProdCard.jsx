@@ -41,7 +41,7 @@ export default function AdminProdCard({ product = {}, onEdit, onView }) {
           onClick={() => onView && onView(id)}
           onMouseUp={(e) => e.currentTarget.blur()}
         >
-          <Eye size={18} />
+          <Eye size={18}/>
         </button>
       </div>
       <div className="admin__admin_prod_card_body">

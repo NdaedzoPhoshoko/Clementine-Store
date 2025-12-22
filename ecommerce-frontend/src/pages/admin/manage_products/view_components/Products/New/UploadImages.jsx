@@ -2,11 +2,15 @@ import React, { useState, useRef } from 'react'
 import { Upload, X, Loader } from 'lucide-react'
 import useUploadProductImages from '../../../../../../hooks/admin_dashboard/products/useUploadProductImages.js'
 import './New.css'
+import SuccessModal from '../../../../../../components/modals/success_modal/SuccessModal.jsx'
+import ErrorModal from '../../../../../../components/modals/ErrorModal.jsx'
 
 export default function UploadImages({ productId, onComplete }) {
   const [queuedFiles, setQueuedFiles] = useState([])
   const [previews, setPreviews] = useState([])
   const [uploading, setUploading] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [errorModalMessage, setErrorModalMessage] = useState('')
   const uploadInputRef = useRef(null)
   const imagesScrollRef = useRef(null)
   
@@ -39,11 +43,15 @@ export default function UploadImages({ productId, onComplete }) {
 
     setUploading(true)
     try {
-      await upload(productId, queuedFiles)
-      onComplete()
+      const res = await upload(productId, queuedFiles)
+      if (res) {
+        setShowSuccessModal(true)
+      } else {
+        throw new Error('Upload returned null')
+      }
     } catch (e) {
       console.error('Upload failed', e)
-      alert('Upload failed, please try again.')
+      setErrorModalMessage('Upload failed, please try again.')
     } finally {
       setUploading(false)
     }
@@ -59,7 +67,7 @@ export default function UploadImages({ productId, onComplete }) {
        <div className="admin__edit__header">
         <h1 className="admin__edit__title">Upload Additional Images</h1>
         <p className="admin__edit__subtitle">
-          Add more images to your product. These will appear in the product gallery.
+          Add more images to your product. These will appear in the product gallery. You can choose to skip and assign the images later.
         </p>
         <div className="admin__edit__header_actions">
             <button
@@ -93,6 +101,20 @@ export default function UploadImages({ productId, onComplete }) {
             <label className="form-label">Product Images</label>
             
             <div className="images-scroll" ref={imagesScrollRef}>
+                {/* Previews */}
+                {previews.map((url, idx) => (
+                    <div key={idx} className="image-tile has-image">
+                        <button
+                          type="button"
+                          className="image-remove"
+                          onClick={() => onRemoveFile(idx)}
+                        >
+                          <X size={14} />
+                        </button>
+                        <img src={url} alt={`Preview ${idx}`} />
+                    </div>
+                ))}
+
                  {/* Upload Tile */}
                 <div 
                   className="image-tile placeholder"
@@ -111,20 +133,6 @@ export default function UploadImages({ productId, onComplete }) {
                     onChange={onSelectFiles}
                   />
                 </div>
-
-                {/* Previews */}
-                {previews.map((url, idx) => (
-                    <div key={idx} className="image-tile has-image">
-                        <button
-                          type="button"
-                          className="image-remove"
-                          onClick={() => onRemoveFile(idx)}
-                        >
-                          <X size={14} />
-                        </button>
-                        <img src={url} alt={`Preview ${idx}`} />
-                    </div>
-                ))}
             </div>
 
              <div className="images-controls">
@@ -138,6 +146,23 @@ export default function UploadImages({ productId, onComplete }) {
               </div>
         </div>
       </div>
+      
+      <SuccessModal
+        open={showSuccessModal}
+        title="Images Uploaded"
+        message="Product images have been successfully uploaded."
+        onClose={() => {
+          setShowSuccessModal(false)
+          onComplete()
+        }}
+      />
+      
+      {errorModalMessage && (
+        <ErrorModal
+          message={errorModalMessage}
+          onClose={() => setErrorModalMessage('')}
+        />
+      )}
     </div>
   )
 }

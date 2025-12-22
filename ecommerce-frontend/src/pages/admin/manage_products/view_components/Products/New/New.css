@@ -59,6 +59,7 @@
 .admin__edit__page .form-control,
 .admin__edit__page .form-select {
   border-radius: 0;
+  border: 1px solid var(--color-border) !important;
 }
 .admin__edit__page textarea.form-control {
   min-height: 120px;
@@ -462,11 +463,16 @@
 }
 
 .admin__edit__error {
-  color: #ef4444;
+  /* color: #ef4444; */
   font-size: 0.8rem;
   margin-top: 0.25rem;
 }
 .form-control.is-invalid,
 .form-select.is-invalid {
   border-color: #ef4444;
+}
+
+.error-star {
+  color: #ef4444;
+  margin-right: 4px;
 }

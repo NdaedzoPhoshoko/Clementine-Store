@@ -70,6 +70,7 @@
   z-index: 2;
   opacity: 0;
   transform: translateY(-2px);
+  display: none;
 }
 .admin__admin_prod_card_card:hover .admin__admin_prod_card_edit,
 .admin__admin_prod_card_edit:focus-visible {

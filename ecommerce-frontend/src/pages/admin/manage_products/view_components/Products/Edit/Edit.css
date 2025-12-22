@@ -65,6 +65,16 @@
   resize: vertical;
 }
 
+.form-control.is-invalid,
+.form-select.is-invalid {
+  border-color: #ef4444;
+}
+
+.error-star {
+  color: #ef4444;
+  margin-right: 4px;
+}
+
 /* Images: single-row horizontal scroller with fixed-size tiles */
 .images-scroll {
   display: flex;
