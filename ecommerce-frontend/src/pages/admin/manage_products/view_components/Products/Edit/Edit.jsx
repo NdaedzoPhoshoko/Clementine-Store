@@ -50,6 +50,7 @@ export default function Edit({ productId: propProductId }) {
   const [uploading, setUploading] = useState(false)
   const uploadInputRef = useRef(null)
   const [uploadedPreviews, setUploadedPreviews] = useState([])
+  const [uploadedFilesMeta, setUploadedFilesMeta] = useState([])
   const [placeholderIndex, setPlaceholderIndex] = useState(null)
   const [replaceIndex, setReplaceIndex] = useState(null)
   const [localImages, setLocalImages] = useState([])
@@ -225,12 +226,32 @@ export default function Edit({ productId: propProductId }) {
   const onUploadImages = async (files) => {
     if (!productId || !files?.length) return
     try {
-      const urls = Array.from(files).map((f) => URL.createObjectURL(f))
+      const all = Array.from(files)
+      const newFiles = all.filter((f) => !uploadedFilesMeta.some((m) => m.name === f.name && m.size === f.size))
+      if (!newFiles.length) return
+      const urls = newFiles.map((f) => URL.createObjectURL(f))
       setUploadedPreviews((prev) => [...prev, ...urls])
     } catch {}
     setUploading(true)
     try {
-      await uploadProductImages(productId, files)
+      const all = Array.from(files)
+      const newFiles = all.filter((f) => !uploadedFilesMeta.some((m) => m.name === f.name && m.size === f.size))
+      if (!newFiles.length) return
+      const resp = await uploadProductImages(productId, newFiles)
+      const uploadedUrls = Array.isArray(resp?.images)
+        ? resp.images.map((i) => (typeof i === 'string' ? i : i?.url)).filter(Boolean)
+        : []
+      if (uploadedUrls.length) {
+        setLocalImages((prev) => {
+          const set = new Set(prev)
+          uploadedUrls.forEach((u) => set.add(u))
+          return Array.from(set)
+        })
+      }
+      setUploadedFilesMeta((prev) => [
+        ...prev,
+        ...newFiles.map((f) => ({ name: f.name, size: f.size })),
+      ])
       if (uploadInputRef?.current) uploadInputRef.current.value = ''
     } catch (e) {
     } finally {

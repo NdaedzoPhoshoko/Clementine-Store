@@ -687,11 +687,19 @@ export const uploadProductImage = async (req, res) => {
         return res.status(500).json({ message: "Upload failed: no URL returned" });
       }
 
-      await pool.query(
-        "INSERT INTO product_images (product_id, image_url, public_id) VALUES ($1, $2, $3)",
-        [id, secureUrl, publicId || null]
+      const currentPrimary = existingRes.rows[0].image_url;
+      const dupCheck = await pool.query(
+        "SELECT 1 FROM product_images WHERE product_id=$1 AND (image_url=$2 OR (public_id IS NOT NULL AND public_id=$3)) LIMIT 1",
+        [id, secureUrl, publicId || ""]
       );
-      uploaded.push({ url: secureUrl, public_id: publicId });
+      const isDuplicate = dupCheck.rows.length > 0 || (currentPrimary && currentPrimary === secureUrl);
+      if (!isDuplicate) {
+        await pool.query(
+          "INSERT INTO product_images (product_id, image_url, public_id) VALUES ($1, $2, $3)",
+          [id, secureUrl, publicId || null]
+        );
+        uploaded.push({ url: secureUrl, public_id: publicId });
+      }
     }
 
     // Set primary image if none exists yet using the first uploaded image
