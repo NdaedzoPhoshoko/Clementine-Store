@@ -22,7 +22,10 @@ export default function Edit({ productId: propProductId }) {
   const [features, setFeatures] = useState([])
   const [newFeature, setNewFeature] = useState('')
 
-  const [dimensionsText, setDimensionsText] = useState('')
+  const [dimWidth, setDimWidth] = useState('')
+  const [dimHeight, setDimHeight] = useState('')
+  const [dimLength, setDimLength] = useState('')
+
   const [sustainabilityText, setSustainabilityText] = useState('')
   const [careNotesList, setCareNotesList] = useState([])
   const [newCareNote, setNewCareNote] = useState('')
@@ -75,7 +78,15 @@ export default function Edit({ productId: propProductId }) {
       setFeatures([])
     }
 
-    setDimensionsText(product.dimensions ? JSON.stringify(product.dimensions, null, 2) : '')
+    if (product.dimensions) {
+      setDimWidth(product.dimensions.width || '')
+      setDimHeight(product.dimensions.height || '')
+      setDimLength(product.dimensions.length || '')
+    } else {
+      setDimWidth('')
+      setDimHeight('')
+      setDimLength('')
+    }
     // Extract description from sustainability_notes JSON
     if (product.sustainability_notes && typeof product.sustainability_notes === 'object') {
       setSustainabilityText(product.sustainability_notes.description || '')
@@ -112,13 +123,12 @@ export default function Edit({ productId: propProductId }) {
   }, [material, features])
 
   const parsedDimensions = useMemo(() => {
-    try {
-      if (!dimensionsText.trim()) return null
-      return JSON.parse(dimensionsText)
-    } catch {
-      return '__invalid__'
-    }
-  }, [dimensionsText])
+    const w = dimWidth.trim()
+    const h = dimHeight.trim()
+    const l = dimLength.trim()
+    if (!w && !h && !l) return null
+    return { width: w, height: h, length: l }
+  }, [dimWidth, dimHeight, dimLength])
 
   const parsedSustainability = useMemo(() => {
     // Return null if empty so it doesn't try to save
@@ -659,14 +669,42 @@ export default function Edit({ productId: propProductId }) {
                 </div>
               </div>
               <div className="form-group">
-                <label className="form-label">Dimensions (JSON)</label>
-                <textarea
-                  className="form-control"
-                  rows={6}
-                  value={dimensionsText}
-                  onChange={(e) => setDimensionsText(e.target.value)}
-                  placeholder='{"weight":"500g","length":"70cm"}'
-                />
+                <label className="form-label">Dimensions</label>
+                <div className="dimensions-inputs">
+                  <div className="selector-row">
+                    <span style={{ fontSize: '0.85rem', width: '50px' }}>Width:</span>
+                    <input
+                      className="form-control"
+                      style={{ flex: 1 }}
+                      type="text"
+                      placeholder="e.g. 5cm"
+                      value={dimWidth}
+                      onChange={(e) => setDimWidth(e.target.value)}
+                    />
+                  </div>
+                  <div className="selector-row">
+                    <span style={{ fontSize: '0.85rem', width: '50px' }}>Height:</span>
+                    <input
+                      className="form-control"
+                      style={{ flex: 1 }}
+                      type="text"
+                      placeholder="e.g. 2cm"
+                      value={dimHeight}
+                      onChange={(e) => setDimHeight(e.target.value)}
+                    />
+                  </div>
+                  <div className="selector-row">
+                    <span style={{ fontSize: '0.85rem', width: '50px' }}>Length:</span>
+                    <input
+                      className="form-control"
+                      style={{ flex: 1 }}
+                      type="text"
+                      placeholder="e.g. 10cm"
+                      value={dimLength}
+                      onChange={(e) => setDimLength(e.target.value)}
+                    />
+                  </div>
+                </div>
                 <div className="admin__edit__sublabel">Include size chart in Sizes above</div>
               </div>
             </div>
