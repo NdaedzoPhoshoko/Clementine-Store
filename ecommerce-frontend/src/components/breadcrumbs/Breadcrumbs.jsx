@@ -56,6 +56,19 @@ export default function Breadcrumbs() {
     const name = extractNameFromSlug(slug);
     items.push({ label: "Shop All", to: "/shop-all" });
     items.push({ label: name ? capitalize(name) : "Detail", to: null });
+  } else if (
+    pathSegments[0] === "admin" &&
+    pathSegments[1] === "product_management" &&
+    pathSegments[2] === "products" &&
+    pathSegments[3] === "edit"
+  ) {
+    const slug = pathSegments[4];
+    const name = slug ? extractNameFromSlug(slug) : "";
+    items.push({ label: "Admin", to: "/admin" });
+    items.push({ label: "Product Management", to: "/admin/product_management" });
+    items.push({ label: "Products", to: "/admin/product_management/products" });
+    items.push({ label: "Edit", to: "/admin/product_management/products/edit" });
+    if (name) items.push({ label: capitalize(name), to: null });
   } else {
     // Fallback: show capitalized segments
     pathSegments.forEach((seg, i) => {

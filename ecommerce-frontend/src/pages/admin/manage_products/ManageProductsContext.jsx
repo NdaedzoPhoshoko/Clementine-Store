@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useMemo, useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { extractIdFromSlug } from '../../../utils/slugUtils';
 
 const Ctx = createContext(null);
 
@@ -19,7 +20,8 @@ export function ManageProductsProvider({ children }) {
     if (segs[0] === 'admin' && segs[1] === 'product_management') {
       const section = segs[2] || 'products';
       const action = segs[3] || 'all';
-      const id = segs[4] != null ? Number(segs[4]) : null;
+      const idOrSlug = segs[4] != null ? segs[4] : null;
+      const id = idOrSlug != null ? Number(extractIdFromSlug(idOrSlug)) : null;
       setActiveSection(section);
       setInnerAction(action);
       setCurrentProductId(Number.isFinite(id) ? id : null);

@@ -5,6 +5,7 @@ import useFetchBrowseProducts from '../../../../../hooks/useFetchBrowseProducts.
 import AdminProdGrid from '../../../../../components/admin_manage_products/admin_product_grid/AdminProdGrid.jsx'
 import PaginationBar from '../../../../../components/pagination/PaginationBar.jsx'
 import { useNavigate } from 'react-router-dom'
+import { createProductSlug } from '../../../../../utils/slugUtils.js'
 
 export default function Products() {
   const { query, stock } = useManageProducts()
@@ -63,7 +64,9 @@ export default function Products() {
 
   const handleEdit = (id) => {
     if (!id) return
-    navigate(`/admin/product_management/products/edit/${id}`)
+    const found = displayProducts.find((p) => p.id === id)
+    const slug = createProductSlug(found?.name || 'product', id)
+    navigate(`/admin/product_management/products/edit/${slug}`)
   }
   const totalPages = meta?.pages || 1
   const hasPrev = typeof meta?.hasPrev !== 'undefined' ? !!meta?.hasPrev : page > 1
