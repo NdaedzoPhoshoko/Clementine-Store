@@ -6,11 +6,13 @@ import { HexColorPicker } from 'react-colorful'
 import useFetchCategoryNames from '../../../../../../hooks/useFetchCategoryNames.js'
 import useCreateProduct from '../../../../../../hooks/admin_dashboard/products/useCreateProduct.js'
 import useUploadProductImages from '../../../../../../hooks/admin_dashboard/products/useUploadProductImages.js'
+import UploadImages from './UploadImages.jsx'
 
 export default function New() {
   const navigate = useNavigate()
   
   // State
+  const [createdProductId, setCreatedProductId] = useState(null)
   const [name, setName] = useState('')
   const [price, setPrice] = useState('')
   const [stock, setStock] = useState('')
@@ -40,18 +42,12 @@ export default function New() {
   const [newVariantHex, setNewVariantHex] = useState('#293b0c')
   const DEFAULT_SIZE_OPTIONS = ['XS', 'S', 'M', 'L', 'XL', '2XL']
 
+  // Image handling: Single thumbnail only
   const [primaryImageUrl, setPrimaryImageUrl] = useState('')
+  const [queuedFiles, setQueuedFiles] = useState([])
   const [pending, setPending] = useState(false)
   const [uploading, setUploading] = useState(false)
   const uploadInputRef = useRef(null)
-  const [uploadedPreviews, setUploadedPreviews] = useState([])
-  const [uploadedFilesMeta, setUploadedFilesMeta] = useState([])
-  const [blobMetaByUrl, setBlobMetaByUrl] = useState({})
-  const [queuedFiles, setQueuedFiles] = useState([])
-  const [placeholderIndex, setPlaceholderIndex] = useState(null)
-  const [replaceIndex, setReplaceIndex] = useState(null)
-  const [localImages, setLocalImages] = useState([])
-  const imagesScrollRef = useRef(null)
   const colorScrollRef = useRef(null)
 
   const { create, pending: createPending } = useCreateProduct()
@@ -82,11 +78,11 @@ export default function New() {
   }, [sustainabilityText])
 
   const DEFAULT_SIZE_CHART_CM = {
-    XS: '26 cm',
-    S: '28 cm',
-    M: '30 cm',
-    L: '32 cm',
-    XL: '34 cm',
+    'XS': '26 cm',
+    'S': '28 cm',
+    'M': '30 cm',
+    'L': '32 cm',
+    'XL': '34 cm',
     '2XL': '36 cm',
   }
 
@@ -157,70 +153,30 @@ export default function New() {
     setNewVariantHex('#000000')
   }
 
-  // Image handling for New Product
-  const onUploadImages = async (files, existingPreviews = null) => {
+  // Single Image Handler
+  const onUploadImages = (files) => {
     if (!files?.length) return
-    try {
-      const all = Array.from(files)
-      const newFiles = []
-      const newPreviews = []
-
-      all.forEach((f, i) => {
-         const isDuplicate = uploadedFilesMeta.some((m) => m.name === f.name && m.size === f.size)
-         if (!isDuplicate) {
-           newFiles.push(f)
-           if (existingPreviews && existingPreviews[i]) {
-             newPreviews.push(existingPreviews[i])
-           }
-         }
-      })
-
-      if (!newFiles.length) return
-
-      const urls = (existingPreviews && existingPreviews.length === all.length) 
-        ? newPreviews 
-        : newFiles.map((f) => URL.createObjectURL(f))
-
-      setUploadedPreviews((prev) => [...prev, ...urls])
-      
-      setBlobMetaByUrl((prev) => {
-        const next = { ...prev }
-        urls.forEach((u, idx) => {
-          const f = newFiles[idx]
-          next[u] = { name: f.name, size: f.size }
-        })
-        return next
-      })
-      setQueuedFiles((prev) => [...prev, ...newFiles])
-    } catch {}
+    const file = files[0]
     
-    setUploadedFilesMeta((prev) => [
-      ...prev,
-      ...Array.from(files).map((f) => ({ name: f.name, size: f.size })),
-    ])
+    // Revoke previous URL if exists
+    if (primaryImageUrl) {
+      try { URL.revokeObjectURL(primaryImageUrl) } catch {}
+    }
+
+    const url = URL.createObjectURL(file)
+    setPrimaryImageUrl(url)
+    setQueuedFiles([file]) // Always replace with single file
+    
     if (uploadInputRef?.current) uploadInputRef.current.value = ''
   }
 
-  const onDeleteAllImages = async () => {
-    // Just clear local state since no server images yet
-    setLocalImages([])
-    setQueuedFiles([])
-    setUploadedFilesMeta([])
-    setBlobMetaByUrl({})
-    setPlaceholderIndex(null)
-    setReplaceIndex(null)
+  const onDeleteImage = () => {
+    if (primaryImageUrl) {
+      try { URL.revokeObjectURL(primaryImageUrl) } catch {}
+    }
     setPrimaryImageUrl('')
-  }
-
-  const isBlobUrl = (u) => typeof u === 'string' && u.startsWith('blob:')
-  const revokeBlobUrls = (urls) => {
-    try {
-      urls.forEach((u) => {
-        if (isBlobUrl(u)) {
-          try { URL.revokeObjectURL(u) } catch {}
-        }
-      })
-    } catch {}
+    setQueuedFiles([])
+    if (uploadInputRef?.current) uploadInputRef.current.value = ''
   }
 
   const onSubmit = async (e) => {
@@ -230,6 +186,12 @@ export default function New() {
     if (name.length > 50) return
     if (shortDescription.length > 250) return
     if (!categoryId) return
+    
+    // Image validation
+    if (!queuedFiles.length) {
+      alert('Image file is required')
+      return
+    }
 
     setPending(true)
     try {
@@ -257,39 +219,30 @@ export default function New() {
       if (parsedSustainability) payload.sustainability_notes = parsedSustainability
       if (variants && variants.length) payload.color_variants = variants.filter((v) => v && (v.name || v.hex))
 
+      // Attach image file for creation
+      if (queuedFiles.length) {
+        payload.image = queuedFiles[0]
+      }
+
       console.log('[New] Creating product', { payload })
 
       // 2. Create Product
       const res = await create(payload)
       console.log('[New] Create response', res)
       
-      const newId = res?.id || (res?.data && res.data.id)
+      const newId = res?.id || (res?.data && res.data.id) || res?.product?.id
       if (!newId) throw new Error('Product created but no ID returned')
 
-      // 3. Upload Images if any
-      let finalPrimaryUrl = ''
-      if (queuedFiles.length) {
-        setUploading(true)
-        try {
-          const uploadResp = await uploadProductImages(newId, queuedFiles)
-          const uploadedUrls = Array.isArray(uploadResp?.images)
-            ? uploadResp.images.map((i) => (typeof i === 'string' ? i : i?.url)).filter(Boolean)
-            : []
-            
-          if (uploadedUrls.length > 0) {
-             finalPrimaryUrl = uploadedUrls[0]
-          }
-        } finally {
-          setUploading(false)
-        }
-      }
-
-      navigate(-1)
+      setCreatedProductId(newId)
     } catch (e) {
       console.error('[New] Create error', e)
     } finally {
       setPending(false)
     }
+  }
+
+  if (createdProductId) {
+    return <UploadImages productId={createdProductId} onComplete={() => navigate(-1)} />
   }
 
   const onCancel = () => {
@@ -301,44 +254,10 @@ export default function New() {
     e.stopPropagation()
   }
 
-  const onDropFiles = (e, insertIdx = null) => {
-    preventDefaults(e)
-    const fl = e.dataTransfer?.files
-    if (!fl || !fl.length) return
-    const files = Array.from(fl)
-    
-    // Create previews
-    const previews = files.map(f => URL.createObjectURL(f))
-
-    // Update UI
-    setLocalImages((prev) => {
-      const next = [...prev]
-      const idx = insertIdx !== null ? Math.min(insertIdx, next.length) : next.length
-      // Insert all previews at the index
-      next.splice(idx, 0, ...previews)
-      return next
-    })
-    
-    onUploadImages(files, previews)
-  }
-
   const browse = (ref) => {
     if (ref?.current) ref.current.click()
   }
 
-  const tiles = useMemo(() => {
-    const arr = [...localImages]
-    const idx = placeholderIndex != null ? Math.min(placeholderIndex, arr.length) : arr.length
-    arr.splice(idx, 0, '__placeholder__')
-    return arr
-  }, [localImages, placeholderIndex])
-
-  const TILE_SIZE = 160
-  const TILE_GAP = 12
-  const scrollByTiles = (n) => {
-    if (!imagesScrollRef?.current) return
-    imagesScrollRef.current.scrollBy({ left: n * (TILE_SIZE + TILE_GAP), behavior: 'smooth' })
-  }
   const COLOR_SCROLL_STEP = 240
   const scrollColors = (px) => {
     if (!colorScrollRef?.current) return
@@ -372,7 +291,7 @@ export default function New() {
                 Creating…
               </>
             ) : (
-              'Create'
+              'Next'
             )}
           </button>
         </div>
@@ -449,156 +368,61 @@ export default function New() {
 
             <div className="admin__edit__right">
               <div className="form-row">
-                <label className="form-label">Product Images</label>
-                <div
-                  className="images-scroll"
-                  ref={imagesScrollRef}
+                <label className="form-label">Product Thumbnail</label>
+                <div 
+                  className="image-tile-single"
+                  onClick={() => !primaryImageUrl && browse(uploadInputRef)}
                   onDragOver={preventDefaults}
                   onDrop={(e) => {
-                    setReplaceIndex(null)
-                    setPlaceholderIndex(localImages.length)
-                    onDropFiles(e)
+                    preventDefaults(e)
+                    const fl = e.dataTransfer?.files
+                    if (fl?.length) onUploadImages([fl[0]])
+                  }}
+                  style={{ 
+                    width: '160px', 
+                    height: '160px', 
+                    border: '1px solid var(--color-border)',
+                    background: 'var(--color-bg)',
+                    display: 'grid',
+                    placeItems: 'center',
+                    position: 'relative',
+                    cursor: primaryImageUrl ? 'default' : 'pointer'
                   }}
                 >
-                  {(() => {
-                    const firstImageIdx = tiles.findIndex((x) => x !== '__placeholder__')
-                    return tiles.map((t, i) =>
-                    t === '__placeholder__' ? (
-                      <div
-                        key={`ph-${i}`}
-                        className="image-tile placeholder"
-                        onClick={() => {
-                          setReplaceIndex(null)
-                          setPlaceholderIndex(i + 1)
-                          browse(uploadInputRef)
-                        }}
-                        onDragOver={preventDefaults}
-                        onDrop={(e) => {
-                          setReplaceIndex(null)
-                          setPlaceholderIndex(i + 1)
-                          onDropFiles(e, i + 1)
-                        }}
-                      >
-                        <div className="image-placeholder">
-                          <ImageIcon size={20} />
-                          <span>
-                            Drop your images here, or select{' '}
-                            <button
-                              type="button"
-                              className="image-browse-link"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setPlaceholderIndex(i + 1)
-                                browse(uploadInputRef)
-                              }}
-                            >
-                              click to browse
-                            </button>
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div
-                        key={t + i}
-                        className="image-tile has-image"
-                        onClick={() => {
-                          setReplaceIndex(i)
-                          browse(uploadInputRef)
-                        }}
-                      >
-                        {i === firstImageIdx && (
-                          <button type="button" className="image-label" aria-label="Thumbnail">thumbnail</button>
-                        )}
-                        <button
+                  {primaryImageUrl ? (
+                    <>
+                       <button
                           type="button"
                           className="image-remove"
                           onClick={(e) => {
                             e.stopPropagation()
-                            const imgUrl = t;
-                            const nextImages = localImages.filter((_, idx) => idx !== i)
-                            setLocalImages(nextImages)
-                            revokeBlobUrls([imgUrl])
-
-                            if (isBlobUrl(imgUrl)) {
-                              const meta = blobMetaByUrl[imgUrl]
-                              if (meta) {
-                                setUploadedFilesMeta((prev) => prev.filter((m) => !(m.name === meta.name && m.size === meta.size)))
-                                setBlobMetaByUrl((prev) => {
-                                  const next = { ...prev }
-                                  delete next[imgUrl]
-                                  return next
-                                })
-                                setQueuedFiles(prev => prev.filter(f => !(f.name === meta.name && f.size === meta.size)))
-                              }
-                            }
+                            onDeleteImage()
                           }}
                         >
                           <X size={14} />
                         </button>
-                        <img src={t} alt={`Image ${i + 1}`} />
-                        <div className="image-overlay">
-                          <span>Tap to replace</span>
-                        </div>
-                      </div>
-                    )
-                  )})()}
+                        <img src={primaryImageUrl} alt="Thumbnail" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </>
+                  ) : (
+                    <div className="image-placeholder">
+                      <ImageIcon size={20} />
+                      <span>Click to upload thumbnail</span>
+                    </div>
+                  )}
+                  
                   <input
                     ref={uploadInputRef}
                     type="file"
                     accept="image/*"
-                    multiple
                     style={{ display: 'none' }}
                     onChange={(e) => {
                       const fl = e.target.files
-                      if (!fl || !fl.length) return
-                      const files = Array.from(fl)
-                      let previews = []
-                      try {
-                        previews = files.map((f) => URL.createObjectURL(f))
-
-                        setBlobMetaByUrl((prev) => {
-                          const next = { ...prev }
-                          previews.forEach((p, idx) => {
-                            const f = files[idx]
-                            next[p] = { name: f.name, size: f.size }
-                          })
-                          return next
-                        })
-                        setLocalImages((prev) => {
-                          const next = [...prev]
-                          if (replaceIndex != null && previews.length) {
-                            next[replaceIndex] = previews[0]
-                          } else {
-                            let insertIdx = placeholderIndex != null ? Math.min(placeholderIndex, next.length) : next.length
-                            previews.forEach((p) => {
-                              next.splice(insertIdx, 0, p)
-                              insertIdx += 1
-                            })
-                            setPlaceholderIndex(insertIdx)
-                          }
-                          return next
-                        })
-                        setQueuedFiles(prev => [...prev, ...files])
-                      } catch {}
+                      if (fl?.length) onUploadImages([fl[0]])
                     }}
                   />
                 </div>
-                <div className="images-controls">
-                  <span className="images-controls__hint">Use these controls to view more images and attach more.</span>
-                  <div className="images-controls__buttons">
-                    <button type="button" className="images-btn" onClick={() => scrollByTiles(-3)}>Prev</button>
-                    <button type="button" className="images-btn" onClick={() => scrollByTiles(3)}>Next</button>
-                    <button
-                      type="button"
-                      className="images-btn"
-                      onClick={onDeleteAllImages}
-                    >
-                      Delete All
-                    </button>
-                  </div>
-                </div>
                 <div className="admin__edit__sublabel">
-                  You need to add at least 4 images. Pay attention to the quality of the pictures you add, comply with the background color standards. Pictures must be in certain dimensions. Notice that the product shows all the details. The image labeled "thumbnail" will be shown in product lists/grids.
+                  This image will be used as the main thumbnail for the product lists.
                 </div>
               </div>
 

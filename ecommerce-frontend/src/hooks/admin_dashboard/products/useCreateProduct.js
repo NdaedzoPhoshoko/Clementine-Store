@@ -41,25 +41,50 @@ export default function useCreateProduct() {
         if (Object.prototype.hasOwnProperty.call(payload, 'color_variants')) body.color_variants = payload.color_variants === null ? null : payload.color_variants
       }
 
+      const token = typeof window !== 'undefined' ? (authStorage.getAccessToken() || authStorage.getToken()) : null
+      if (!token) throw new Error('require signin')
+
+      // Prepare request body and headers
+      let requestBody
+      const headers = {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      }
+
+      if (payload && payload.image instanceof File) {
+        const fd = new FormData()
+        // Append all prepared body fields
+        Object.keys(body).forEach((key) => {
+          const val = body[key]
+          if (val === undefined || val === null) return
+          if (typeof val === 'object') {
+            fd.append(key, JSON.stringify(val))
+          } else {
+            fd.append(key, val)
+          }
+        })
+        fd.append('image', payload.image)
+        requestBody = fd
+        // Content-Type header is omitted to let browser set it with boundary
+      } else {
+        headers['Content-Type'] = 'application/json'
+        requestBody = JSON.stringify(body)
+      }
+
       const base = typeof import.meta?.env?.VITE_API_BASE_URL !== 'undefined' ? import.meta.env.VITE_API_BASE_URL : 'http://localhost:5000'
       const attempts = [
         `/api/products`,
         `${base}/api/products`,
       ]
-      const token = typeof window !== 'undefined' ? (authStorage.getAccessToken() || authStorage.getToken()) : null
-      if (!token) throw new Error('require signin')
+      
       let lastErr
       for (let i = 0; i < attempts.length; i++) {
         const url = attempts[i]
         try {
           const res = await fetch(url, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Accept: 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(body),
+            headers,
+            body: requestBody,
           })
           if (!res.ok) {
             const ctErr = res.headers.get('content-type') || ''
