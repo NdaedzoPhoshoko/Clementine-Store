@@ -1,19 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import './InnerSidebar.css';
 import useManageProducts from './ManageProductsContext.jsx';
+import { useNavigate } from 'react-router-dom';
 
 export default function InnerSidebar() {
-  const { activeSection, query, setQuery, status, setStatus, stock, setStock, stars, setStars, reviewRange, setReviewRange } = useManageProducts();
-  const [activeAction, setActiveAction] = useState('all');
-  const toggleAction = (key) => setActiveAction((prev) => (prev === key ? '' : key));
-  useEffect(() => {
-    if (activeSection === 'products') setActiveAction('all');
-    else if (activeSection === 'inventory') setActiveAction('logs');
-    else if (activeSection === 'categories') setActiveAction('all');
-    else if (activeSection === 'reviews') setActiveAction('all');
-    else if (activeSection === 'settings') setActiveAction('manage');
-    else setActiveAction('');
-  }, [activeSection]);
+  const { activeSection, innerAction, query, setQuery, status, setStatus, stock, setStock, stars, setStars, reviewRange, setReviewRange } = useManageProducts();
+  const navigate = useNavigate();
+  useEffect(() => {}, [activeSection]);
   return (
     <aside className="admin_products__inner_sidebar" aria-label="Secondary sidebar">
       {activeSection === 'products' ? (
@@ -21,23 +14,23 @@ export default function InnerSidebar() {
           <div className="admin_products__section_title">Products</div>
           <button
             type="button"
-            className={`admin_products__action_btn ${activeAction === 'all' ? 'admin_products__action_btn--active' : ''}`}
+            className={`admin_products__action_btn ${innerAction === 'all' ? 'admin_products__action_btn--active' : ''}`}
             aria-label="All products"
-            aria-pressed={activeAction === 'all'}
-            onClick={() => toggleAction('all')}
+            aria-pressed={innerAction === 'all'}
+            onClick={() => navigate('/admin/product_management/products')}
           >
             All Products
           </button>
           <button
             type="button"
-            className={`admin_products__action_btn ${activeAction === 'add' ? 'admin_products__action_btn--active' : ''}`}
+            className={`admin_products__action_btn ${innerAction === 'add' ? 'admin_products__action_btn--active' : ''}`}
             aria-label="Add product"
-            aria-pressed={activeAction === 'add'}
-            onClick={() => toggleAction('add')}
+            aria-pressed={innerAction === 'add'}
+            onClick={() => navigate('/admin/product_management/products/add')}
           >
             Add Product
           </button>
-          {activeAction === 'all' ? (
+          {innerAction === 'all' ? (
             <>
               <div className="admin_products__divider" aria-hidden="true"></div>
               <div className="admin_products__section_title">Filters</div>
@@ -51,23 +44,23 @@ export default function InnerSidebar() {
           <div className="admin_products__section_title">Categories</div>
           <button
             type="button"
-            className={`admin_products__action_btn ${activeAction === 'all' ? 'admin_products__action_btn--active' : ''}`}
+            className={`admin_products__action_btn ${innerAction === 'all' ? 'admin_products__action_btn--active' : ''}`}
             aria-label="All categories"
-            aria-pressed={activeAction === 'all'}
-            onClick={() => toggleAction('all')}
+            aria-pressed={innerAction === 'all'}
+            onClick={() => navigate('/admin/product_management/categories')}
           >
             All Categories
           </button>
           <button
             type="button"
-            className={`admin_products__action_btn ${activeAction === 'add' ? 'admin_products__action_btn--active' : ''}`}
+            className={`admin_products__action_btn ${innerAction === 'add' ? 'admin_products__action_btn--active' : ''}`}
             aria-label="Add categories"
-            aria-pressed={activeAction === 'add'}
-            onClick={() => toggleAction('add')}
+            aria-pressed={innerAction === 'add'}
+            onClick={() => navigate('/admin/product_management/categories/add')}
           >
             Add Categories
           </button>
-          {activeAction === 'all' ? (
+          {innerAction === 'all' ? (
             <>
               <div className="admin_products__divider" aria-hidden="true"></div>
               <div className="admin_products__section_title">Filters</div>
@@ -91,10 +84,10 @@ export default function InnerSidebar() {
           <div className="admin_products__section_title">Inventory</div>
           <button
             type="button"
-            className={`admin_products__action_btn ${activeAction === 'logs' ? 'admin_products__action_btn--active' : ''}`}
+            className={`admin_products__action_btn ${innerAction === 'logs' ? 'admin_products__action_btn--active' : ''}`}
             aria-label="Inventory logs"
-            aria-pressed={activeAction === 'logs'}
-            onClick={() => toggleAction('logs')}
+            aria-pressed={innerAction === 'logs'}
+            onClick={() => navigate('/admin/product_management/inventory/logs')}
           >
             Logs
           </button>
@@ -118,14 +111,14 @@ export default function InnerSidebar() {
           <div className="admin_products__section_title">Reviews</div>
           <button
             type="button"
-            className={`admin_products__action_btn ${activeAction === 'all' ? 'admin_products__action_btn--active' : ''}`}
+            className={`admin_products__action_btn ${innerAction === 'all' ? 'admin_products__action_btn--active' : ''}`}
             aria-label="All reviews"
-            aria-pressed={activeAction === 'all'}
-            onClick={() => toggleAction('all')}
+            aria-pressed={innerAction === 'all'}
+            onClick={() => navigate('/admin/product_management/reviews')}
           >
             All Reviews
           </button>
-          {activeAction === 'all' ? (
+          {innerAction === 'all' ? (
             <>
               <div className="admin_products__divider" aria-hidden="true"></div>
               <div className="admin_products__section_title">Filters</div>
@@ -153,19 +146,19 @@ export default function InnerSidebar() {
           <div className="admin_products__section_title">Settings</div>
           <button
             type="button"
-            className={`admin_products__action_btn ${activeAction === 'manage' ? 'admin_products__action_btn--active' : ''}`}
+            className={`admin_products__action_btn ${innerAction === 'manage' ? 'admin_products__action_btn--active' : ''}`}
             aria-label="Manage admins"
-            aria-pressed={activeAction === 'manage'}
-            onClick={() => toggleAction('manage')}
+            aria-pressed={innerAction === 'manage'}
+            onClick={() => navigate('/admin/product_management/settings/manage')}
           >
             Manage Admins
           </button>
           <button
             type="button"
-            className={`admin_products__action_btn ${activeAction === 'add' ? 'admin_products__action_btn--active' : ''}`}
+            className={`admin_products__action_btn ${innerAction === 'add' ? 'admin_products__action_btn--active' : ''}`}
             aria-label="Add admins"
-            aria-pressed={activeAction === 'add'}
-            onClick={() => toggleAction('add')}
+            aria-pressed={innerAction === 'add'}
+            onClick={() => navigate('/admin/product_management/settings/add')}
           >
             Add Admins
           </button>

@@ -1,9 +1,11 @@
 import React from 'react';
 import './Sidebar.css';
 import useManageProducts from './ManageProductsContext.jsx';
+import { useNavigate } from 'react-router-dom';
 
 export default function Sidebar() {
-  const { activeSection, setActiveSection } = useManageProducts();
+  const { activeSection } = useManageProducts();
+  const navigate = useNavigate();
   const items = [
     { key: 'products', label: 'Products' },
     { key: 'inventory', label: 'Inventory' },
@@ -21,7 +23,7 @@ export default function Sidebar() {
             key={it.key}
             type="button"
             className={`admin_products__nav_item ${activeSection === it.key ? 'admin_products__nav_item--active' : ''}`}
-            onClick={() => setActiveSection(it.key)}
+            onClick={() => navigate(`/admin/product_management/${it.key}`)}
             aria-current={activeSection === it.key ? 'page' : undefined}
           >
             {it.label}

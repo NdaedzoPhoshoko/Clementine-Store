@@ -4,9 +4,11 @@ import useManageProducts from '../../ManageProductsContext.jsx'
 import useFetchBrowseProducts from '../../../../../hooks/useFetchBrowseProducts.js'
 import AdminProdGrid from '../../../../../components/admin_manage_products/admin_product_grid/AdminProdGrid.jsx'
 import PaginationBar from '../../../../../components/pagination/PaginationBar.jsx'
+import { useNavigate } from 'react-router-dom'
 
 export default function Products() {
-  const { query, stock, setInnerAction, setCurrentProductId } = useManageProducts()
+  const { query, stock } = useManageProducts()
+  const navigate = useNavigate()
 
   const getDefaultItemsPerPage = () => {
     const w = typeof window !== 'undefined' ? window.innerWidth : 1200
@@ -61,8 +63,7 @@ export default function Products() {
 
   const handleEdit = (id) => {
     if (!id) return
-    setCurrentProductId(id)
-    setInnerAction('edit')
+    navigate(`/admin/product_management/products/edit/${id}`)
   }
   const totalPages = meta?.pages || 1
   const hasPrev = typeof meta?.hasPrev !== 'undefined' ? !!meta?.hasPrev : page > 1
