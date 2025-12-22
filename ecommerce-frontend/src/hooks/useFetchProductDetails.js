@@ -73,6 +73,7 @@ export default function useFetchProductDetails({ productId, enabled = true } = {
     controllerRef.current = controller;
 
     const KEY = cacheKey(productId);
+    const BUST_KEY = `product-details-cache:bust:v1:id=${productId}`;
 
     let usedCache = false;
     let detailsCacheIsStale = true;
@@ -81,6 +82,11 @@ export default function useFetchProductDetails({ productId, enabled = true } = {
     // Try cache first for this product ID
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
+        const bustFlag = localStorage.getItem(BUST_KEY);
+        if (bustFlag) {
+          try { localStorage.removeItem(KEY); } catch {}
+          try { localStorage.removeItem(BUST_KEY); } catch {}
+        }
         const raw = localStorage.getItem(KEY);
         if (raw) {
           const cached = JSON.parse(raw);
@@ -185,6 +191,7 @@ export default function useFetchProductDetails({ productId, enabled = true } = {
                 ts: Date.now(),
               })
             );
+            try { localStorage.removeItem(BUST_KEY); } catch {}
           }
         } catch (e) {
           console.warn('[useFetchProductDetails] Cache write failed:', e);

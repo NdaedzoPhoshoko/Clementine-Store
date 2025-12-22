@@ -558,6 +558,18 @@ router.delete("/:id/images", protect, requireAdmin, deleteAllProductImages);
  *                   type: array
  *                   items:
  *                     type: string
+ *                 image_entries:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       image_url:
+ *                         type: string
+ *                       public_id:
+ *                         type: string
+ *                         nullable: true
  *                 reviews:
  *                   type: array
  *                   items:

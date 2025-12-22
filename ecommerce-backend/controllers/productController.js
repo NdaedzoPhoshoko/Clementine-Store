@@ -117,10 +117,15 @@ export const getProductById = async (req, res) => {
     const p = productResult.rows[0];
 
     const imagesResult = await pool.query(
-      "SELECT image_url FROM product_images WHERE product_id=$1 ORDER BY id ASC",
+      "SELECT id, image_url, public_id FROM product_images WHERE product_id=$1 ORDER BY id ASC",
       [id]
     );
-    const images = imagesResult.rows.map((r) => r.image_url);
+    const imageEntries = imagesResult.rows.map((r) => ({
+      id: r.id,
+      image_url: r.image_url,
+      public_id: r.public_id || null,
+    }));
+    const images = imageEntries.map((r) => r.image_url);
 
     const reviewsResult = await pool.query(
       "SELECT id, user_id, rating, comment, created_at FROM reviews WHERE product_id=$1 ORDER BY created_at DESC",
@@ -156,11 +161,12 @@ export const getProductById = async (req, res) => {
         ? { id: p.category_id, name: p.category_name, description: p.category_description }
         : null,
       images,
+      image_entries: imageEntries,
       reviews,
       reviewStats,
     });
   } catch (err) {
-    console.error("Get product error:", err.message);
+    console.error("Get product by id error:", err.message);
     return res.status(500).json({ message: "Error fetching product details" });
   }
 };

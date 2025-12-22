@@ -8,6 +8,8 @@ import useFetchCategoryNames from '../../../../../../hooks/useFetchCategoryNames
 import useUpdateProduct from '../../../../../../hooks/admin_dashboard/products/useUpdateProduct.js'
 import useUploadProductImages from '../../../../../../hooks/admin_dashboard/products/useUploadProductImages.js'
 import useSetPrimaryImage from '../../../../../../hooks/admin_dashboard/products/useSetPrimaryImage.js'
+import useDeleteAllProductImages from '../../../../../../hooks/admin_dashboard/products/useDeleteAllProductImages.js'
+import useDeleteProductImage from '../../../../../../hooks/admin_dashboard/products/useDeleteProductImage.js'
 
 export default function Edit({ productId: propProductId }) {
   const { id } = useParams()
@@ -59,6 +61,8 @@ export default function Edit({ productId: propProductId }) {
   const { update, pending: updatePending, error: updateError } = useUpdateProduct()
   const { upload: uploadProductImages } = useUploadProductImages()
   const { setPrimary: setPrimaryImage } = useSetPrimaryImage()
+  const { removeAll, pending: removingAll } = useDeleteAllProductImages()
+  const { remove, pending: removingOne } = useDeleteProductImage()
 
   useEffect(() => {
     if (!product) return
@@ -243,7 +247,9 @@ export default function Edit({ productId: propProductId }) {
         : []
       if (uploadedUrls.length) {
         setLocalImages((prev) => {
-          const set = new Set(prev)
+          revokeBlobUrls(prev.filter(isBlobUrl))
+          const next = prev.filter((u) => !isBlobUrl(u))
+          const set = new Set(next)
           uploadedUrls.forEach((u) => set.add(u))
           return Array.from(set)
         })
@@ -259,12 +265,71 @@ export default function Edit({ productId: propProductId }) {
     }
   }
 
+  const [deletingSet, setDeletingSet] = useState(new Set())
+  const markDeleting = (key) => {
+    setDeletingSet((prev) => {
+      const next = new Set(prev)
+      next.add(key)
+      return next
+    })
+  }
+  const unmarkDeleting = (key) => {
+    setDeletingSet((prev) => {
+      const next = new Set(prev)
+      next.delete(key)
+      return next
+    })
+  }
+
   const onSetPrimaryImage = async (url) => {
     if (!productId || !url) return
     setPending(true)
     try {
       await setPrimaryImage(productId, url)
       setPrimaryImageUrl(url)
+    } catch (e) {
+    } finally {
+      setPending(false)
+    }
+  }
+
+  const onDeleteAllImages = async () => {
+    if (!productId) return
+    setPending(true)
+    try {
+      await removeAll(productId)
+      setLocalImages([])
+      setPrimaryImageUrl('')
+      setUploadedPreviews([])
+      setUploadedFilesMeta([])
+      setPlaceholderIndex(null)
+      setReplaceIndex(null)
+      revokeBlobUrls(localImages.filter(isBlobUrl))
+      const base = typeof import.meta?.env?.VITE_API_BASE_URL !== 'undefined' ? import.meta.env.VITE_API_BASE_URL : 'http://localhost:5000'
+      const attempts = [
+        `/api/products/${productId}`,
+        `${base}/api/products/${productId}`,
+      ]
+      for (let i = 0; i < attempts.length; i++) {
+        const url = attempts[i]
+        try {
+          const res = await fetch(url, { headers: { Accept: 'application/json' }, cache: 'no-store' })
+          if (!res.ok) continue
+          const ct = res.headers.get('content-type') || ''
+          const json = ct.includes('application/json') ? await res.json() : null
+          const imgs = Array.isArray(json?.images) ? json.images.filter(Boolean) : []
+          const prim = typeof json?.product?.image_url === 'string' ? json.product.image_url : ''
+          setLocalImages(imgs)
+          setPrimaryImageUrl(prim || '')
+          try {
+            const KEY = `product-details-cache:v1:id=${productId}`
+            if (typeof window !== 'undefined' && window.localStorage) {
+              window.localStorage.removeItem(KEY)
+            }
+          } catch {}
+          break
+        } catch {}
+      }
     } catch (e) {
     } finally {
       setPending(false)
@@ -351,6 +416,16 @@ export default function Edit({ productId: propProductId }) {
   const scrollColors = (px) => {
     if (!colorScrollRef?.current) return
     colorScrollRef.current.scrollBy({ left: px, behavior: 'smooth' })
+  }
+  const isBlobUrl = (u) => typeof u === 'string' && u.startsWith('blob:')
+  const revokeBlobUrls = (urls) => {
+    try {
+      urls.forEach((u) => {
+        if (isBlobUrl(u)) {
+          try { URL.revokeObjectURL(u) } catch {}
+        }
+      })
+    } catch {}
   }
 
   return (
@@ -520,6 +595,7 @@ export default function Edit({ productId: propProductId }) {
                         key={t + i}
                         className="image-tile has-image"
                         onClick={() => {
+                          if (deletingSet.has(t)) return
                           setReplaceIndex(i)
                           browse(uploadInputRef)
                         }}
@@ -532,15 +608,62 @@ export default function Edit({ productId: propProductId }) {
                           className="image-remove"
                           onClick={(e) => {
                             e.stopPropagation()
-                            setLocalImages((prev) => prev.filter((_, idx) => idx !== i))
+                            ;(async () => {
+                              try {
+                                const imgUrl = t
+                                let didServerDelete = false
+                                if (productId && imgUrl) {
+                                  try {
+                                    markDeleting(imgUrl)
+                                    await remove(productId, imgUrl)
+                                    didServerDelete = true
+                                  } catch (err) {
+                                  }
+                                }
+                                setLocalImages((prev) => {
+                                  const next = prev.filter((_, idx) => idx !== i)
+                                  revokeBlobUrls([imgUrl])
+                                  return next
+                                })
+                                const base = typeof import.meta?.env?.VITE_API_BASE_URL !== 'undefined' ? import.meta.env.VITE_API_BASE_URL : 'http://localhost:5000'
+                                const attempts = [
+                                  `/api/products/${productId}`,
+                                  `${base}/api/products/${productId}`,
+                                ]
+                                for (let j = 0; j < attempts.length; j++) {
+                                  const url = attempts[j]
+                                  try {
+                                    const res = await fetch(url, { headers: { Accept: 'application/json' }, cache: 'no-store' })
+                                    if (!res.ok) continue
+                                    const ct = res.headers.get('content-type') || ''
+                                    const json = ct.includes('application/json') ? await res.json() : null
+                                    const imgs = Array.isArray(json?.images) ? json.images.filter(Boolean) : []
+                                    const prim = typeof json?.product?.image_url === 'string' ? json.product.image_url : ''
+                                    setLocalImages(imgs)
+                                    setPrimaryImageUrl(prim || '')
+                                    try {
+                                      const KEY = `product-details-cache:v1:id=${productId}`
+                                      if (typeof window !== 'undefined' && window.localStorage) {
+                                        window.localStorage.removeItem(KEY)
+                                      }
+                                    } catch {}
+                                    break
+                                  } catch {}
+                                }
+                              } catch (err) {
+                                setLocalImages((prev) => prev.filter((_, idx) => idx !== i))
+                              }
+                              unmarkDeleting(t)
+                            })()
                           }}
-                          aria-label="Remove image"
+                          aria-label={deletingSet.has(t) ? 'Removing…' : 'Remove image'}
+                          disabled={deletingSet.has(t)}
                         >
-                          <X size={14} />
+                          {deletingSet.has(t) ? <Loader size={14} className="spin" /> : <X size={14} />}
                         </button>
                         <img src={t} alt={`Image ${i + 1}`} />
-                        <div className="image-overlay">
-                          <span>Tap to replace</span>
+                        <div className={deletingSet.has(t) ? 'image-overlay is-active' : 'image-overlay'}>
+                          <span>{deletingSet.has(t) ? 'Removing…' : 'Tap to replace'}</span>
                         </div>
                       </div>
                     )
@@ -582,6 +705,14 @@ export default function Edit({ productId: propProductId }) {
                   <div className="images-controls__buttons">
                     <button type="button" className="images-btn" onClick={() => scrollByTiles(-3)}>Prev</button>
                     <button type="button" className="images-btn" onClick={() => scrollByTiles(3)}>Next</button>
+                    <button
+                      type="button"
+                      className="images-btn"
+                      onClick={onDeleteAllImages}
+                      disabled={pending || updatePending || uploading || removingAll}
+                    >
+                      {removingAll ? (<><Loader size={14} className="btn-spinner" /> Deleting…</>) : 'Delete All'}
+                    </button>
                   </div>
                 </div>
                 <div className="admin__edit__sublabel">
