@@ -41,6 +41,7 @@ export default function useFetchProductDetails({ productId, enabled = true } = {
   const [colorVariants, setColorVariants] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [refetchIndex, setRefetchIndex] = useState(0);
 
   const controllerRef = useRef(null);
   const reviewsControllerRef = useRef(null);
@@ -263,7 +264,21 @@ export default function useFetchProductDetails({ productId, enabled = true } = {
       controller.abort();
       reviewsControllerRef.current?.abort();
     };
-  }, [productId, enabled]);
+  }, [productId, enabled, refetchIndex]);
+
+  const refetch = async () => {
+    if (!productId) return;
+    const BUST_KEY = `product-details-cache:bust:v1:id=${productId}`;
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(BUST_KEY, 'true');
+    }
+    // Force a re-mount of the effect or similar? 
+    // Actually, simply setting a state that the effect depends on, or calling the fetch logic directly is better.
+    // But since fetchLatest is inside useEffect, we can't call it easily.
+    // Let's refactor to move fetchLatest out or use a trigger.
+    // A simple way is to use a counter.
+    setRefetchIndex(prev => prev + 1);
+  };
 
   return {
     product,
@@ -280,6 +295,7 @@ export default function useFetchProductDetails({ productId, enabled = true } = {
     loading,
     error,
     isLoading: loading,
-    isError: !!error
+    isError: !!error,
+    refetch
   };
 }

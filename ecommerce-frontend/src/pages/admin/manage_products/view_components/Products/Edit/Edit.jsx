@@ -15,7 +15,7 @@ export default function Edit({ productId: propProductId }) {
   const { id } = useParams()
   const navigate = useNavigate()
   const productId = propProductId ?? id
-  const { product, category, images, details, dimensions, sizeChart, careNotes, sustainabilityNotes, colorVariants, loading, error } =
+  const { product, category, images, details, dimensions, sizeChart, careNotes, sustainabilityNotes, colorVariants, loading, error, refetch } =
     useFetchProductDetails({ productId, enabled: true })
 
   const [name, setName] = useState('')
@@ -53,6 +53,9 @@ export default function Edit({ productId: propProductId }) {
   const uploadInputRef = useRef(null)
   const [uploadedPreviews, setUploadedPreviews] = useState([])
   const [uploadedFilesMeta, setUploadedFilesMeta] = useState([])
+  const [blobMetaByUrl, setBlobMetaByUrl] = useState({})
+  const [queuedFiles, setQueuedFiles] = useState([])
+  const [sessionUploadedUrls, setSessionUploadedUrls] = useState([])
   const [placeholderIndex, setPlaceholderIndex] = useState(null)
   const [replaceIndex, setReplaceIndex] = useState(null)
   const [localImages, setLocalImages] = useState([])
@@ -227,45 +230,55 @@ export default function Edit({ productId: propProductId }) {
     setNewVariantHex('#000000')
   }
 
-  const onUploadImages = async (files) => {
+  const onUploadImages = async (files, existingPreviews = null) => {
     if (!productId || !files?.length) return
     try {
       const all = Array.from(files)
-      const newFiles = all.filter((f) => !uploadedFilesMeta.some((m) => m.name === f.name && m.size === f.size))
+      // Filter out files that have already been processed (based on name/size in uploadedFilesMeta)
+      // Note: If existingPreviews is provided, we assume the caller has already decided these files are valid for UI
+      // but we still want to avoid double-queuing if they are already in the queue.
+      const newFiles = []
+      const newPreviews = []
+
+      all.forEach((f, i) => {
+         const isDuplicate = uploadedFilesMeta.some((m) => m.name === f.name && m.size === f.size)
+         if (!isDuplicate) {
+           newFiles.push(f)
+           if (existingPreviews && existingPreviews[i]) {
+             newPreviews.push(existingPreviews[i])
+           }
+         }
+      })
+
       if (!newFiles.length) return
-      const urls = newFiles.map((f) => URL.createObjectURL(f))
+
+      // If no existing previews were provided, generate them now
+      const urls = (existingPreviews && existingPreviews.length === all.length) 
+        ? newPreviews 
+        : newFiles.map((f) => URL.createObjectURL(f))
+
       setUploadedPreviews((prev) => [...prev, ...urls])
-    } catch {}
-    setUploading(true)
-    try {
-      const all = Array.from(files)
-      const newFiles = all.filter((f) => !uploadedFilesMeta.some((m) => m.name === f.name && m.size === f.size))
-      if (!newFiles.length) return
-      const resp = await uploadProductImages(productId, newFiles)
-      const uploadedUrls = Array.isArray(resp?.images)
-        ? resp.images.map((i) => (typeof i === 'string' ? i : i?.url)).filter(Boolean)
-        : []
-      if (uploadedUrls.length) {
-        setLocalImages((prev) => {
-          revokeBlobUrls(prev.filter(isBlobUrl))
-          const next = prev.filter((u) => !isBlobUrl(u))
-          const set = new Set(next)
-          uploadedUrls.forEach((u) => set.add(u))
-          return Array.from(set)
+      
+      setBlobMetaByUrl((prev) => {
+        const next = { ...prev }
+        urls.forEach((u, idx) => {
+          const f = newFiles[idx]
+          next[u] = { name: f.name, size: f.size }
         })
-      }
-      setUploadedFilesMeta((prev) => [
-        ...prev,
-        ...newFiles.map((f) => ({ name: f.name, size: f.size })),
-      ])
-      if (uploadInputRef?.current) uploadInputRef.current.value = ''
-    } catch (e) {
-    } finally {
-      setUploading(false)
-    }
+        return next
+      })
+      setQueuedFiles((prev) => [...prev, ...newFiles])
+    } catch {}
+    
+    setUploadedFilesMeta((prev) => [
+      ...prev,
+      ...Array.from(files).map((f) => ({ name: f.name, size: f.size })),
+    ])
+    if (uploadInputRef?.current) uploadInputRef.current.value = ''
   }
 
   const [deletingSet, setDeletingSet] = useState(new Set())
+  const [pendingDeletes, setPendingDeletes] = useState(new Set())
   const markDeleting = (key) => {
     setDeletingSet((prev) => {
       const next = new Set(prev)
@@ -298,38 +311,14 @@ export default function Edit({ productId: propProductId }) {
     setPending(true)
     try {
       await removeAll(productId)
-      setLocalImages([])
-      setPrimaryImageUrl('')
-      setUploadedPreviews([])
-      setUploadedFilesMeta([])
+      setLocalImages((prev) => prev.filter((u) => isBlobUrl(u)))
+      setPrimaryImageUrl((prev) => {
+        if (!prev || isBlobUrl(prev)) return prev || ''
+        const blobs = localImages.filter((u) => isBlobUrl(u))
+        return blobs[0] || ''
+      })
       setPlaceholderIndex(null)
       setReplaceIndex(null)
-      revokeBlobUrls(localImages.filter(isBlobUrl))
-      const base = typeof import.meta?.env?.VITE_API_BASE_URL !== 'undefined' ? import.meta.env.VITE_API_BASE_URL : 'http://localhost:5000'
-      const attempts = [
-        `/api/products/${productId}`,
-        `${base}/api/products/${productId}`,
-      ]
-      for (let i = 0; i < attempts.length; i++) {
-        const url = attempts[i]
-        try {
-          const res = await fetch(url, { headers: { Accept: 'application/json' }, cache: 'no-store' })
-          if (!res.ok) continue
-          const ct = res.headers.get('content-type') || ''
-          const json = ct.includes('application/json') ? await res.json() : null
-          const imgs = Array.isArray(json?.images) ? json.images.filter(Boolean) : []
-          const prim = typeof json?.product?.image_url === 'string' ? json.product.image_url : ''
-          setLocalImages(imgs)
-          setPrimaryImageUrl(prim || '')
-          try {
-            const KEY = `product-details-cache:v1:id=${productId}`
-            if (typeof window !== 'undefined' && window.localStorage) {
-              window.localStorage.removeItem(KEY)
-            }
-          } catch {}
-          break
-        } catch {}
-      }
     } catch (e) {
     } finally {
       setPending(false)
@@ -339,33 +328,104 @@ export default function Edit({ productId: propProductId }) {
   const onSubmit = async (e) => {
     e.preventDefault()
     if (parsedDetails === '__invalid__' || parsedDimensions === '__invalid__' || parsedSustainability === '__invalid__') return
-    const payload = {}
-    if (name.trim()) payload.name = name.trim()
-    if (shortDescription.trim()) payload.description = shortDescription.trim()
-    if (price !== '') payload.price = parseFloat(price)
-    if (stock !== '') payload.stock = parseInt(stock, 10)
-    if (categoryId !== '') payload.category_id = parseInt(categoryId, 10)
-    if (primaryImageUrl) payload.image_url = primaryImageUrl
-    if (parsedDetails !== '__invalid__') payload.details = parsedDetails
-    const dimsObj = parsedDimensions !== '__invalid__' ? (parsedDimensions || {}) : {}
-    if (sizes && sizes.length) {
-      const chart = {}
-      sizes.forEach((s) => {
-        const key = String(s).toUpperCase()
-        const val = DEFAULT_SIZE_CHART_CM[key] || null
-        if (val) chart[s] = val
-      })
-      if (Object.keys(chart).length) dimsObj.size_chart = chart
-    }
-    if (Object.keys(dimsObj).length) payload.dimensions = dimsObj
-    if (careNotesList && careNotesList.length) payload.care_notes = careNotesList.filter(Boolean)
-    if (parsedSustainability !== '__invalid__') payload.sustainability_notes = parsedSustainability
-    if (variants && variants.length) payload.color_variants = variants.filter((v) => v && (v.name || v.hex))
+
     setPending(true)
     try {
+      // 1. Upload queued images first
+      let currentUploadedUrls = []
+      if (queuedFiles.length) {
+        setUploading(true)
+        try {
+          const resp = await uploadProductImages(productId, queuedFiles)
+          currentUploadedUrls = Array.isArray(resp?.images)
+            ? resp.images.map((i) => (typeof i === 'string' ? i : i?.url)).filter(Boolean)
+            : []
+        } finally {
+          setUploading(false)
+        }
+      }
+
+      // 2. Resolve final image list (map blobs to new URLs)
+      const resolvedImages = localImages.map((img) => {
+        if (isBlobUrl(img)) {
+          const meta = blobMetaByUrl[img]
+          if (meta) {
+            const fileIdx = queuedFiles.findIndex((f) => f.name === meta.name && f.size === meta.size)
+            if (fileIdx !== -1 && currentUploadedUrls[fileIdx]) {
+              return currentUploadedUrls[fileIdx]
+            }
+          }
+          return null
+        }
+        return img
+      }).filter(Boolean)
+
+      // Determine final primary image URL
+      let finalPrimaryUrl = primaryImageUrl
+      if (primaryImageUrl && isBlobUrl(primaryImageUrl)) {
+        const meta = blobMetaByUrl[primaryImageUrl]
+        if (meta) {
+          const fileIdx = queuedFiles.findIndex((f) => f.name === meta.name && f.size === meta.size)
+          if (fileIdx !== -1 && currentUploadedUrls[fileIdx]) {
+            finalPrimaryUrl = currentUploadedUrls[fileIdx]
+          } else {
+            finalPrimaryUrl = ''
+          }
+        } else {
+          finalPrimaryUrl = resolvedImages[0] || ''
+        }
+      } else if (!primaryImageUrl && resolvedImages.length > 0) {
+        finalPrimaryUrl = resolvedImages[0]
+      }
+
+      // 3. Construct Payload
+      const payload = {}
+      if (name.trim()) payload.name = name.trim()
+      if (shortDescription.trim()) payload.description = shortDescription.trim()
+      if (price !== '') payload.price = parseFloat(price)
+      if (stock !== '') payload.stock = parseInt(stock, 10)
+      if (categoryId !== '') payload.category_id = parseInt(categoryId, 10)
+      if (finalPrimaryUrl) payload.image_url = finalPrimaryUrl
+
+      if (parsedDetails !== '__invalid__') payload.details = parsedDetails
+      const dimsObj = parsedDimensions !== '__invalid__' ? (parsedDimensions || {}) : {}
+      if (sizes && sizes.length) {
+        const chart = {}
+        sizes.forEach((s) => {
+          const key = String(s).toUpperCase()
+          const val = DEFAULT_SIZE_CHART_CM[key] || null
+          if (val) chart[s] = val
+        })
+        if (Object.keys(chart).length) dimsObj.size_chart = chart
+      }
+      if (Object.keys(dimsObj).length) payload.dimensions = dimsObj
+      if (careNotesList && careNotesList.length) payload.care_notes = careNotesList.filter(Boolean)
+      if (parsedSustainability !== '__invalid__') payload.sustainability_notes = parsedSustainability
+      if (variants && variants.length) payload.color_variants = variants.filter((v) => v && (v.name || v.hex))
+
       console.log('[Edit] Submitting update', { productId, payload })
+
+      // 4. Update Product
       const res = await update(productId, payload)
       console.log('[Edit] Update response', res)
+
+      // 5. Cleanup
+      setLocalImages(resolvedImages)
+      setPrimaryImageUrl(finalPrimaryUrl || '')
+      setQueuedFiles([])
+      setUploadedFilesMeta([])
+      setBlobMetaByUrl({})
+
+      // Process pending deletes
+      if (pendingDeletes.size > 0) {
+        const deletes = Array.from(pendingDeletes)
+        await Promise.all(deletes.map((u) => remove(productId, u)))
+        setPendingDeletes(new Set())
+      }
+
+      if (refetch) {
+        await refetch()
+      }
     } catch (e) {
       console.error('[Edit] Update error', e)
     } finally {
@@ -373,8 +433,20 @@ export default function Edit({ productId: propProductId }) {
     }
   }
 
-  const onCancel = () => {
+  const onCancel = async () => {
+    if (productId && sessionUploadedUrls.length) {
+      try {
+        setPending(true)
+        for (const url of sessionUploadedUrls) {
+          try {
+            await remove(productId, url)
+          } catch {}
+        }
+      } catch {}
+    }
+    setSessionUploadedUrls([])
     navigate(-1)
+    setPending(false)
   }
 
   const displayedImages = useMemo(() => {
@@ -390,12 +462,25 @@ export default function Edit({ productId: propProductId }) {
     e.preventDefault()
     e.stopPropagation()
   }
-  const onDropFiles = (e, single = false) => {
+  const onDropFiles = (e, insertIdx = null) => {
     preventDefaults(e)
     const fl = e.dataTransfer?.files
     if (!fl || !fl.length) return
-    const arr = Array.from(fl)
-    onUploadImages(single ? [arr[0]] : arr)
+    const files = Array.from(fl)
+    
+    // Create previews
+    const previews = files.map(f => URL.createObjectURL(f))
+
+    // Update UI
+    setLocalImages((prev) => {
+      const next = [...prev]
+      const idx = insertIdx !== null ? Math.min(insertIdx, next.length) : next.length
+      // Insert all previews at the index
+      next.splice(idx, 0, ...previews)
+      return next
+    })
+    
+    onUploadImages(files, previews)
   }
   const browse = (ref) => {
     if (ref?.current) ref.current.click()
@@ -461,7 +546,6 @@ export default function Edit({ productId: propProductId }) {
             )}
           </button>
         </div>
-        {(pending || updatePending) ? <div className="update-hint">Submitting product update…</div> : null}
       </div>
       <form id="admin__edit__form" className="admin__edit__form" onSubmit={onSubmit}>
           <div className="admin__edit__body">
@@ -550,7 +634,7 @@ export default function Edit({ productId: propProductId }) {
                   onDrop={(e) => {
                     setReplaceIndex(null)
                     setPlaceholderIndex(localImages.length)
-                    onDropFiles(e, false)
+                    onDropFiles(e)
                   }}
                 >
                   {(() => {
@@ -569,7 +653,7 @@ export default function Edit({ productId: propProductId }) {
                         onDrop={(e) => {
                           setReplaceIndex(null)
                           setPlaceholderIndex(i + 1)
-                          onDropFiles(e, false)
+                          onDropFiles(e, i + 1)
                         }}
                       >
                         <div className="image-placeholder">
@@ -608,52 +692,49 @@ export default function Edit({ productId: propProductId }) {
                           className="image-remove"
                           onClick={(e) => {
                             e.stopPropagation()
+                            // Update local state IMMEDIATELY
+                            // This ensures the UI feels instant even if the server request is still pending
+                            const imgUrl = t;
+                            const nextImages = localImages.filter((_, idx) => idx !== i)
+                            setLocalImages(nextImages)
+                            revokeBlobUrls([imgUrl])
+
+                            // If the removed image was the primary one, promote the first available image immediately
+                            if (imgUrl === primaryImageUrl) {
+                              setPrimaryImageUrl(nextImages.length > 0 ? nextImages[0] : '')
+                            }
+
+                            if (isBlobUrl(imgUrl)) {
+                              const meta = blobMetaByUrl[imgUrl]
+                              if (meta) {
+                                setUploadedFilesMeta((prev) => prev.filter((m) => !(m.name === meta.name && m.size === meta.size)))
+                                setBlobMetaByUrl((prev) => {
+                                  const next = { ...prev }
+                                  delete next[imgUrl]
+                                  return next
+                                })
+                              }
+                            }
+                            setSessionUploadedUrls((prev) => prev.filter((u) => u !== t))
+                            unmarkDeleting(t)
+
                             ;(async () => {
                               try {
-                                const imgUrl = t
                                 let didServerDelete = false
-                                if (productId && imgUrl) {
+                                // Only attempt server delete if it's NOT a blob URL
+                                if (productId && imgUrl && !isBlobUrl(imgUrl)) {
                                   try {
                                     markDeleting(imgUrl)
                                     await remove(productId, imgUrl)
                                     didServerDelete = true
                                   } catch (err) {
+                                    console.error("Failed to delete image", err)
+                                    // Optionally revert UI state here if needed, but for "immediate feel" we usually don't
                                   }
                                 }
-                                setLocalImages((prev) => {
-                                  const next = prev.filter((_, idx) => idx !== i)
-                                  revokeBlobUrls([imgUrl])
-                                  return next
-                                })
-                                const base = typeof import.meta?.env?.VITE_API_BASE_URL !== 'undefined' ? import.meta.env.VITE_API_BASE_URL : 'http://localhost:5000'
-                                const attempts = [
-                                  `/api/products/${productId}`,
-                                  `${base}/api/products/${productId}`,
-                                ]
-                                for (let j = 0; j < attempts.length; j++) {
-                                  const url = attempts[j]
-                                  try {
-                                    const res = await fetch(url, { headers: { Accept: 'application/json' }, cache: 'no-store' })
-                                    if (!res.ok) continue
-                                    const ct = res.headers.get('content-type') || ''
-                                    const json = ct.includes('application/json') ? await res.json() : null
-                                    const imgs = Array.isArray(json?.images) ? json.images.filter(Boolean) : []
-                                    const prim = typeof json?.product?.image_url === 'string' ? json.product.image_url : ''
-                                    setLocalImages(imgs)
-                                    setPrimaryImageUrl(prim || '')
-                                    try {
-                                      const KEY = `product-details-cache:v1:id=${productId}`
-                                      if (typeof window !== 'undefined' && window.localStorage) {
-                                        window.localStorage.removeItem(KEY)
-                                      }
-                                    } catch {}
-                                    break
-                                  } catch {}
-                                }
                               } catch (err) {
-                                setLocalImages((prev) => prev.filter((_, idx) => idx !== i))
+                                console.error("Error in delete process", err)
                               }
-                              unmarkDeleting(t)
                             })()
                           }}
                           aria-label={deletingSet.has(t) ? 'Removing…' : 'Remove image'}
@@ -678,8 +759,30 @@ export default function Edit({ productId: propProductId }) {
                       const fl = e.target.files
                       if (!fl || !fl.length) return
                       const files = Array.from(fl)
+                      let previews = []
                       try {
-                        const previews = files.map((f) => URL.createObjectURL(f))
+                        // Create previews immediately for UI responsiveness
+                        previews = files.map((f) => URL.createObjectURL(f))
+
+                        if (replaceIndex != null && previews.length) {
+                          const oldUrl = localImages[replaceIndex]
+                          if (oldUrl && !isBlobUrl(oldUrl)) {
+                            setPendingDeletes((pd) => {
+                              const n = new Set(pd)
+                              n.add(oldUrl)
+                              return n
+                            })
+                          }
+                        }
+
+                        setBlobMetaByUrl((prev) => {
+                          const next = { ...prev }
+                          previews.forEach((p, idx) => {
+                            const f = files[idx]
+                            next[p] = { name: f.name, size: f.size }
+                          })
+                          return next
+                        })
                         setLocalImages((prev) => {
                           const next = [...prev]
                           if (replaceIndex != null && previews.length) {
@@ -695,7 +798,7 @@ export default function Edit({ productId: propProductId }) {
                           return next
                         })
                       } catch {}
-                      onUploadImages(files)
+                      onUploadImages(files, previews)
                       setReplaceIndex(null)
                     }}
                   />
