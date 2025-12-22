@@ -25,6 +25,7 @@ export default function Edit({ productId: propProductId }) {
   const [dimensionsText, setDimensionsText] = useState('')
   const [sustainabilityText, setSustainabilityText] = useState('')
   const [careNotesList, setCareNotesList] = useState([])
+  const [newCareNote, setNewCareNote] = useState('')
 
   const [variants, setVariants] = useState([])
   const [sizes, setSizes] = useState([])
@@ -154,18 +155,16 @@ export default function Edit({ productId: propProductId }) {
   }
 
   const onAddCareNote = () => {
-    setCareNotesList([...careNotesList, ''])
+    const val = newCareNote.trim()
+    if (!val) return
+    setCareNotesList([...careNotesList, val])
+    setNewCareNote('')
   }
 
   const onRemoveCareNote = (idx) => {
     setCareNotesList(careNotesList.filter((_, i) => i !== idx))
   }
 
-  const onChangeCareNote = (idx, value) => {
-    const next = [...careNotesList]
-    next[idx] = value
-    setCareNotesList(next)
-  }
 
   const onAddVariant = () => {
     setVariants([...variants, { name: '', hex: '#000000' }])
@@ -555,7 +554,7 @@ export default function Edit({ productId: propProductId }) {
                   ))}
                 </div>
                 <div className="admin__edit__sublabel">
-                  selected sizes are: {Array.isArray(sizes) && sizes.length ? sizes.join(', ') : 'none'}
+                  Selected sizes are: {Array.isArray(sizes) && sizes.length ? sizes.join(', ') : 'none'}
                 </div>
               </div>
               <div className="form-group">
@@ -589,7 +588,7 @@ export default function Edit({ productId: propProductId }) {
                       />
                       <button type="button" className="btn-add-color" onClick={onAddVariantManual}>Add Color</button>
                     </div>
-                    <div className="admin__edit__sublabel">selected colors are:</div>
+                    <div className="admin__edit__sublabel">Selected colors are:</div>
                     <div className="color-chip-grid" ref={colorScrollRef}>
                       {Array.isArray(variants) && variants.length ? (
                         variants.map((v, idx) => (
@@ -625,23 +624,22 @@ export default function Edit({ productId: propProductId }) {
                     onChange={(e) => setMaterial(e.target.value)}
                   />
                 </div>
-                <label className="form-label" style={{ fontSize: '0.85rem', color: '#666', marginTop: '5px' }}>Features</label>
+                <label className="form-label features-label">Features</label>
                 <div className="selector-row">
                   <input
                     type="text"
-                    className="form-control"
+                    className="form-control features-input"
                     placeholder="Feature value (e.g. Waterproof)"
                     value={newFeature}
                     onChange={(e) => setNewFeature(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), onAddFeature())}
-                    style={{ flex: 1 }}
                   />
                   <button type="button" className="btn-add-note" onClick={onAddFeature}>Add</button>
                 </div>
                 
-                <div style={{ marginTop: '0.75rem' }}>
-                  <div style={{ fontSize: '0.9rem', color: 'var(--color-text)', lineHeight: '1.5' }}>
-                    <span style={{ fontWeight: 600 }}>Features: </span>
+                <div className="features-list-container">
+                  <div className="admin__edit__sublabel">
+                    <span className="features-list-prefix">Selected features: </span>
                     {features.length > 0 ? (
                       features.map((f, idx) => (
                         <span 
@@ -654,7 +652,7 @@ export default function Edit({ productId: propProductId }) {
                         </span>
                       ))
                     ) : (
-                      <span style={{ color: 'var(--color-muted)', fontStyle: 'italic' }}>None</span>
+                      <span className="features-list-none">None</span>
                     )}
                   </div>
                   <div className="admin__edit__sublabel">Click an added feature to remove it.</div>
@@ -674,24 +672,37 @@ export default function Edit({ productId: propProductId }) {
             </div>
             <div className="form-group admin__edit__fullrow">
               <label className="form-label">Care Notes</label>
-              {Array.isArray(careNotesList) && careNotesList.length ? (
-                careNotesList.map((n, idx) => (
-                  <div key={idx} className="selector-row">
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="e.g., Machine wash cold"
-                      value={n}
-                      onChange={(e) => onChangeCareNote(idx, e.target.value)}
-                    />
-                    <button type="button" className="note-remove-btn" onClick={() => onRemoveCareNote(idx)}>Remove</button>
-                  </div>
-                ))
-              ) : (
-                <div className="admin__edit__sublabel">No care notes added yet</div>
-              )}
               <div className="selector-row">
-                <button type="button" className="btn-add-note" onClick={onAddCareNote}>Add Note</button>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="e.g., Machine wash cold"
+                  value={newCareNote}
+                  onChange={(e) => setNewCareNote(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), onAddCareNote())}
+                />
+                <button type="button" className="btn-add-note" onClick={onAddCareNote}>Add</button>
+              </div>
+
+              <div className="features-list-container">
+                <div className="admin__edit__sublabel">
+                  <span className="features-list-prefix">Selected notes: </span>
+                  {careNotesList.length > 0 ? (
+                    careNotesList.map((n, idx) => (
+                      <span 
+                        key={idx} 
+                        className="feature-text-item"
+                        onClick={() => onRemoveCareNote(idx)}
+                        title="Click to remove"
+                      >
+                        {n}{idx < careNotesList.length - 1 ? ', ' : ''}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="features-list-none">None</span>
+                  )}
+                </div>
+                <div className="admin__edit__sublabel">Click an added note to remove it.</div>
               </div>
             </div>
             {/* Sustainability Notes section removed as it is now handled by Main Description */}

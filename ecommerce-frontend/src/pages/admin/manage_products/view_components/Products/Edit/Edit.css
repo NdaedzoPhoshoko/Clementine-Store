@@ -348,6 +348,29 @@
 }
 
 /* Feature text items */
+.features-label {
+  font-size: 0.85rem;
+  color: var(--color-muted);
+  margin-top: 5px;
+}
+
+.features-input {
+  flex: 1;
+}
+
+.features-list-container {
+  margin-top: 0.75rem;
+}
+
+/* .features-list-prefix {
+  font-weight: 600;
+} */
+
+.features-list-none {
+  color: var(--color-muted);
+  font-style: italic;
+}
+
 .feature-text-item {
   cursor: pointer;
   transition: color 0.15s ease;
