@@ -348,7 +348,7 @@ const Navbar = () => {
             )}
           </div>
           <nav className="nav-links" aria-label="Secondary navigation">
-            <div className="nav-item">
+            <div className="nav-item" onMouseLeave={() => setActiveMenu(null)}>
               <Link
                 to="/"
                 aria-haspopup="menu"
@@ -482,7 +482,7 @@ const Navbar = () => {
               )}
             </div>
 
-            <div className="nav-item">
+            <div className="nav-item" onMouseLeave={() => setActiveMenu(null)}>
               <Link
                 to="/support"
                 aria-haspopup="menu"
@@ -498,7 +498,7 @@ const Navbar = () => {
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
               </Link>
               {activeMenu === "support" && (
-              <div className="nav-mega open" role="menu" aria-label="Support menu" id="menu-support" onMouseLeave={() => setActiveMenu(null)}>
+              <div className="nav-mega open" role="menu" aria-label="Support menu" id="menu-support">
                 <div className="mega-left">
                   <h4>Help Center</h4>
                   <p>Get help with orders, shipping, returns, and account questions. Find quick answers, track your order status, or reach our support team for personalized assistance when you need it.</p>
