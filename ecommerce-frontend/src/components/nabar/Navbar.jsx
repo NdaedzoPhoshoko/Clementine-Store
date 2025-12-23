@@ -47,7 +47,7 @@ const Navbar = () => {
     }, DELAY_CLOSE_MS);
   };
 
-  const { data: hfData, loading: hfLoading } = useHomeFeatures();
+  const { data: hfData, loading: hfLoading, refresh: refreshHomeFeatures } = useHomeFeatures();
   const placeholderImg = "/images/imageNoVnXXmDNi0.png";
   const homeTags = useMemo(() => {
     const tags = [];
@@ -85,6 +85,17 @@ const Navbar = () => {
   }, [hfData]);
   const [homeLoaded, setHomeLoaded] = useState({});
   const markLoaded = (key) => setHomeLoaded((prev) => ({ ...prev, [key]: true }));
+  useEffect(() => {
+    try {
+      homeTags.forEach((t) => {
+        if (!t?.img) return;
+        const img = new Image();
+        img.src = t.img;
+        img.onload = () => markLoaded(t.key);
+        img.onerror = () => markLoaded(t.key);
+      });
+    } catch {}
+  }, [homeTags]);
   const { names, loading: namesLoading, error: namesError } = useFetchCategoryNames({ page: 1, limit: 40 });
   const { bucket, categories, total, loading: autoLoading, error: autoError } = useFetchAutocomplete({ q: searchQuery, limit: 16, enabled: !!searchQuery.trim() });
   const slugify = (s) => s.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
@@ -189,7 +200,7 @@ const Navbar = () => {
   return (
     <nav className="nav-bar" role="navigation" aria-label="Main navigation">
       <div className="nav-bar__inner">
-        <div className="nav-left">
+        <div className="nav-left" onMouseEnter={() => setActiveMenu(null)}>
           <Link to="/" className="nav-brand" aria-label="Home">
             <span className="nav-brand__text">Clementine</span>
           </Link>
@@ -348,14 +359,20 @@ const Navbar = () => {
             )}
           </div>
           <nav className="nav-links" aria-label="Secondary navigation">
-            <div className="nav-item" onMouseLeave={() => setActiveMenu(null)}>
+            <div className="nav-item">
               <Link
                 to="/"
                 aria-haspopup="menu"
                 aria-expanded={activeMenu === "home"}
                 aria-controls="menu-home"
-                onMouseEnter={() => setActiveMenu("home")}
-                onFocus={() => setActiveMenu("home")}
+                onMouseEnter={() => {
+                  setActiveMenu("home");
+                  refreshHomeFeatures();
+                }}
+                onFocus={() => {
+                  setActiveMenu("home");
+                  refreshHomeFeatures();
+                }}
                 onClick={() => {
                   setActiveMenu((prev) => (prev === "home" ? null : "home"));
                 }}
@@ -391,7 +408,7 @@ const Navbar = () => {
                             src={t.img}
                             alt={t.label}
                             className="mega-tag__img"
-                            loading="lazy"
+                            loading="eager"
                             decoding="async"
                             width="160"
                             height="100"
@@ -482,7 +499,7 @@ const Navbar = () => {
               )}
             </div>
 
-            <div className="nav-item" onMouseLeave={() => setActiveMenu(null)}>
+            <div className="nav-item">
               <Link
                 to="/support"
                 aria-haspopup="menu"
@@ -498,7 +515,7 @@ const Navbar = () => {
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
               </Link>
               {activeMenu === "support" && (
-              <div className="nav-mega open" role="menu" aria-label="Support menu" id="menu-support">
+              <div className="nav-mega open" role="menu" aria-label="Support menu" id="menu-support" onMouseLeave={() => setActiveMenu(null)}>
                 <div className="mega-left">
                   <h4>Help Center</h4>
                   <p>Get help with orders, shipping, returns, and account questions. Find quick answers, track your order status, or reach our support team for personalized assistance when you need it.</p>
@@ -522,7 +539,7 @@ const Navbar = () => {
           </nav>
         </div>
 
-        <div className="nav-right">
+        <div className="nav-right" onMouseEnter={() => setActiveMenu(null)}>
           {authed && (isAdminCached || (!meLoading && isAdmin)) ? (
             <span className="nav-admin-label" aria-label="Admin Mode">Admin Mode</span>
           ) : null}

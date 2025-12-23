@@ -81,7 +81,7 @@
   width: auto; /* match .nav-search width */
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 0 0 12px 12px;
   box-shadow: var(--shadow-soft);
   padding: 12px;
   z-index: 1200;
@@ -272,7 +272,7 @@
   box-sizing: border-box;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 0 0 12px 12px;
   box-shadow: var(--shadow-soft);
   padding: 16px 205px; /* increased horizontal padding */
   z-index: 1100;
@@ -282,7 +282,24 @@
   /* Skip rendering work until opened (Chromium) */
   content-visibility: auto;
   contain-intrinsic-size: 600px;
+
+  /* Animation */
+  opacity: 0;
+  transform: translateY(10px);
+  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .nav-mega .mega-left,
 .nav-mega .mega-right { padding: 0 8px; }
 
@@ -406,6 +423,11 @@
   right: 0;
   top: 34px;
   z-index: 50;
+  
+  /* Animation */
+  opacity: 0;
+  transform: translateY(10px);
+  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 .account-card {
   width: 320px;
@@ -457,11 +479,11 @@
 }
 .account-btn--light:hover { filter: brightness(1.04); }
 .account-btn--dark {
-  background: var(--color-text);
+  background: var(--color-accent) !important;
   color: var(--color-bg);
-  border: 1px solid var(--color-text);
+  border: 0px solid var(--color-text) !important;
 }
-.account-btn--dark:hover { filter: brightness(1.04); }
+.account-btn--dark:hover { filter: brightness(1.04); color: var(--color-bg); background: var(--palette-deep) !important; }
 
 /* (Removed) account dropdown styles */
 

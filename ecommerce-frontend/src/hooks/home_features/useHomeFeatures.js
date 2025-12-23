@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-const CACHE_KEY = 'home-features-cache:v1'
-const CACHE_TTL_MS = 5 * 60 * 1000
-
 const cleanImage = (u) => (typeof u === 'string' ? u.replace(/`/g, '').trim() : '')
 
 export default function useHomeFeatures({ enabled = true } = {}) {
+  // Initialize with empty data; no localStorage reading (real-time only)
   const [data, setData] = useState({
     trendy_product: null,
     new_arrival: null,
@@ -13,6 +11,8 @@ export default function useHomeFeatures({ enabled = true } = {}) {
     top_rated: null,
     low_stock_alert: null,
   })
+
+  // Start as loading since we have no data initially
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
@@ -28,33 +28,14 @@ export default function useHomeFeatures({ enabled = true } = {}) {
     controllerRef.current?.abort()
     controllerRef.current = controller
 
-    let usedCache = false
-    let cacheIsStale = true
-
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const raw = localStorage.getItem(CACHE_KEY)
-        if (raw) {
-          const cached = JSON.parse(raw)
-          const age = Date.now() - (cached.ts || 0)
-          if (cached && typeof cached === 'object') {
-            setData({
-              trendy_product: cached.trendy_product || null,
-              new_arrival: cached.new_arrival || null,
-              featured_collection: cached.featured_collection || null,
-              top_rated: cached.top_rated || null,
-              low_stock_alert: cached.low_stock_alert || null,
-            })
-            setLoading(false)
-            usedCache = true
-            cacheIsStale = age >= CACHE_TTL_MS
-          }
-        }
-      }
-    } catch (_) {}
-
     const fetchLatest = async () => {
-      if (!usedCache) setLoading(true)
+      // Check if we already have populated data
+      const hasData = data.trendy_product || data.new_arrival || data.featured_collection || data.top_rated || data.low_stock_alert
+      
+      // Only show loading state if we have NO data.
+      // This prevents the "placeholder state" (skeletons) from reappearing during a refresh.
+      if (!hasData) setLoading(true)
+      
       setError(null)
       const base = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:5000'
       const attempts = ['/api/home-features', `${base}/api/home-features`]
@@ -93,36 +74,26 @@ export default function useHomeFeatures({ enabled = true } = {}) {
           }
 
           setData(next)
-          try {
-            if (typeof window !== 'undefined' && window.localStorage) {
-              localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), ...next }))
-            }
-          } catch (_) {}
           setLoading(false)
           return
         } catch (err) {
           if (controller.signal.aborted) return
           if (i === attempts.length - 1) {
             setError(err)
-            if (!usedCache) setLoading(false)
+            // If we failed and had no data, we stop loading (error state).
+            // If we had data, we keep showing it (silent failure).
+            if (!hasData) setLoading(false)
           }
         }
       }
     }
 
-    if (!usedCache || cacheIsStale) {
-      fetchLatest()
-    }
+    fetchLatest()
 
     return () => controller.abort()
   }, [enabled, refreshKey])
 
   const refresh = useCallback(() => {
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.removeItem(CACHE_KEY)
-      }
-    } catch (_) {}
     setRefreshKey((k) => k + 1)
   }, [])
 
@@ -132,4 +103,3 @@ export default function useHomeFeatures({ enabled = true } = {}) {
 
   return { data, loading, error, refresh, abort }
 }
-
