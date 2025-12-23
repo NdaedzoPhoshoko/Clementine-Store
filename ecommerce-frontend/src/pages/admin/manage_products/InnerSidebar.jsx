@@ -4,7 +4,18 @@ import useManageProducts from './ManageProductsContext.jsx';
 import { useNavigate } from 'react-router-dom';
 
 export default function InnerSidebar() {
-  const { activeSection, innerAction, query, setQuery, status, setStatus, stock, setStock, stars, setStars, reviewRange, setReviewRange } = useManageProducts();
+  const { 
+    activeSection, innerAction, 
+    query, setQuery, 
+    status, setStatus, 
+    stock, setStock, 
+    stars, setStars, 
+    reviewRange, setReviewRange,
+    logChangeType, setLogChangeType,
+    logSource, setLogSource,
+    logStartDate, setLogStartDate,
+    logEndDate, setLogEndDate
+  } = useManageProducts();
   const navigate = useNavigate();
   useEffect(() => {}, [activeSection]);
   return (
@@ -108,18 +119,31 @@ export default function InnerSidebar() {
             </>
           ) : innerAction === 'logs' ? (
             <>
-              <input className="admin_products__filter_input" placeholder="Search records" aria-label="Search inventory records" value={query} onChange={(e) => setQuery(e.target.value)} />
-              <select className="admin_products__filter_select" aria-label="Filter by status" value={status} onChange={(e) => setStatus(e.target.value)}>
-                <option>All Status</option>
-                <option>Active</option>
-                <option>Draft</option>
-                <option>Archived</option>
+              <input className="admin_products__filter_input" placeholder="Search ID or Keyword" aria-label="Search inventory records" value={query} onChange={(e) => setQuery(e.target.value)} />
+              
+              <div className="admin_products__filter_label">Change Type</div>
+              <select className="admin_products__filter_select" aria-label="Filter by change type" value={logChangeType} onChange={(e) => setLogChangeType(e.target.value)}>
+                <option value="">All Types</option>
+                <option value="SALE">Sale</option>
+                <option value="RESTOCK">Restock</option>
+                <option value="ADJUSTMENT">Adjustment</option>
+                <option value="RETURN">Return</option>
               </select>
-              <select className="admin_products__filter_select" aria-label="Filter by stock" value={stock} onChange={(e) => setStock(e.target.value)}>
-                <option>All Stock</option>
-                <option>In Stock</option>
-                <option>Out of Stock</option>
+
+              <div className="admin_products__filter_label">Source</div>
+              <select className="admin_products__filter_select" aria-label="Filter by source" value={logSource} onChange={(e) => setLogSource(e.target.value)}>
+                <option value="">All Sources</option>
+                <option value="order">Order</option>
+                <option value="return">Return</option>
+                <option value="manual">Manual</option>
+                <option value="adjustment">Adjustment</option>
               </select>
+
+              <div className="admin_products__filter_label">Start Date</div>
+              <input type="date" className="admin_products__filter_input" aria-label="Start Date" value={logStartDate} onChange={(e) => setLogStartDate(e.target.value)} />
+
+              <div className="admin_products__filter_label">End Date</div>
+              <input type="date" className="admin_products__filter_input" aria-label="End Date" value={logEndDate} onChange={(e) => setLogEndDate(e.target.value)} />
             </>
           ) : null}
         </>

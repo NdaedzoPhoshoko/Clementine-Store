@@ -22,3 +22,16 @@
 .admin_products__divider { height: 1px; background: var(--color-border); margin: 8px 0; }
 .admin_products__filter_input { height: 30px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--color-border); background: var(--color-surface); }
 .admin_products__filter_select { min-height: 30px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--color-border); background: var(--color-surface); }
+
+.admin_products__filter_select:focus {
+  border-color: var(--color-accent);
+}
+
+.admin_products__filter_label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  margin-top: 0.75rem;
+  margin-bottom: 0.25rem;
+}

@@ -13,6 +13,13 @@ export function ManageProductsProvider({ children }) {
   const [reviewRange, setReviewRange] = useState('All Counts');
   const [innerAction, setInnerAction] = useState('all');
   const [currentProductId, setCurrentProductId] = useState(null);
+
+  // Inventory Logs Filters
+  const [logChangeType, setLogChangeType] = useState('');
+  const [logSource, setLogSource] = useState('');
+  const [logStartDate, setLogStartDate] = useState('');
+  const [logEndDate, setLogEndDate] = useState('');
+
   const location = useLocation();
 
   useEffect(() => {
@@ -38,8 +45,12 @@ export function ManageProductsProvider({ children }) {
     reviewRange, setReviewRange,
     innerAction, setInnerAction,
     currentProductId, setCurrentProductId,
+    logChangeType, setLogChangeType,
+    logSource, setLogSource,
+    logStartDate, setLogStartDate,
+    logEndDate, setLogEndDate,
   }), [activeSection, query, status, stock, stars, reviewRange
-  , innerAction, currentProductId]);
+  , innerAction, currentProductId, logChangeType, logSource, logStartDate, logEndDate]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
