@@ -140,7 +140,7 @@ export default function Stock() {
       </div>
       <div className="admin__edit__body">
         <div className="admin__edit__body_form">
-          <motion.div layout className={gridDocked ? 'admin__edit__left' : 'admin__edit__fullrow'}>
+          <div className={gridDocked ? 'admin__edit__left' : 'admin__edit__fullrow'}>
             <AdminProdGrid products={displayProducts} loading={loading || loadingMore} onEdit={onSelectProduct} />
             <PaginationBar
               page={page}
@@ -154,7 +154,7 @@ export default function Stock() {
                 setPage(target);
               }}
             />
-          </motion.div>
+          </div>
           {gridDocked && (
           <div className="admin__edit__right">
             <div className="adjust__product_title">
