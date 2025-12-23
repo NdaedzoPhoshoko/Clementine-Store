@@ -21,6 +21,11 @@
 }
 .admin__edit__left,
 .admin__edit__right { display: grid; gap: .9rem; }
+.admin__edit__fullrow {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: .9rem;
+}
 .form-group { display: grid; gap: .35rem; }
 .form-row { display: grid; gap: .5rem; }
 .form-row--dual {
@@ -72,6 +77,10 @@
   color: var(--color-accent);
   border-color: var(--color-accent);
   cursor: pointer;
+}
+.preview-btn:disabled {
+  opacity: .6;
+  cursor: not-allowed;
 }
 .preview-btn--secondary {
   background: var(--color-surface);
@@ -145,6 +154,10 @@
   color: var(--color-accent);
   border-color: var(--color-accent);
   cursor: pointer;
+}
+.form-control,
+.form-select {
+  border-radius: 0px;
 }
 .color-chip-grid {
   display: flex;

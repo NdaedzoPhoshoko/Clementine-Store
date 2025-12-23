@@ -186,3 +186,81 @@ export const adjustStock = async (req, res) => {
     client.release();
   }
 };
+
+export const adjustStockBatch = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const payload = Array.isArray(req.body?.items) ? req.body.items : (Array.isArray(req.body) ? req.body : []);
+    if (!payload.length) {
+      return res.status(400).json({ message: "No items" });
+    }
+    const actorId = parseInt(req.user?.id, 10) || null;
+    await client.query('BEGIN');
+    const results = [];
+    const logs = [];
+    const group = new Map();
+    for (const it of payload) {
+      const pid = parseInt(it?.product_id, 10);
+      const qty = parseInt(it?.quantity_changed, 10);
+      if (!pid || pid <= 0) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ message: "Invalid product_id in batch" });
+      }
+      if (!qty || qty === 0 || !Number.isInteger(qty)) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ message: "quantity_changed must be a non-zero integer in batch" });
+      }
+      const arr = group.get(pid) || [];
+      arr.push({
+        product_id: pid,
+        quantity_changed: qty,
+        change_type: it?.change_type,
+        size: typeof it?.size === 'string' ? it.size : '',
+        color_hex: typeof it?.color_hex === 'string' ? it.color_hex : '',
+        source: it?.source || 'adjustment',
+        reason: typeof it?.reason === 'string' ? it.reason : '',
+        note: typeof it?.note === 'string' ? it.note : '',
+        order_id: it?.order_id ?? null,
+        cart_item_id: it?.cart_item_id ?? null,
+      });
+      group.set(pid, arr);
+    }
+    for (const [pid, items] of group.entries()) {
+      const prodRes = await client.query('SELECT id, stock FROM products WHERE id=$1 FOR UPDATE', [pid]);
+      if (prodRes.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ message: "Product not found" });
+      }
+      let runningStock = parseInt(prodRes.rows[0].stock || 0, 10);
+      for (const it of items) {
+        const qty = it.quantity_changed;
+        const normalizedType = it.change_type ? String(it.change_type).toUpperCase() : (qty > 0 ? 'RESTOCK' : 'ADJUSTMENT');
+        const previous_stock = runningStock;
+        const new_stock = previous_stock + qty;
+        if (new_stock < 0) {
+          await client.query('ROLLBACK');
+          return res.status(400).json({ message: "Resulting stock cannot be negative" });
+        }
+        const updRes = await client.query('UPDATE products SET stock=$1 WHERE id=$2 RETURNING id, stock', [new_stock, pid]);
+        runningStock = parseInt(updRes.rows[0].stock, 10);
+        const insRes = await client.query(
+          `INSERT INTO inventory_log
+           (product_id, change_type, quantity_changed, previous_stock, new_stock, size, color_hex, source, reason, note, actor_user_id, order_id, cart_item_id)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+           RETURNING id, product_id, change_type, quantity_changed, previous_stock, new_stock, size, color_hex, source, reason, note, actor_user_id, order_id, cart_item_id, created_at`,
+          [pid, normalizedType, qty, previous_stock, new_stock, it.size, it.color_hex, it.source, it.reason, it.note, actorId, it.order_id, it.cart_item_id]
+        );
+        logs.push(insRes.rows[0]);
+      }
+      results.push({ product_id: pid, final_stock: runningStock });
+    }
+    await client.query('COMMIT');
+    return res.status(201).json({ products: results, logs });
+  } catch (err) {
+    try { await client.query('ROLLBACK'); } catch (_) {}
+    console.error("Adjust stock batch error:", err.message);
+    return res.status(500).json({ message: "Error adjusting stock batch" });
+  } finally {
+    client.release();
+  }
+};

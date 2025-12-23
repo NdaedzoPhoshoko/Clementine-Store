@@ -6,6 +6,9 @@ import { motion } from 'framer-motion';
 import PaginationBar from '../../../../../../components/pagination/PaginationBar.jsx';
 import useManageProducts from '../../../ManageProductsContext.jsx';
 import { HexColorPicker } from 'react-colorful';
+import useAdjustInventoryBatch from '../../../../../../hooks/admin_dashboard/inventory/useAdjustInventoryBatch.js';
+import SuccessModal from '../../../../../../components/modals/success_modal/SuccessModal.jsx';
+import ErrorModal from '../../../../../../components/modals/ErrorModal.jsx';
 
 export default function Stock() {
   const { query } = useManageProducts();
@@ -28,6 +31,12 @@ export default function Stock() {
     }));
   }, [pageItems]);
   const [gridDocked, setGridDocked] = useState(false);
+
+  // Force undocked state on mount to ensure it doesn't persist across reloads unexpectedly
+  React.useEffect(() => {
+    setGridDocked(false);
+  }, []);
+
   const [productId, setProductId] = useState('');
   const [productName, setProductName] = useState('');
   const [currentStock, setCurrentStock] = useState('');
@@ -43,12 +52,18 @@ export default function Stock() {
   const [note, setNote] = useState('');
   const initialValuesRef = useRef(null);
   const colorScrollRef = useRef(null);
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [showError, setShowError] = useState(false);
+  const [applyPerVariant, setApplyPerVariant] = useState(true);
   const COLOR_SCROLL_STEP = 160;
   const scrollColors = (delta) => {
     const el = colorScrollRef.current;
     if (!el) return;
     el.scrollBy({ left: delta, behavior: 'smooth' });
   };
+  const { adjustBatch, pending } = useAdjustInventoryBatch();
 
   const parsedCurrent = useMemo(() => {
     const n = parseInt(currentStock, 10);
@@ -59,47 +74,19 @@ export default function Stock() {
     return Number.isFinite(n) ? n : 0;
   }, [quantity]);
   const previewNew = useMemo(() => Math.max(0, parsedCurrent + parsedQty), [parsedCurrent, parsedQty]);
+  const summary = useMemo(() => {
+    let qty = parseInt(quantity, 10);
+    if (!Number.isInteger(qty) || qty === 0) qty = 1;
+    const countSizes = Array.isArray(sizes) && sizes.length ? sizes.length : 0;
+    const countColors = Array.isArray(variants) && variants.length ? variants.length : 0;
+    const combos = (countSizes || 1) * (countColors || 1);
+    const entries = applyPerVariant ? combos : 1;
+    const totalUnits = applyPerVariant ? qty * combos : qty;
+    return { entries, totalUnits, qty };
+  }, [sizes, variants, quantity, applyPerVariant]);
   const onToggleSize = (s) => {
     const exists = sizes.includes(s);
     setSizes(exists ? sizes.filter((x) => x !== s) : [...sizes, s]);
-  };
-  const normalizeHex = (h) => {
-    const v = (h || '').trim();
-    if (!v) return '';
-    return v.startsWith('#') ? v : `#${v}`;
-  };
-  const handleSave = () => {
-    const pid = parseInt(productId, 10);
-    const qty = parsedQty;
-    if (!pid || !Number.isInteger(qty) || qty === 0) return;
-    const base = {
-      product_id: pid,
-      quantity_changed: qty,
-      change_type: changeType,
-      source,
-      reason: (reason || '').trim(),
-      note: (note || '').trim(),
-    };
-    const variantHexes = (Array.isArray(variants) ? variants : []).map((v) => normalizeHex(v?.hex));
-    const sizeList = Array.isArray(sizes) ? sizes : [];
-    const payloads = [];
-    if (!sizeList.length && !variantHexes.length) {
-      payloads.push({ ...base, size: '', color_hex: '' });
-    } else if (sizeList.length && !variantHexes.length) {
-      sizeList.forEach((s) => payloads.push({ ...base, size: s, color_hex: '' }));
-    } else if (!sizeList.length && variantHexes.length) {
-      variantHexes.forEach((hex) => payloads.push({ ...base, size: '', color_hex: hex }));
-    } else {
-      sizeList.forEach((s) => {
-        variantHexes.forEach((hex) => {
-          payloads.push({ ...base, size: s, color_hex: hex });
-        });
-      });
-    }
-    try {
-      // Placeholder to visualize payloads; integration intentionally not implemented yet
-      console.log('Inventory Adjust Payloads', payloads);
-    } catch (_) {}
   };
   const onAddVariantManual = () => {
     const name = (newVariantName || '').trim();
@@ -145,6 +132,7 @@ export default function Stock() {
     setNote(baseline.note);
   };
   return (
+    <>
     <div className="admin__edit__page">
       <div className="admin__edit__header">
         <h2 className="admin__edit__title">Adjust Stock</h2>
@@ -169,7 +157,10 @@ export default function Stock() {
           </motion.div>
           {gridDocked && (
           <div className="admin__edit__right">
-            <div className="adjust__product_title">Adjusting Stock - {productName || (productId ? `Product #${productId}` : '')}</div>
+            <div className="adjust__product_title">
+              Adjusting Stock - {productName || (productId ? `Product #${productId}` : '')}
+              {productId ? <span> • Stock: {parsedCurrent}</span> : null}
+            </div>
             <div className="adjust__topbar">
               <button
                 type="button"
@@ -180,18 +171,7 @@ export default function Stock() {
                 Cancel
               </button>
             </div>
-            <div className="form-row form-row--dual">
-              <div className="form-group">
-                <label className="admin__edit__sublabel">Current Stock</label>
-                <input
-                  type="number"
-                  className="form-control"
-                  value={currentStock}
-                  onChange={(e) => setCurrentStock(e.target.value)}
-                  placeholder="e.g. 120"
-                  aria-label="Current stock"
-                />
-              </div>
+            <div className="form-row">
               <div className="form-group">
                 <label className="admin__edit__sublabel">Quantity Change</label>
                 <input
@@ -202,6 +182,18 @@ export default function Stock() {
                   placeholder="e.g. -5 or 20"
                   aria-label="Quantity change"
                 />
+                <div className="admin__edit__sublabel">
+                  Positive adds, negative deducts. Quantity applies to each selected size/color. Blank or 0 defaults to 1.
+                </div>
+                <div className="selector-row">
+                  <input
+                    type="checkbox"
+                    id="apply-per-variant"
+                    checked={applyPerVariant}
+                    onChange={(e) => setApplyPerVariant(e.target.checked)}
+                  />
+                  <label htmlFor="apply-per-variant" className="admin__edit__sublabel">Apply quantity to each selected variant</label>
+                </div>
               </div>
             </div>
             <div className="form-row form-row--dual">
@@ -246,6 +238,9 @@ export default function Stock() {
                     <HexColorPicker color={newVariantHex} onChange={setNewVariantHex} />
                   </div>
                   <div className="color-fields">
+                    <div className="admin__edit__sublabel">
+                      Add colors to target variants. If sizes are also selected, the change applies to each size×color combination.
+                    </div>
                     <div className="selector-row">
                       <div className="color-preview" style={{ backgroundColor: newVariantHex }} />
                       <input
@@ -315,6 +310,9 @@ export default function Stock() {
                   ))}
                 </div>
                 <div className="admin__edit__sublabel">
+                  Select sizes to target. If none are selected, the change applies without a size.
+                </div>
+                <div className="admin__edit__sublabel">
                   Selected sizes to add are: {Array.isArray(sizes) && sizes.length ? sizes.join(', ') : 'none'}
                 </div>
               </div>
@@ -356,6 +354,18 @@ export default function Stock() {
                   <div className="preview-value">{previewNew}</div>
                 </div>
                 <div className="preview-item">
+                  <div className="preview-label">Apply Mode</div>
+                  <div className="preview-value">{applyPerVariant ? 'Per Variant' : 'Single Entry'}</div>
+                </div>
+                <div className="preview-item">
+                  <div className="preview-label">Entries</div>
+                  <div className="preview-value">{summary.entries}</div>
+                </div>
+                <div className="preview-item">
+                  <div className="preview-label">Total Units</div>
+                  <div className="preview-value">{summary.totalUnits}</div>
+                </div>
+                <div className="preview-item">
                   <div className="preview-label">Change Type</div>
                   <div className="preview-value">{changeType}</div>
                 </div>
@@ -363,11 +373,11 @@ export default function Stock() {
                   <div className="preview-label">Source</div>
                   <div className="preview-value">{source}</div>
                 </div>
-                <div className="preview-item">
+                <div className="preview-item preview-item--full">
                   <div className="preview-label">Sizes</div>
                   <div className="preview-value">{Array.isArray(sizes) && sizes.length ? sizes.join(', ') : 'none'}</div>
                 </div>
-                <div className="preview-item">
+                <div className="preview-item preview-item--full">
                   <div className="preview-label">Colors</div>
                   <div className="preview-value">
                     {Array.isArray(variants) && variants.length ? (
@@ -394,7 +404,82 @@ export default function Stock() {
                 </div>
               </div>
               <div className="preview-actions">
-                <button type="button" className="preview-btn" aria-label="Save adjustment" onClick={handleSave}>Save Adjustment</button>
+                <div className="admin__edit__sublabel" aria-live="polite">
+                  {(() => {
+                    let qty = parseInt(quantity, 10);
+                    if (!Number.isInteger(qty) || qty === 0) qty = 1;
+                    const countSizes = Array.isArray(sizes) && sizes.length ? sizes.length : 0;
+                    const countColors = Array.isArray(variants) && variants.length ? variants.length : 0;
+                    const combos = (countSizes || 1) * (countColors || 1);
+                    const total = applyPerVariant ? qty * combos : qty;
+                    const entries = applyPerVariant ? combos : 1;
+                    return `This will create ${entries} log ${entries === 1 ? 'entry' : 'entries'} totaling ${total} units.`;
+                  })()}
+                </div>
+                <button
+                  type="button"
+                  className="preview-btn"
+                  aria-label="Save adjustment"
+                  disabled={pending}
+                  onClick={async () => {
+                    const pid = parseInt(productId, 10);
+                    if (!Number.isFinite(pid)) {
+                      setErrorMsg('Select a product first');
+                      setShowError(true);
+                      return;
+                    }
+                    let qty = parseInt(quantity, 10);
+                    if (!Number.isInteger(qty) || qty === 0) {
+                      qty = 1;
+                    }
+                    const base = {
+                      product_id: pid,
+                      quantity_changed: qty,
+                      change_type: changeType,
+                      source,
+                      reason: (reason || '').trim(),
+                      note: (note || '').trim(),
+                    };
+                    let items = [];
+                    const haveSizes = Array.isArray(sizes) && sizes.length > 0;
+                    const haveVariants = Array.isArray(variants) && variants.length > 0;
+                    if (!applyPerVariant) {
+                      items = [base];
+                    } else {
+                      if (haveSizes && haveVariants) {
+                        for (const s of sizes) {
+                          for (const v of variants) {
+                            items.push({ ...base, size: s, color_hex: v?.hex || '' });
+                          }
+                        }
+                      } else if (haveSizes) {
+                        for (const s of sizes) items.push({ ...base, size: s });
+                      } else if (haveVariants) {
+                        for (const v of variants) items.push({ ...base, color_hex: v?.hex || '' });
+                      } else {
+                        items.push(base);
+                      }
+                    }
+                    try {
+                      const result = await adjustBatch(items);
+                      const updated = Array.isArray(result?.products)
+                        ? result.products.find((p) => Number(p.product_id) === pid)
+                        : null;
+                      if (updated && Number.isFinite(Number(updated.final_stock))) {
+                        setCurrentStock(String(updated.final_stock));
+                        const baseline = initialValuesRef.current || {};
+                        initialValuesRef.current = { ...baseline, currentStock: String(updated.final_stock) };
+                      }
+                      setSuccessMsg('Stock adjusted and logged successfully');
+                      setSuccessOpen(true);
+                    } catch (e) {
+                      setErrorMsg(e?.message || 'Failed to adjust stock');
+                      setShowError(true);
+                    }
+                  }}
+                >
+                  {pending ? 'Saving…' : 'Save Adjustment'}
+                </button>
                 <button
                   type="button"
                   className="preview-btn preview-btn--secondary"
@@ -422,5 +507,29 @@ export default function Stock() {
         </div>
       </div>
     </div>
+    <SuccessModal
+      open={successOpen}
+      onClose={() => setSuccessOpen(false)}
+      onAfterClose={() => {
+        setSuccessMsg('');
+        navigate('/admin/product_management/inventory/logs');
+      }}
+      variant="success"
+      title="Stock Updated"
+      message={successMsg}
+      autoCloseMs={6000}
+      closeOnOverlay={true}
+    />
+    {showError && (
+      <ErrorModal
+        message={errorMsg}
+        onClose={() => {
+          setShowError(false);
+          setErrorMsg('');
+        }}
+        durationMs={8000}
+      />
+    )}
+    </>
   );
 }

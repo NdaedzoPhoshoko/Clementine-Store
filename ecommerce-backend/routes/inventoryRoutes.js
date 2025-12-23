@@ -1,5 +1,5 @@
 import express from "express";
-import { getInventoryLogs, adjustStock } from "../controllers/inventoryController.js";
+import { getInventoryLogs, adjustStock, adjustStockBatch } from "../controllers/inventoryController.js";
 import { protect, requireAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -152,5 +152,81 @@ router.get("/", protect, requireAdmin, getInventoryLogs);
  *         description: Server error while adjusting stock
  */
 router.post("/adjust", protect, requireAdmin, adjustStock);
+/**
+ * @swagger
+ * /api/inventory-logs/adjust/batch:
+ *   post:
+ *     summary: Adjust product stock for multiple variant entries in a single transaction
+ *     description: Accepts an array of adjustment items or an object with an `items` array. Each item creates an inventory log and updates product stock sequentially per product.
+ *     tags:
+ *       - Admin
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             oneOf:
+ *               - type: object
+ *                 properties:
+ *                   items:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       properties:
+ *                         product_id: { type: integer }
+ *                         quantity_changed: { type: integer, description: "Positive for restock, negative for deduction" }
+ *                         change_type: { type: string }
+ *                         size: { type: string }
+ *                         color_hex: { type: string }
+ *                         source: { type: string }
+ *                         reason: { type: string }
+ *                         note: { type: string }
+ *                         order_id: { type: integer }
+ *                         cart_item_id: { type: integer }
+ *               - type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     product_id: { type: integer }
+ *                     quantity_changed: { type: integer }
+ *                     change_type: { type: string }
+ *                     size: { type: string }
+ *                     color_hex: { type: string }
+ *                     source: { type: string }
+ *                     reason: { type: string }
+ *                     note: { type: string }
+ *                     order_id: { type: integer }
+ *                     cart_item_id: { type: integer }
+ *     responses:
+ *       201:
+ *         description: Stock adjustments applied and logs created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 products:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       product_id: { type: integer }
+ *                       final_stock: { type: integer }
+ *                 logs:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       400:
+ *         description: Invalid input or negative resulting stock
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Admin privilege required
+ *       500:
+ *         description: Server error while adjusting stock in batch
+ */
+router.post("/adjust/batch", protect, requireAdmin, adjustStockBatch);
 
 export default router;
