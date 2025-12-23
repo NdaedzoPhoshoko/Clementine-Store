@@ -295,3 +295,45 @@ UPDATE users SET token_version = 0 WHERE token_version IS NULL;
 ALTER TABLE users ALTER COLUMN token_version SET DEFAULT 0, ALTER COLUMN token_version SET NOT NULL;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE;
 COMMIT;
+
+BEGIN;
+ALTER TABLE inventory_log
+  ADD COLUMN IF NOT EXISTS actor_user_id INT REFERENCES users(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS source VARCHAR(50),
+  ADD COLUMN IF NOT EXISTS reason VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS note TEXT,
+  ADD COLUMN IF NOT EXISTS order_id INT REFERENCES orders(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS cart_item_id INT REFERENCES cart_items(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS previous_stock INT CHECK (previous_stock >= 0),
+  ADD COLUMN IF NOT EXISTS new_stock INT CHECK (new_stock >= 0),
+  ADD COLUMN IF NOT EXISTS size VARCHAR(50) NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS color_hex VARCHAR(12) NOT NULL DEFAULT '';
+COMMIT;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'inventory_log_change_type_allowed'
+  ) THEN
+    ALTER TABLE inventory_log
+      ADD CONSTRAINT inventory_log_change_type_allowed
+      CHECK (change_type IN ('SALE','RESTOCK','RETURN','ADJUSTMENT','CANCELLATION','RESERVATION','UNRESERVATION'));
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'inventory_log_quantity_changed_nonzero'
+  ) THEN
+    ALTER TABLE inventory_log
+      ADD CONSTRAINT inventory_log_quantity_changed_nonzero
+      CHECK (quantity_changed <> 0);
+  END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_inventory_log_product_created_at ON inventory_log(product_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_inventory_log_order ON inventory_log(order_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_log_actor ON inventory_log(actor_user_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_log_source ON inventory_log(source);
+CREATE INDEX IF NOT EXISTS idx_inventory_log_variant ON inventory_log(size, color_hex);

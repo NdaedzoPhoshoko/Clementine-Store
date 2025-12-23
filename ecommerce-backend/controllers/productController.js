@@ -448,6 +448,7 @@ export const updateProduct = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
     const existing = existingRes.rows[0];
+    const originalStock = parseInt(existing.stock || 0, 10);
 
     const { name, description, price, image_url, stock, category_id, details, dimensions, care_notes, sustainability_notes, color_variants } = req.body || {};
 
@@ -611,6 +612,37 @@ export const updateProduct = async (req, res) => {
     ];
     const result = await pool.query(updateQuery, updateParams);
     const product = result.rows[0];
+
+    try {
+      const updatedStock = parseInt(product.stock || 0, 10);
+      const delta = updatedStock - originalStock;
+      if (delta !== 0) {
+        const actorId = parseInt(req.user?.id, 10) || null;
+        const changeType = delta > 0 ? 'RESTOCK' : 'ADJUSTMENT';
+        await pool.query(
+          `INSERT INTO inventory_log
+           (product_id, change_type, quantity_changed, previous_stock, new_stock, size, color_hex, source, reason, note, actor_user_id, order_id, cart_item_id)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+          [
+            id,
+            changeType,
+            delta,
+            originalStock,
+            updatedStock,
+            '', // size
+            '', // color_hex
+            'manual',
+            'admin update stock',
+            '',
+            actorId,
+            null,
+            null,
+          ]
+        );
+      }
+    } catch (logErr) {
+      console.warn("Inventory log insert failed after product update:", logErr?.message || logErr);
+    }
 
     return res.status(200).json({ product });
   } catch (err) {

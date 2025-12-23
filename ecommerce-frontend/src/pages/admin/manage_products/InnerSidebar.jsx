@@ -84,6 +84,15 @@ export default function InnerSidebar() {
           <div className="admin_products__section_title">Inventory</div>
           <button
             type="button"
+            className={`admin_products__action_btn ${innerAction === 'adjust' ? 'admin_products__action_btn--active' : ''}`}
+            aria-label="Adjust stock"
+            aria-pressed={innerAction === 'adjust'}
+            onClick={() => navigate('/admin/product_management/inventory/adjust')}
+          >
+            Adjust Stock
+          </button>
+          <button
+            type="button"
             className={`admin_products__action_btn ${innerAction === 'logs' ? 'admin_products__action_btn--active' : ''}`}
             aria-label="Inventory logs"
             aria-pressed={innerAction === 'logs'}
@@ -93,18 +102,26 @@ export default function InnerSidebar() {
           </button>
           <div className="admin_products__divider" aria-hidden="true"></div>
           <div className="admin_products__section_title">Filters</div>
-          <input className="admin_products__filter_input" placeholder="Search records" aria-label="Search inventory records" value={query} onChange={(e) => setQuery(e.target.value)} />
-          <select className="admin_products__filter_select" aria-label="Filter by status" value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option>All Status</option>
-            <option>Active</option>
-            <option>Draft</option>
-            <option>Archived</option>
-          </select>
-          <select className="admin_products__filter_select" aria-label="Filter by stock" value={stock} onChange={(e) => setStock(e.target.value)}>
-            <option>All Stock</option>
-            <option>In Stock</option>
-            <option>Out of Stock</option>
-          </select>
+          {innerAction === 'adjust' ? (
+            <>
+              <input className="admin_products__filter_input" placeholder="Search products" aria-label="Search products" value={query} onChange={(e) => setQuery(e.target.value)} />
+            </>
+          ) : innerAction === 'logs' ? (
+            <>
+              <input className="admin_products__filter_input" placeholder="Search records" aria-label="Search inventory records" value={query} onChange={(e) => setQuery(e.target.value)} />
+              <select className="admin_products__filter_select" aria-label="Filter by status" value={status} onChange={(e) => setStatus(e.target.value)}>
+                <option>All Status</option>
+                <option>Active</option>
+                <option>Draft</option>
+                <option>Archived</option>
+              </select>
+              <select className="admin_products__filter_select" aria-label="Filter by stock" value={stock} onChange={(e) => setStock(e.target.value)}>
+                <option>All Stock</option>
+                <option>In Stock</option>
+                <option>Out of Stock</option>
+              </select>
+            </>
+          ) : null}
         </>
       ) : activeSection === 'reviews' ? (
         <>

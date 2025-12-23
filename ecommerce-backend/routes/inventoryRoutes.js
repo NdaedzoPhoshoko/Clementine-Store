@@ -1,5 +1,5 @@
 import express from "express";
-import { getInventoryLogs } from "../controllers/inventoryController.js";
+import { getInventoryLogs, adjustStock } from "../controllers/inventoryController.js";
 import { protect, requireAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -38,6 +38,26 @@ const router = express.Router();
  *           type: string
  *         description: Filter by change type (e.g., "SALE" or "RESTOCK")
  *       - in: query
+ *         name: source
+ *         schema:
+ *           type: string
+ *         description: Filter by source (order, return, manual, adjustment)
+ *       - in: query
+ *         name: size
+ *         schema:
+ *           type: string
+ *         description: Filter by variant size
+ *       - in: query
+ *         name: colorHex
+ *         schema:
+ *           type: string
+ *         description: Filter by variant color hex code
+ *       - in: query
+ *         name: actorUserId
+ *         schema:
+ *           type: integer
+ *         description: Filter by actor user id
+ *       - in: query
  *         name: startDate
  *         schema:
  *           type: string
@@ -67,6 +87,17 @@ const router = express.Router();
  *                       product_name: { type: string }
  *                       change_type: { type: string }
  *                       quantity_changed: { type: integer }
+ *                       size: { type: string }
+ *                       color_hex: { type: string }
+ *                       previous_stock: { type: integer }
+ *                       new_stock: { type: integer }
+ *                       source: { type: string }
+ *                       reason: { type: string }
+ *                       note: { type: string }
+ *                       actor_user_id: { type: integer }
+ *                       actor_name: { type: string }
+ *                       order_id: { type: integer }
+ *                       cart_item_id: { type: integer }
  *                       created_at: { type: string, format: date-time }
  *                 meta:
  *                   type: object
@@ -81,5 +112,45 @@ const router = express.Router();
  *         description: Server error while fetching inventory logs
  */
 router.get("/", protect, requireAdmin, getInventoryLogs);
+
+/**
+ * @swagger
+ * /api/inventory-logs/adjust:
+ *   post:
+ *     summary: Adjust product stock and create an inventory log
+ *     tags:
+ *       - Admin
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               product_id: { type: integer }
+ *               quantity_changed: { type: integer, description: "Positive for restock, negative for deduction" }
+ *               change_type: { type: string }
+ *               size: { type: string }
+ *               color_hex: { type: string }
+ *               source: { type: string }
+ *               reason: { type: string }
+ *               note: { type: string }
+ *               order_id: { type: integer }
+ *               cart_item_id: { type: integer }
+ *     responses:
+ *       201:
+ *         description: Stock adjusted and log created
+ *       400:
+ *         description: Invalid input or negative resulting stock
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Admin privilege required
+ *       500:
+ *         description: Server error while adjusting stock
+ */
+router.post("/adjust", protect, requireAdmin, adjustStock);
 
 export default router;

@@ -23,7 +23,8 @@ export function ManageProductsProvider({ children }) {
       const idOrSlug = segs[4] != null ? segs[4] : null;
       const id = idOrSlug != null ? Number(extractIdFromSlug(idOrSlug)) : null;
       setActiveSection(section);
-      setInnerAction(action);
+      const normalizedAction = section === 'inventory' && action === 'all' ? 'adjust' : action;
+      setInnerAction(normalizedAction);
       setCurrentProductId(Number.isFinite(id) ? id : null);
     }
   }, [location.pathname]);
