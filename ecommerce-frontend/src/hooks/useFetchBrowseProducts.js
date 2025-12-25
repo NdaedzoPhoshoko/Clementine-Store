@@ -167,6 +167,7 @@ function normalizeItem(p) {
     price: typeof p.price === 'string' ? Number(p.price) : p.price,
     stock: p.stock,
     category_id: p.category_id,
+    dimensions: p.dimensions,
     average_rating: p.average_rating !== undefined ? p.average_rating : 0,
     review_count: p.review_count !== undefined ? p.review_count : 0,
   };

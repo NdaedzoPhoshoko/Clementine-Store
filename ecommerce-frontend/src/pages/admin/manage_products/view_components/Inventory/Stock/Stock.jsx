@@ -47,6 +47,7 @@ export default function Stock() {
   const [newVariantName, setNewVariantName] = useState('');
   const [newVariantHex, setNewVariantHex] = useState('#5f9ae2');
   const DEFAULT_SIZE_OPTIONS = ['XS', 'S', 'M', 'L', 'XL', '2XL'];
+  const [availableSizes, setAvailableSizes] = useState(DEFAULT_SIZE_OPTIONS);
   const [source, setSource] = useState('manual');
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
@@ -108,6 +109,16 @@ export default function Stock() {
     setProductName(foundRaw?.name || '');
     setCurrentStock(foundRaw?.stock != null ? String(foundRaw.stock) : '');
     setGridDocked(true);
+
+    // Extract sizes from product dimensions if available
+    const sizeChart = foundRaw?.dimensions?.size_chart;
+    const productSizes = sizeChart ? Object.keys(sizeChart) : [];
+    if (productSizes.length > 0) {
+      setAvailableSizes(productSizes);
+    } else {
+      setAvailableSizes(DEFAULT_SIZE_OPTIONS);
+    }
+
     const baseline = {
       currentStock: foundRaw?.stock != null ? String(foundRaw.stock) : '',
       quantity: '',
@@ -298,7 +309,7 @@ export default function Stock() {
               <div className="form-group">
                 <label className="form-label">Sizes</label>
                 <div className="size-palette">
-                  {DEFAULT_SIZE_OPTIONS.map((s) => (
+                  {availableSizes.map((s) => (
                     <button
                       key={s}
                       type="button"
