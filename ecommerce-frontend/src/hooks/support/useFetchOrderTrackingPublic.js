@@ -13,9 +13,15 @@ export default function useFetchOrderTrackingPublic() {
 
     try {
       // Backend expects /api/orders/track/:id
-      const res = await apiFetch(`/api/orders/track/${orderId}`, {
+      const timestamp = Date.now();
+      const res = await apiFetch(`/api/orders/track/${orderId}?_t=${timestamp}`, {
         method: 'GET',
-        headers: { accept: 'application/json' },
+        headers: { 
+          accept: 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        },
       });
       
       const payload = await res.json().catch(() => ({}));

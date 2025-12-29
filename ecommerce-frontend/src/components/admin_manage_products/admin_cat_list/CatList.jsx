@@ -2,7 +2,7 @@ import React from 'react'
 import './CatList.css'
 import CatListItem from './cat_list_item/CatListItem.jsx'
 
-export default function CatList({ categories = [], loading = false, onEdit }) {
+export default function CatList({ categories = [], loading = false, onEdit, onDelete }) {
   const ready = !loading
 
   if (!loading && (!categories || categories.length === 0)) {
@@ -32,7 +32,7 @@ export default function CatList({ categories = [], loading = false, onEdit }) {
                 </div>
               </article>
             ) : (
-              <CatListItem category={c} onEdit={onEdit} />
+              <CatListItem category={c} onEdit={onEdit} onDelete={onDelete} />
             )}
           </li>
         ))}

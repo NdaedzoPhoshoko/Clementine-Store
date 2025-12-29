@@ -85,11 +85,15 @@ export default function useFetchInventoryLogs({
       if (actorUserId) params.set('actorUserId', String(actorUserId));
       if (startDate) params.set('startDate', startDate);
       if (endDate) params.set('endDate', endDate);
+      params.set('_t', String(Date.now())); // Cache busting
 
       const res = await apiFetch(`/api/inventory-logs?${params.toString()}`, {
         method: 'GET',
         headers: {
           accept: 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
         },
       });
 

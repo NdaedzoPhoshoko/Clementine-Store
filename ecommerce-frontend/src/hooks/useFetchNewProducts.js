@@ -12,9 +12,10 @@ export default function useFetchNewProducts() {
       setLoading(true);
       setError(null);
       const base = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:5000';
+      const timestamp = Date.now();
       const attempts = [
-        '/api/products/new', // Vite proxy
-        `${base}/api/products/new`, // Absolute fallback
+        `/api/products/new?_t=${timestamp}`, // Vite proxy
+        `${base}/api/products/new?_t=${timestamp}`, // Absolute fallback
       ];
 
       for (let i = 0; i < attempts.length; i++) {
@@ -22,7 +23,12 @@ export default function useFetchNewProducts() {
         try {
           console.log(`[useFetchNewProducts] Attempt ${i + 1}:`, url);
           const res = await fetch(url, {
-            headers: { accept: 'application/json' },
+            headers: { 
+              accept: 'application/json',
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
+            },
             signal: controller.signal,
           });
           console.log('[useFetchNewProducts] Response:', res.status, res.statusText);

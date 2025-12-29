@@ -88,16 +88,22 @@ export default function useFetchProductReviews({ productId, enabled = true } = {
       setLoading(!usedCache);
 
       const base = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:5000';
+      const timestamp = Date.now();
       const attempts = [
-        `/api/products/${productId}/reviews`,
-        `${base}/api/products/${productId}/reviews`,
+        `/api/products/${productId}/reviews?_t=${timestamp}`,
+        `${base}/api/products/${productId}/reviews?_t=${timestamp}`,
       ];
 
       for (let i = 0; i < attempts.length; i++) {
         const url = attempts[i];
         try {
           const res = await apiFetch(url, {
-            headers: { accept: 'application/json' },
+            headers: { 
+              accept: 'application/json',
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
+            },
             signal: controller.signal,
           });
           if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);

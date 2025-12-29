@@ -19,7 +19,16 @@ export default function useFetchMe({ enabled = true } = {}) {
       setError(null);
       setData(null);
       try {
-        const res = await apiFetch('/api/users/me', { headers: { accept: 'application/json' }, signal: controller.signal });
+        const timestamp = Date.now();
+        const res = await apiFetch(`/api/users/me?_t=${timestamp}`, { 
+          headers: { 
+            accept: 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }, 
+          signal: controller.signal 
+        });
         const payload = await res.json().catch(() => ({}));
         if (!res.ok) {
           const message = payload?.message || `HTTP ${res.status}`;

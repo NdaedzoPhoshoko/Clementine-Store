@@ -29,7 +29,16 @@ export default function useFetchCart({ enabled = true } = {}) {
       setError(null);
       setLoading(true);
       try {
-        const res = await apiFetch('/api/cart', { headers: { accept: 'application/json' }, signal: controller.signal });
+        const timestamp = Date.now();
+        const res = await apiFetch(`/api/cart?_t=${timestamp}`, { 
+          headers: { 
+            accept: 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }, 
+          signal: controller.signal 
+        });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const ct = res.headers.get('content-type') || '';
         if (!ct.includes('application/json')) {

@@ -61,7 +61,8 @@ export default function useFetchAutocomplete({ q = '', limit = 10, enabled = tru
       setError(null);
 
       const base = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:5000';
-      const params = new URLSearchParams({ q: trimmedQ });
+      const timestamp = Date.now();
+      const params = new URLSearchParams({ q: trimmedQ, _t: String(timestamp) });
       if (limit != null) params.set('limit', String(limit));
 
       const attempts = [
@@ -73,7 +74,12 @@ export default function useFetchAutocomplete({ q = '', limit = 10, enabled = tru
         const url = attempts[i];
         try {
           const res = await fetch(url, {
-            headers: { accept: 'application/json' },
+            headers: { 
+              accept: 'application/json',
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
+            },
             signal: controller.signal
           });
           if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);

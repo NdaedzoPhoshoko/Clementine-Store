@@ -1,8 +1,8 @@
 import React from 'react'
 import './CatListItem.css'
-import { Pencil, Image as ImageIcon } from 'lucide-react'
+import { Image as ImageIcon, Trash2 } from 'lucide-react'
 
-export default function CatListItem({ category = {}, onEdit }) {
+export default function CatListItem({ category = {}, onEdit, onDelete }) {
   const {
     id,
     name = 'Untitled Category',
@@ -14,7 +14,18 @@ export default function CatListItem({ category = {}, onEdit }) {
   const imgAlt = name || 'Category image'
 
   return (
-    <article className="admin__cat_list_item_card" aria-label={name} tabIndex={0}>
+    <article 
+      className="admin__cat_list_item_card" 
+      aria-label={`Edit ${name}`} 
+      tabIndex={0}
+      onClick={() => onEdit && onEdit(category)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onEdit && onEdit(category);
+        }
+      }}
+    >
       <div className="admin__cat_list_item_media">
         {image ? (
           <img className="admin__cat_list_item_img" src={image} alt={imgAlt} />
@@ -25,15 +36,15 @@ export default function CatListItem({ category = {}, onEdit }) {
         )}
         <button
           type="button"
-          className="admin__cat_list_item_edit"
-          aria-label="Edit category"
+          className="admin__cat_list_item_delete"
+          aria-label="Delete category"
           onClick={(e) => {
             e.stopPropagation();
-            onEdit && onEdit(category);
+            onDelete && onDelete(category);
           }}
           onMouseUp={(e) => e.currentTarget.blur()}
         >
-          <Pencil size={18} />
+          <Trash2 size={18} />
         </button>
       </div>
       <div className="admin__cat_list_item_body">

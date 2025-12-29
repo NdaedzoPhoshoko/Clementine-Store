@@ -1,50 +1,54 @@
 import { useEffect, useState } from 'react';
 
-// Cache config (same TTL as new products)
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const cacheKey = (page, limit, search) =>
-  `categories-with-images-cache:v1:p=${page}:l=${limit}:s=${encodeURIComponent(search || '')}`;
+// Cache disabled for immediate updates
+// const CACHE_TTL_MS = 5 * 60 * 1000; 
 
 export default function useFetchCategoriesWithImages({ page = 1, limit = 16, search = '' } = {}) {
   const [categories, setCategories] = useState([]);
   const [meta, setMeta] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const refetch = () => setRefreshKey(prev => prev + 1);
+
+  // kept for backward compatibility, but caching is disabled
+  const invalidateCache = () => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const prefix = 'categories-with-images-cache:';
+        const keys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith(prefix)) {
+            keys.push(k);
+          }
+        }
+        keys.forEach((k) => localStorage.removeItem(k));
+        // console.log(`[useFetchCategoriesWithImages] Invalidated ${keys.length} cache entries.`);
+      }
+    } catch (e) {
+      console.warn('[useFetchCategoriesWithImages] Cache invalidation failed:', e);
+    }
+  };
 
   useEffect(() => {
     const controller = new AbortController();
 
-    const KEY = cacheKey(page, limit, search);
-    let usedCache = false;
-    let cacheIsStale = true;
-
-    // Try cache first
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const raw = localStorage.getItem(KEY);
-        if (raw) {
-          const cached = JSON.parse(raw);
-          const age = Date.now() - (cached.ts || 0);
-          if (Array.isArray(cached.categories)) {
-            console.log('[useFetchCategoriesWithImages] Using cached categories. Age(ms):', age);
-            setCategories(cached.categories);
-            setMeta(cached.meta || null);
-            setLoading(false);
-            usedCache = true;
-            cacheIsStale = age >= CACHE_TTL_MS;
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('[useFetchCategoriesWithImages] Cache read failed:', e);
-    }
+    // Cache logic disabled
+    // const KEY = cacheKey(page, limit, search);
+    // let usedCache = false;
 
     const fetchLatest = async () => {
-      if (!usedCache) setLoading(true);
+      setLoading(true);
       setError(null);
 
       const base = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:5000';
-      const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+      const params = new URLSearchParams({ 
+        page: String(page), 
+        limit: String(limit),
+        _t: String(Date.now()) // Prevent browser caching
+      });
       if (search) params.set('search', String(search));
 
       const attempts = [
@@ -55,12 +59,17 @@ export default function useFetchCategoriesWithImages({ page = 1, limit = 16, sea
       for (let i = 0; i < attempts.length; i++) {
         const url = attempts[i];
         try {
-          console.log(`[useFetchCategoriesWithImages] Attempt ${i + 1}:`, url);
+          // console.log(`[useFetchCategoriesWithImages] Attempt ${i + 1}:`, url);
           const res = await fetch(url, {
-            headers: { accept: 'application/json' },
+            headers: { 
+              accept: 'application/json',
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
+            },
             signal: controller.signal,
           });
-          console.log('[useFetchCategoriesWithImages] Response:', res.status, res.statusText);
+          // console.log('[useFetchCategoriesWithImages] Response:', res.status, res.statusText);
           if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
 
           const ct = res.headers.get('content-type') || '';
@@ -69,7 +78,7 @@ export default function useFetchCategoriesWithImages({ page = 1, limit = 16, sea
           }
 
           const data = await res.json();
-          console.log('[useFetchCategoriesWithImages] Raw:', data);
+          // console.log('[useFetchCategoriesWithImages] Raw:', data);
 
           const arr = Array.isArray(data?.items)
             ? data.items
@@ -85,10 +94,12 @@ export default function useFetchCategoriesWithImages({ page = 1, limit = 16, sea
             image: typeof c.image === 'string' ? c.image.replace(/`/g, '').trim() : '',
           }));
 
-          console.log('[useFetchCategoriesWithImages] Normalized:', normalized);
+          // console.log('[useFetchCategoriesWithImages] Normalized:', normalized);
           setCategories(normalized);
           setMeta(data?.meta || null);
 
+          // Cache write disabled
+          /*
           try {
             if (typeof window !== 'undefined' && window.localStorage) {
               localStorage.setItem(
@@ -99,6 +110,7 @@ export default function useFetchCategoriesWithImages({ page = 1, limit = 16, sea
           } catch (e) {
             console.warn('[useFetchCategoriesWithImages] Cache write failed:', e);
           }
+          */
 
           setLoading(false);
           return; // success
@@ -107,7 +119,7 @@ export default function useFetchCategoriesWithImages({ page = 1, limit = 16, sea
           console.warn('[useFetchCategoriesWithImages] Attempt failed:', err);
           if (i === attempts.length - 1) {
             setError(err);
-            if (!usedCache) setLoading(false);
+            setLoading(false);
           }
         }
       }
@@ -116,7 +128,7 @@ export default function useFetchCategoriesWithImages({ page = 1, limit = 16, sea
     fetchLatest();
 
     return () => controller.abort();
-  }, [page, limit, search]);
+  }, [page, limit, search, refreshKey]);
 
-  return { categories, meta, loading, error };
+  return { categories, meta, loading, error, refetch, invalidateCache };
 }

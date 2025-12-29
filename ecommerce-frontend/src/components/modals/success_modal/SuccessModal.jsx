@@ -77,7 +77,7 @@ export default function SuccessModal({
       aria-labelledby="success-modal-title"
       aria-describedby="success-modal-desc"
     >
-      <div className={`success-modal-card ${isSuccess ? 'success-modal--success' : 'success-modal--error'}`}>
+      <div className={`success-modal-card ${isSuccess ? 'success-modal--success' : 'success-modal--error'} ${open ? 'animate-enter' : ''}`}>
         <button className="close-btn" aria-label="Close" onClick={handleClose}>
           <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />

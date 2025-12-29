@@ -2,8 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react'
 import './Category.css'
 import useManageProducts from '../../ManageProductsContext.jsx'
 import useFetchCategoriesWithImages from '../../../../../hooks/useFetchCategoriesWithImages.js'
+import useDeleteCategory from '../../../../../hooks/admin_dashboard/categories/useDeleteCategory.js'
 import CatList from '../../../../../components/admin_manage_products/admin_cat_list/CatList.jsx'
 import PaginationBar from '../../../../../components/pagination/PaginationBar.jsx'
+import ConfirmModal from '../../../../../components/modals/confirm_modal/ConfirmModal.jsx'
 import { useNavigate } from 'react-router-dom'
 import { createCategorySlug } from '../../../../../utils/slugUtils.js'
 
@@ -11,6 +13,8 @@ export default function Category() {
   const { query } = useManageProducts()
   const navigate = useNavigate()
   const [page, setPage] = useState(1)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [categoryToDelete, setCategoryToDelete] = useState(null)
 
   const getDefaultItemsPerPage = () => {
     const w = typeof window !== 'undefined' ? window.innerWidth : 1200
@@ -37,11 +41,13 @@ export default function Category() {
     }
   }, [])
 
-  const { categories, meta, loading, error } = useFetchCategoriesWithImages({
+  const { categories, meta, loading, error, refetch, invalidateCache } = useFetchCategoriesWithImages({
     page,
     limit: itemsPerPage,
     search: query,
   })
+
+  const { remove, pending: deletePending, error: deleteError } = useDeleteCategory()
 
   // Reset page when query changes
   useEffect(() => {
@@ -58,6 +64,33 @@ export default function Category() {
       product_count: c.product_count
     }))
   }, [categories])
+
+  const handleDeleteClick = (cat) => {
+    setCategoryToDelete(cat)
+    setDeleteModalOpen(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!categoryToDelete || !categoryToDelete.id) return
+    try {
+      console.log('Attempting to delete category:', categoryToDelete.id);
+      await remove(categoryToDelete.id)
+      invalidateCache && invalidateCache()
+      // Small delay to ensure server consistency before refetching
+      await new Promise(resolve => setTimeout(resolve, 500))
+      refetch()
+    } catch (e) {
+      console.error('Failed to delete category:', e)
+      // If category is not found, it's already deleted. Refresh list to sync.
+      if (e.message && (e.message.toLowerCase().includes('not found') || e.message.toLowerCase().includes('404'))) {
+        invalidateCache && invalidateCache()
+        refetch()
+      }
+    } finally {
+      setDeleteModalOpen(false)
+      setCategoryToDelete(null)
+    }
+  }
 
   const handleEdit = (cat) => {
     if (!cat || !cat.id) return
@@ -79,13 +112,25 @@ export default function Category() {
   return (
     <div className="admin__cat_category_page">
       {error && <div className="admin__cat_error">{error.message || 'Error loading categories'}</div>}
-      <CatList categories={displayCategories} loading={loading} onEdit={handleEdit} />
+      {deleteError && <div className="admin__cat_error">Error deleting category: {deleteError}</div>}
+      <CatList categories={displayCategories} loading={loading} onEdit={handleEdit} onDelete={handleDeleteClick} />
       <PaginationBar
         page={page}
         totalPages={totalPages}
         hasPrev={hasPrev}
         hasNext={hasNext}
         onPageChange={goToPage}
+      />
+      <ConfirmModal
+        open={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete Category"
+        message={`Are you sure you want to delete "${categoryToDelete?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        loadingText="Deleting..."
+        isDangerous={true}
+        isLoading={deletePending}
       />
     </div>
   )

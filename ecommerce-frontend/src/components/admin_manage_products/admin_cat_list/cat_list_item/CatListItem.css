@@ -45,7 +45,7 @@
   opacity: 0.5;
 }
 
-.admin__cat_list_item_edit {
+.admin__cat_list_item_delete {
   position: absolute;
   top: 12px;
   right: 12px;
@@ -57,7 +57,7 @@
   justify-content: center;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
-  color: var(--color-text);
+  color: #ef4444; /* Red for delete */
   box-shadow: var(--shadow-soft);
   cursor: pointer;
   transition: transform 0.18s ease, opacity 0.18s ease, filter 0.18s ease;
@@ -66,19 +66,20 @@
   transform: translateY(-2px);
 }
 
-.admin__cat_list_item_card:hover .admin__cat_list_item_edit,
-.admin__cat_list_item_edit:focus-visible {
+.admin__cat_list_item_card:hover .admin__cat_list_item_delete,
+.admin__cat_list_item_delete:focus-visible {
   opacity: 1;
   transform: none;
 }
 
-.admin__cat_list_item_edit:hover {
+.admin__cat_list_item_delete:hover {
   filter: none;
-  border-color: var(--color-accent);
-  color: var(--color-accent);
+  border-color: #dc2626;
+  background-color: #fee2e2;
 }
 
-.admin__cat_list_item_edit:active {
+.admin__cat_list_item_edit:active,
+.admin__cat_list_item_delete:active {
   transform: scale(0.95);
 }
 
@@ -157,7 +158,8 @@
 }
 
 .admin__cat_list_item_card--skeleton { pointer-events: none; border-color: transparent; }
-.admin__cat_list_item_card--skeleton .admin__cat_list_item_edit { display: none; }
+.admin__cat_list_item_card--skeleton .admin__cat_list_item_edit,
+.admin__cat_list_item_card--skeleton .admin__cat_list_item_delete { display: none; }
 .admin__cat_list_item_img_skeleton { width: 100%; height: 100%; }
 .admin__cat_list_item_name_skeleton { width: 60%; height: 18px; margin-bottom: 8px; }
 .admin__cat_list_item_desc_skeleton { width: 90%; height: 14px; margin-bottom: 4px; }

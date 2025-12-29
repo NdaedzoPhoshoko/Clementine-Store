@@ -77,6 +77,7 @@ export default function useFetchBrowseProducts({
       const params = new URLSearchParams();
       params.set('page', String(page));
       params.set('limit', String(limit));
+      params.set('_t', String(Date.now())); // Cache busting
       if (search) params.set('search', String(search));
       if (categoryId != null && categoryId !== '') params.set('categoryId', String(categoryId));
       if (minPrice != null && minPrice !== '') params.set('minPrice', String(minPrice));
@@ -93,7 +94,12 @@ export default function useFetchBrowseProducts({
         try {
           console.log(`[useFetchBrowseProducts] Attempt ${i + 1}:`, url);
           const res = await fetch(url, {
-            headers: { accept: 'application/json' },
+            headers: { 
+              accept: 'application/json',
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
+            },
             signal: controller.signal,
           });
           console.log('[useFetchBrowseProducts] Response:', res.status, res.statusText);

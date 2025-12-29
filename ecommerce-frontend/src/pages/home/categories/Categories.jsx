@@ -54,7 +54,7 @@ export default function Categories({ onError }) {
   const [page, setPage] = useState(1);
   const [offset, setOffset] = useState(0);
   const [cats, setCats] = useState([]);
-  const [unitX, setUnitX] = useState(236); // card width + gap in px
+  const [unitX, setUnitX] = useState(174); // card width (150) + gap (24) in px
   const [entered, setEntered] = useState(false);
 
   const navigate = useNavigate();

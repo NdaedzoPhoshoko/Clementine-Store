@@ -35,9 +35,18 @@ export default function useFetchMyOrders({ initialPage = 1, limit = 20, enabled 
       const params = new URLSearchParams();
       params.set('page', String(page));
       params.set('limit', String(limit));
+      params.set('_t', String(Date.now())); // Cache busting
 
       try {
-        const res = await apiFetch(`/api/orders/my?${params.toString()}`, { headers: { accept: 'application/json' }, signal: controller.signal });
+        const res = await apiFetch(`/api/orders/my?${params.toString()}`, { 
+          headers: { 
+            accept: 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }, 
+          signal: controller.signal 
+        });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const ct = res.headers.get('content-type') || '';
         if (!ct.includes('application/json')) throw new Error(`Unexpected content-type: ${ct}`);

@@ -215,9 +215,16 @@ export default function useFetchProductDetails({ productId, enabled = true } = {
         reviewsControllerRef.current?.abort();
         reviewsControllerRef.current = rController;
 
-        const response = await fetch(`http://localhost:5000/api/products/${productId}/reviews`, {
+        const base = import.meta?.env?.VITE_API_BASE_URL || 'http://localhost:5000';
+        const timestamp = Date.now();
+        const response = await fetch(`${base}/api/products/${productId}/reviews?_t=${timestamp}`, {
           signal: rController.signal,
-          headers: { 'Accept': 'application/json' }
+          headers: { 
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
         });
         if (!response.ok) {
           throw new Error(`API error: ${response.status}`);

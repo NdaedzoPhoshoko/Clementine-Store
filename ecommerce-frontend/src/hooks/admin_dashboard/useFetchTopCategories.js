@@ -36,7 +36,16 @@ export default function useFetchTopCategories(options = {}) {
         if (endDate) params.set('endDate', endDate);
         params.set('page', String(page));
         params.set('limit', String(limit));
-        const res = await apiFetch(`/api/categories/sales?${params.toString()}`, { headers: { accept: 'application/json' }, signal: controller.signal });
+        params.set('_t', String(Date.now())); // Cache busting
+        const res = await apiFetch(`/api/categories/sales?${params.toString()}`, { 
+          headers: { 
+            accept: 'application/json', 
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }, 
+          signal: controller.signal 
+        });
         const payload = await res.json().catch(() => ({}));
         if (!res.ok) {
           const message = payload?.message || `HTTP ${res.status}`;
