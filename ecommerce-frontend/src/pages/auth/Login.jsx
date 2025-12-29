@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AuthLayout from './AuthLayout';
 import './AuthStyles.css';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthLogin } from '../../hooks/use_auth';
 import SuccessModal from '../../components/modals/success_modal/SuccessModal.jsx';
 
@@ -14,6 +14,9 @@ export default function Login() {
   const { login, loading: loginLoading, error: loginError } = useAuthLogin();
   const [modal, setModal] = useState({ open: false, variant: 'success', title: '', message: '' });
   const navigate = useNavigate();
+  const location = useLocation();
+  const nextParam = new URLSearchParams(location.search).get('next');
+  const destination = nextParam && nextParam.startsWith('/') ? nextParam : '/shop-all';
 
   const validate = () => {
     const next = {};
@@ -118,7 +121,7 @@ export default function Login() {
         onClose={() => setModal((m) => ({ ...m, open: false }))}
         onAfterClose={() => {
           if (modal.variant === 'success') {
-            navigate('/shop-all');
+            navigate(destination);
           }
         }}
         autoCloseMs={10000}
