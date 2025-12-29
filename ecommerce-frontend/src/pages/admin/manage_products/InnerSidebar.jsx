@@ -148,28 +148,6 @@ export default function InnerSidebar() {
           >
             All Reviews
           </button>
-          {innerAction === 'all' ? (
-            <>
-              <div className="admin_products__divider" aria-hidden="true"></div>
-              <div className="admin_products__section_title">Filters</div>
-              <input className="admin_products__filter_input" placeholder="Search reviews" aria-label="Search reviews" value={query} onChange={(e) => setQuery(e.target.value)} />
-              <select className="admin_products__filter_select" aria-label="Filter by stars" value={stars} onChange={(e) => setStars(e.target.value)}>
-                <option>All Stars</option>
-                <option>1 Stars</option>
-                <option>2 Stars</option>
-                <option>3 Stars</option>
-                <option>4 Stars</option>
-                <option>5 Stars</option>
-              </select>
-              <select className="admin_products__filter_select" aria-label="Filter by review count" value={reviewRange} onChange={(e) => setReviewRange(e.target.value)}>
-                <option>All Counts</option>
-                <option>0–50 Reviews</option>
-                <option>51–100 Reviews</option>
-                <option>101–150 Reviews</option>
-                <option>151+ Reviews</option>
-              </select>
-            </>
-          ) : null}
         </>
       ) : activeSection === 'settings' ? (
         <>
