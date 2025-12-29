@@ -76,17 +76,6 @@ export default function InnerSidebar() {
               <div className="admin_products__divider" aria-hidden="true"></div>
               <div className="admin_products__section_title">Filters</div>
               <input className="admin_products__filter_input" placeholder="Search categories" aria-label="Search categories" value={query} onChange={(e) => setQuery(e.target.value)} />
-              <select className="admin_products__filter_select" aria-label="Filter by status" value={status} onChange={(e) => setStatus(e.target.value)}>
-                <option>All Status</option>
-                <option>Active</option>
-                <option>Draft</option>
-                <option>Archived</option>
-              </select>
-              <select className="admin_products__filter_select" aria-label="Filter by stock" value={stock} onChange={(e) => setStock(e.target.value)}>
-                <option>All Stock</option>
-                <option>In Stock</option>
-                <option>Out of Stock</option>
-              </select>
             </>
           ) : null}
         </>

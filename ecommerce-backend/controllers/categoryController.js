@@ -209,7 +209,6 @@ export const listCategoriesWithImages = async (req, res) => {
         c.description,
         COALESCE(pi.image_url, pl.image_url, '') AS image
       FROM categories c
-      ${whereSql}
       LEFT JOIN LATERAL (
         SELECT p.image_url
         FROM products p
@@ -225,6 +224,7 @@ export const listCategoriesWithImages = async (req, res) => {
         ORDER BY pi.id DESC
         LIMIT 1
       ) pi ON true
+      ${whereSql}
       ORDER BY c.id DESC
       LIMIT $${itemsParams.length - 1} OFFSET $${itemsParams.length}
     `;

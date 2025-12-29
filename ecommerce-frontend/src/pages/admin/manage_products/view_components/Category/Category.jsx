@@ -78,7 +78,7 @@ export default function Category() {
 
   return (
     <div className="admin__cat_category_page">
-      {error && <div className="admin__cat_error">Error loading categories</div>}
+      {error && <div className="admin__cat_error">{error.message || 'Error loading categories'}</div>}
       <CatList categories={displayCategories} loading={loading} onEdit={handleEdit} />
       <PaginationBar
         page={page}
