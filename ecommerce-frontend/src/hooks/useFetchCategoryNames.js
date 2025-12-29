@@ -118,9 +118,7 @@ export default function useFetchCategoryNames({ page = 1, limit, search = '' } =
       }
     };
 
-    if (!usedCache || cacheIsStale) {
-      fetchLatest();
-    }
+    fetchLatest();
 
     return () => controller.abort();
   }, [page, limit, search]);
