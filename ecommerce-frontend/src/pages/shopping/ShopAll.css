@@ -19,6 +19,57 @@
   padding-top: 10px;
 }
 
+/* Explicit grid columns to ensure even items per row */
+/* Desktop with sidebar (> 880px) */
+@media (min-width: 880px) {
+  .shop-layout .prod-grid__list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1000px) {
+  .shop-layout .prod-grid__list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1250px) {
+  .shop-layout .prod-grid__list {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 1500px) {
+  .shop-layout .prod-grid__list {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+/* Tablet/Mobile without sidebar (< 880px) */
+@media (max-width: 879px) {
+  .shop-layout .prod-grid__list {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+}
+
+@media (max-width: 879px) and (min-width: 500px) {
+  .shop-layout .prod-grid__list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 499px) {
+  .shop-layout .prod-grid__list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 320px) {
+  .shop-layout .prod-grid__list {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Left filter panel */
 .shop-filters {
   position: sticky;

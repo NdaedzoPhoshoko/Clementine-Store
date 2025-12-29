@@ -23,20 +23,26 @@ export default function ShopAll() {
   // Responsive items per page based on screen width
   const getDefaultItemsPerPage = () => {
     const w = typeof window !== 'undefined' ? window.innerWidth : 1200;
-    if (w >= 1280) return 20;
-    if (w >= 1024) return 16;
-    if (w >= 768) return 12;
-    return 8;
+    if (w >= 1500) return 25; // 5 cols
+    if (w >= 1250) return 20; // 4 cols
+    if (w >= 1000) return 15; // 3 cols
+    if (w >= 880) return 12;  // 2 cols
+    if (w >= 500) return 15;  // 3 cols (no sidebar)
+    if (w >= 320) return 12;  // 2 cols (no sidebar)
+    return 8;                 // 1 col
   };
   const [itemsPerPage, setItemsPerPage] = useState(getDefaultItemsPerPage());
   useEffect(() => {
     const compute = () => {
       const w = typeof window !== 'undefined' ? window.innerWidth : 1200;
       let next = 12;
-      if (w >= 1280) next = 20;       // xl: 5 cols × 4 rows
-      else if (w >= 1024) next = 16;  // lg: 4 cols × 4 rows
-      else if (w >= 768) next = 12;   // md: 3 cols × 4 rows
-      else next = 8;                  // sm/xs: 2 cols × 4 rows
+      if (w >= 1500) next = 25;
+      else if (w >= 1250) next = 20;
+      else if (w >= 1000) next = 15;
+      else if (w >= 880) next = 12;
+      else if (w >= 500) next = 15;
+      else if (w >= 320) next = 12;
+      else next = 8;
       setItemsPerPage(next);
     };
     compute();

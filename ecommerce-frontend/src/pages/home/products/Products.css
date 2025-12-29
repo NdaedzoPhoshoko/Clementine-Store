@@ -53,6 +53,40 @@
   padding-bottom: 0px;
   overflow: hidden;
   padding-top: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+/* Restore original card styling for Home page */
+.home-products .prod-card {
+  --prod-card-height: 350px;
+  --prod-card-media-h: 240px;
+}
+
+.home-products .prod-card__name {
+  font-size: 16px;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  line-height: 1.25;
+}
+
+.home-products .prod-card__desc {
+  font-size: 13px;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  line-height: 1.25;
+}
+
+.home-products .prod-card__price-rating-container {
+  margin-top: 8px;
+}
+
+.home-products .prod-card__price {
+  font-size: 16px;
+}
+
+.home-products .prod-card__rating {
+  font-size: 14px;
+  gap: 4px;
 }
 
 @media (max-width: 640px) {
