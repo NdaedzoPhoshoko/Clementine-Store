@@ -113,9 +113,7 @@ export default function useFetchCategoriesWithImages({ page = 1, limit = 16, sea
       }
     };
 
-    if (!usedCache || cacheIsStale) {
-      fetchLatest();
-    }
+    fetchLatest();
 
     return () => controller.abort();
   }, [page, limit, search]);
