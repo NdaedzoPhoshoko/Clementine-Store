@@ -5,6 +5,7 @@ import useFetchCategoriesWithImages from '../../../../../hooks/useFetchCategorie
 import CatList from '../../../../../components/admin_manage_products/admin_cat_list/CatList.jsx'
 import PaginationBar from '../../../../../components/pagination/PaginationBar.jsx'
 import { useNavigate } from 'react-router-dom'
+import { createCategorySlug } from '../../../../../utils/slugUtils.js'
 
 export default function Category() {
   const { query } = useManageProducts()
@@ -58,11 +59,10 @@ export default function Category() {
     }))
   }, [categories])
 
-  const handleEdit = (id) => {
-    if (!id) return
-    // Navigate to edit category page - assuming the route structure
-    // Since we don't have slug util for categories yet, we might use ID or basic slug
-    navigate(`/admin/product_management/categories/edit/${id}`)
+  const handleEdit = (cat) => {
+    if (!cat || !cat.id) return
+    const slug = createCategorySlug(cat.name || 'category', cat.id)
+    navigate(`/admin/product_management/categories/edit/${slug}`)
   }
 
   const totalPages = meta?.pages || 1

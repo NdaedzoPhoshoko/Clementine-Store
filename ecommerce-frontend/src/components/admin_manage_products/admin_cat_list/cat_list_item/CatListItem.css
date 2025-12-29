@@ -12,7 +12,7 @@
   backface-visibility: hidden;
   cursor: pointer;
   background: var(--color-bg);
-  border: 1px solid var(--color-border);
+  border: 0px solid var(--color-border);
 }
 
 .admin__cat_list_item_card:hover { 

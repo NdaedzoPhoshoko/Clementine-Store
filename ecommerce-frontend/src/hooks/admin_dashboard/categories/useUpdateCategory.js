@@ -20,6 +20,7 @@ export default function useUpdateCategory() {
       if (payload && typeof payload === 'object') {
         if (payload.name !== undefined) body.name = payload.name
         if (payload.description !== undefined) body.description = payload.description
+        if (payload.image !== undefined) body.image = payload.image
       }
 
       if (Object.keys(body).length === 0) {

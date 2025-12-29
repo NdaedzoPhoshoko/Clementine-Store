@@ -7,6 +7,7 @@ const New = React.lazy(() => import('./view_components/Products/New/New.jsx'));
 const InvStock = React.lazy(() => import('./view_components/Inventory/Stock/Stock.jsx'));
 const InvLogs = React.lazy(() => import('./view_components/Inventory/Logs/Logs.jsx'));
 const CategoryList = React.lazy(() => import('./view_components/Category/Category.jsx'));
+const CategoryEdit = React.lazy(() => import('./view_components/Category/Edit/Edit.jsx'));
 
 export default function ContentArea() {
   const { activeSection, status, stock, innerAction, currentProductId } = useManageProducts();
@@ -71,6 +72,10 @@ export default function ContentArea() {
           (innerAction || 'all') === 'all' ? (
              <Suspense fallback={<div className="admin_products__empty_state"></div>}>
                <CategoryList />
+             </Suspense>
+          ) : innerAction === 'edit' ? (
+             <Suspense fallback={<div className="admin_products__empty_state"></div>}>
+               <CategoryEdit productId={currentProductId} />
              </Suspense>
           ) : (
             <div className="admin_products__empty_state">No {activeSection} yet · {status} · {stock}</div>

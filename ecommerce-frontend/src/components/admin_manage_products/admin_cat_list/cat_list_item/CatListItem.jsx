@@ -29,7 +29,7 @@ export default function CatListItem({ category = {}, onEdit }) {
           aria-label="Edit category"
           onClick={(e) => {
             e.stopPropagation();
-            onEdit && onEdit(id);
+            onEdit && onEdit(category);
           }}
           onMouseUp={(e) => e.currentTarget.blur()}
         >
