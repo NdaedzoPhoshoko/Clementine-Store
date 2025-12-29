@@ -124,7 +124,7 @@ export default function Login() {
             navigate(destination);
           }
         }}
-        autoCloseMs={10000}
+        autoCloseMs={5000}
       />
     </AuthLayout>
   );

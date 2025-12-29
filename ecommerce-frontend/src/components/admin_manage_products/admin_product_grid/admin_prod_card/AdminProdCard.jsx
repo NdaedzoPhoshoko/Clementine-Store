@@ -1,8 +1,8 @@
 import React from 'react'
 import './AdminProdCard.css'
-import { Pencil, Star, Eye } from 'lucide-react'
+import { Star, Eye, Trash2 } from 'lucide-react'
 
-export default function AdminProdCard({ product = {}, onEdit, onView }) {
+export default function AdminProdCard({ product = {}, onEdit, onView, onDelete }) {
   const {
     id,
     name = 'Untitled Product',
@@ -18,7 +18,18 @@ export default function AdminProdCard({ product = {}, onEdit, onView }) {
   const roundedRating = Math.max(0, Math.min(5, Math.round(rating)))
 
   return (
-    <article className="admin__admin_prod_card_card" aria-label={name} tabIndex={0}>
+    <article 
+      className="admin__admin_prod_card_card" 
+      aria-label={name} 
+      tabIndex={0}
+      onClick={() => onEdit && onEdit(id)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onEdit && onEdit(id);
+        }
+      }}
+    >
       <div className="admin__admin_prod_card_media">
         {image ? (
           <img className="admin__admin_prod_card_img" src={image} alt={imgAlt} />
@@ -27,21 +38,28 @@ export default function AdminProdCard({ product = {}, onEdit, onView }) {
         )}
         <button
           type="button"
-          className="admin__admin_prod_card_edit"
-          aria-label="Edit product"
-          onClick={() => onEdit && onEdit(id)}
-          onMouseUp={(e) => e.currentTarget.blur()}
-        >
-          <Pencil size={18} />
-        </button>
-        <button
-          type="button"
+          style={{display: "none"}}
           className="admin__admin_prod_card_view"
           aria-label="View product"
-          onClick={() => onView && onView(id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onView && onView(id);
+          }}
           onMouseUp={(e) => e.currentTarget.blur()}
         >
           <Eye size={18}/>
+        </button>
+        <button
+          type="button"
+          className="admin__admin_prod_card_delete"
+          aria-label="Delete product"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete && onDelete(id);
+          }}
+          onMouseUp={(e) => e.currentTarget.blur()}
+        >
+          <Trash2 size={18} />
         </button>
       </div>
       <div className="admin__admin_prod_card_body">

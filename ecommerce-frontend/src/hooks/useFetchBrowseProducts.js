@@ -29,6 +29,9 @@ export default function useFetchBrowseProducts({
   const [meta, setMeta] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  const [refreshKey, setRefreshKey] = useState(0);
+  const refetch = () => setRefreshKey((k) => k + 1);
+
   // Signature of all params except page — when it changes, reset listing
   const signature = useMemo(
     () =>
@@ -147,7 +150,7 @@ export default function useFetchBrowseProducts({
       controller.abort();
       setRefreshing(false);
     };
-  }, [page, limit, search, categoryId, minPrice, maxPrice, inStock, enabled]);
+  }, [page, limit, search, categoryId, minPrice, maxPrice, inStock, enabled, refreshKey]);
 
   const loadNextPage = () => {
     setPage((p) => p + 1);
@@ -161,7 +164,7 @@ export default function useFetchBrowseProducts({
     setError(null);
   };
 
-  return { items, pageItems: items, hasMore, loading, loadingMore, refreshing, error, meta, loadNextPage, reset, page, setPage };
+  return { items, pageItems: items, hasMore, loading, loadingMore, refreshing, error, meta, loadNextPage, reset, page, setPage, refetch };
 }
 
 function normalizeItem(p) {

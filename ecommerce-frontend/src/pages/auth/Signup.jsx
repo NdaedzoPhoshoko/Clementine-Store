@@ -155,7 +155,7 @@ export default function Signup() {
         title={modal.title}
         message={modal.message}
         onClose={() => setModal((m) => ({ ...m, open: false }))}
-        autoCloseMs={10000}
+        autoCloseMs={5000}
       />
     </AuthLayout>
   );

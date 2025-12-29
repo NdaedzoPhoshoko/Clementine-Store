@@ -6,10 +6,14 @@ import AdminProdGrid from '../../../../../components/admin_manage_products/admin
 import PaginationBar from '../../../../../components/pagination/PaginationBar.jsx'
 import { useNavigate } from 'react-router-dom'
 import { createProductSlug } from '../../../../../utils/slugUtils.js'
+import useDeleteProduct from '../../../../../hooks/useDeleteProduct.js'
+import ConfirmModal from '../../../../../components/modals/confirm_modal/ConfirmModal.jsx'
 
 export default function Products() {
   const { query, stock } = useManageProducts()
   const navigate = useNavigate()
+  const [deleteModal, setDeleteModal] = useState({ open: false, id: null })
+  const { deleteProduct, loading: deleting } = useDeleteProduct()
 
   const getDefaultItemsPerPage = () => {
     const w = typeof window !== 'undefined' ? window.innerWidth : 1200
@@ -39,7 +43,7 @@ export default function Products() {
   const inStock =
     stock === 'In Stock' ? true : stock === 'Out of Stock' ? false : undefined
 
-  const { page, setPage, pageItems, loading, loadingMore, meta, hasMore } = useFetchBrowseProducts({
+  const { page, setPage, pageItems, loading, loadingMore, meta, hasMore, refetch } = useFetchBrowseProducts({
     initialPage: 1,
     limit: itemsPerPage,
     search: query,
@@ -78,15 +82,38 @@ export default function Products() {
     setPage(target)
   }
 
+  const handleDeleteClick = (id) => {
+    setDeleteModal({ open: true, id })
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModal.id) return
+    const success = await deleteProduct(deleteModal.id)
+    if (success) {
+      setDeleteModal({ open: false, id: null })
+      refetch()
+    }
+  }
+
   return (
     <div className="admin__products_products">
-      <AdminProdGrid products={displayProducts} loading={isActuallyLoading} onEdit={handleEdit} />
+      <AdminProdGrid products={displayProducts} loading={isActuallyLoading} onEdit={handleEdit} onDelete={handleDeleteClick} />
       <PaginationBar
         page={page}
         totalPages={totalPages}
         hasPrev={hasPrev}
         hasNext={hasNext}
         onPageChange={goToPage}
+      />
+      <ConfirmModal
+        open={deleteModal.open}
+        onClose={() => !deleting && setDeleteModal({ ...deleteModal, open: false })}
+        onConfirm={handleConfirmDelete}
+        title="Delete Product"
+        message="Are you sure you want to delete this product? This action cannot be undone."
+        confirmText="Delete"
+        isDangerous={true}
+        isLoading={deleting}
       />
     </div>
   )

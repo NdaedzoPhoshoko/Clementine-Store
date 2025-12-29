@@ -31,26 +31,6 @@
   object-position: center;
   background: var(--color-bg);
 }
-.admin__admin_prod_card_edit {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text);
-  box-shadow: var(--shadow-soft);
-  cursor: pointer;
-  transition: transform 0.18s ease, opacity 0.18s ease, filter 0.18s ease;
-  z-index: 2;
-  opacity: 0;
-  transform: translateY(-2px);
-}
 .admin__admin_prod_card_view {
   position: absolute;
   top: 12px;
@@ -70,33 +50,56 @@
   z-index: 2;
   opacity: 0;
   transform: translateY(-2px);
-  display: none;
 }
-.admin__admin_prod_card_card:hover .admin__admin_prod_card_edit,
-.admin__admin_prod_card_edit:focus-visible {
-  opacity: 1;
-  transform: none;
+.admin__admin_prod_card_delete {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-danger, #ef4444);
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+  transition: transform 0.18s ease, opacity 0.18s ease, filter 0.18s ease;
+  z-index: 2;
+  opacity: 0;
+  transform: translateY(-2px);
 }
 .admin__admin_prod_card_card:hover .admin__admin_prod_card_view,
 .admin__admin_prod_card_view:focus-visible {
   opacity: 1;
   transform: none;
 }
-.admin__admin_prod_card_edit:hover {
-  filter: none;
+.admin__admin_prod_card_card:hover .admin__admin_prod_card_delete,
+.admin__admin_prod_card_delete:focus-visible {
+  opacity: 1;
+  transform: none;
 }
 .admin__admin_prod_card_view:hover {
   filter: none;
 }
-.admin__admin_prod_card_edit:active,
-.admin__admin_prod_card_edit:focus-visible {
-  color: var(--color-primary);
-  border-color: var(--color-primary);
+.admin__admin_prod_card_delete:hover {
+  filter: none;
+  background: var(--color-danger, #ef4444);
+  color: #fff;
+  border-color: var(--color-danger, #ef4444);
 }
 .admin__admin_prod_card_view:active,
 .admin__admin_prod_card_view:focus-visible {
   color: var(--color-primary);
   border-color: var(--color-primary);
+}
+.admin__admin_prod_card_delete:active,
+.admin__admin_prod_card_delete:focus-visible {
+  color: #fff;
+  background: var(--color-danger-dark, #dc2626);
+  border-color: var(--color-danger-dark, #dc2626);
 }
 
 .admin__admin_prod_card_body {

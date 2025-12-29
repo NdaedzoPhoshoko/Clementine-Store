@@ -2,7 +2,7 @@ import React from 'react'
 import './AdminProdGrid.css'
 import AdminProdCard from './admin_prod_card/AdminProdCard.jsx'
 
-export default function AdminProdGrid({ products = [], loading = false, onEdit }) {
+export default function AdminProdGrid({ products = [], loading = false, onEdit, onDelete }) {
   const ready = !loading
 
   if (!loading && (!products || products.length === 0)) {
@@ -32,7 +32,7 @@ export default function AdminProdGrid({ products = [], loading = false, onEdit }
                 </div>
               </article>
             ) : (
-              <AdminProdCard product={p} onEdit={onEdit} />
+              <AdminProdCard product={p} onEdit={onEdit} onDelete={onDelete} />
             )}
           </li>
         ))}
