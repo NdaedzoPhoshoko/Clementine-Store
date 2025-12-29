@@ -2,7 +2,7 @@ import React from 'react'
 import './AdminProdCard.css'
 import { Star, Eye, Trash2 } from 'lucide-react'
 
-export default function AdminProdCard({ product = {}, onEdit, onView, onDelete }) {
+export default function AdminProdCard({ product = {}, onEdit, onView, onDelete, showDelete = true }) {
   const {
     id,
     name = 'Untitled Product',
@@ -49,6 +49,7 @@ export default function AdminProdCard({ product = {}, onEdit, onView, onDelete }
         >
           <Eye size={18}/>
         </button>
+        {showDelete && (
         <button
           type="button"
           className="admin__admin_prod_card_delete"
@@ -61,6 +62,7 @@ export default function AdminProdCard({ product = {}, onEdit, onView, onDelete }
         >
           <Trash2 size={18} />
         </button>
+        )}
       </div>
       <div className="admin__admin_prod_card_body">
         <h3 className="admin__admin_prod_card_name">{name}</h3>

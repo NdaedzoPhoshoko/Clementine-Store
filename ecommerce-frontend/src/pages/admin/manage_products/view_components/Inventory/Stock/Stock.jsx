@@ -152,7 +152,7 @@ export default function Stock() {
       <div className="admin__edit__body">
         <div className="admin__edit__body_form">
           <div className={gridDocked ? 'admin__edit__left' : 'admin__edit__fullrow'}>
-            <AdminProdGrid products={displayProducts} loading={loading || loadingMore} onEdit={onSelectProduct} />
+            <AdminProdGrid products={displayProducts} loading={loading || loadingMore} onEdit={onSelectProduct} showDelete={false} />
             <PaginationBar
               page={page}
               totalPages={meta?.pages || 1}
