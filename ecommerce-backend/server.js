@@ -58,7 +58,7 @@ app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
 // Base route
 app.get("/", (req, res) => {
-  res.send("🛍️ E-commerce API running...");
+  res.send("🛍️ Clementine Store API running...");
 });
 
 const PORT = process.env.PORT || 5000;
