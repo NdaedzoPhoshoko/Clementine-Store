@@ -309,7 +309,9 @@ export const confirmPaymentIntent = async (req, res) => {
       try {
         const origin = String(req.headers?.origin || '').trim();
         const host = String(req.headers?.host || '').trim();
-        const publicBase = process.env.PUBLIC_APP_URL || (origin || (host ? `http://${host}` : '')) || 'http://localhost:5173';
+        const forwardedProto = String(req.headers?.['x-forwarded-proto'] || '').split(',')[0].trim();
+        const proto = forwardedProto || req.protocol || 'https';
+        const publicBase = process.env.PUBLIC_APP_URL || origin || (host ? `${proto}://${host}` : '') || 'https://clementine-store.vercel.app';
         const returnUrl = `${publicBase.replace(/\/$/, '')}/account`;
         intent = await stripe.paymentIntents.confirm(intentId, { payment_method: 'pm_card_visa', return_url: returnUrl });
       } catch (e) {
