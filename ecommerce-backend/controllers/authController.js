@@ -20,7 +20,7 @@ const REFRESH_COOKIE_MAX_AGE_MS = Number.parseInt(process.env.JWT_REFRESH_MAX_AG
 const refreshCookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
-  sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   path: "/",
   maxAge: REFRESH_COOKIE_MAX_AGE_MS,
 };
