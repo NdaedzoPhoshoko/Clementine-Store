@@ -63,7 +63,7 @@ const options = {
     ],
     servers: [
       {
-        url: `http://localhost:${PORT}`, // <- dynamic port
+        url: `https://clementine-store-backend.onrender.com`, // <- backend hosted port
       },
     ],
   },
