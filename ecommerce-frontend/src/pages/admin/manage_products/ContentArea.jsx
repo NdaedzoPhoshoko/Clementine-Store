@@ -5,7 +5,7 @@ const Products = React.lazy(() => import('./view_components/Products/Products.js
 const Edit = React.lazy(() => import('./view_components/Products/Edit/Edit.jsx'));
 const New = React.lazy(() => import('./view_components/Products/New/New.jsx'));
 const InvStock = React.lazy(() => import('./view_components/Inventory/Stock/Stock.jsx'));
-const InvLogs = React.lazy(() => import('./view_components/Inventory/Logs/Logs'));
+const InvLogs = React.lazy(() => import('./view_components/Inventory/InvLogs/Logs.jsx'));
 const CategoryList = React.lazy(() => import('./view_components/Category/Category.jsx'));
 const CategoryEdit = React.lazy(() => import('./view_components/Category/Edit/Edit.jsx'));
 const CategoryNew = React.lazy(() => import('./view_components/Category/New/New.jsx'));
