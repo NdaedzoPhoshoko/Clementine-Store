@@ -1,16 +1,148 @@
-# React + Vite
+# Clementine Store — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This directory contains the client application for Clementine Store: a production-ready React application built with Vite. The frontend implements product browsing, search and filters, cart management, checkout flows, user sessions, and administrative product management views.
 
-Currently, two official plugins are available:
+Live demo: https://clementine-store.vercel.app/
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Key technologies
+- React
+- Vite (build tooling)
+- CSS modules and component-based architecture
 
-## React Compiler
+Quickstart
+- Prerequisites: Node.js (LTS) and npm or yarn
+- Install dependencies: `npm install`
+- Run development server: `npm run dev`
+- Build production bundle: `npm run build`
+- Preview production build: `npm run preview`
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Configuration
+- Vite environment variables use the `VITE_` prefix. Set `VITE_API_URL` (or other project-specific `VITE_` vars) to point the app to the API endpoint.
 
-## Expanding the ESLint configuration
+Further details and API contracts are documented in repository-level and backend READMEs. For frontend-specific implementation notes, refer to the `src/` folder and `package.json` scripts.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Project structure
+```
+.gitignore
+Edit.jsx
+eslint.config.js
+index.html
+package.json
+README.md
+vite.config.js
+public/
+	icons/
+	illustrations/
+	images/
+		about_us/
+		home/
+		sponsored/
+src/
+	App.css
+	App.jsx
+	index.css
+	main.jsx
+	assets/
+	components/
+		ScrollToTop.jsx
+		account_avatar/
+			AccountAvatar.css
+			AccountAvatar.jsx
+		admin_manage_products/
+			admin_cat_list/
+			admin_product_grid/
+		auth/
+			RequireAdmin.jsx
+			SessionExpiryHandler.jsx
+		breadcrumbs/
+			breadcrumbs.css
+			Breadcrumbs.jsx
+		cart/
+			cart_list/
+			cart_list_item/
+		filters/
+			PriceRangeSlider.css
+			PriceRangeSlider.jsx
+		footer/
+			footer.css
+			Footer.jsx
+		image_zoom/
+			ZoomImage.css
+			ZoomImage.jsx
+		modals/
+			ErrorModal.css
+			ErrorModal.jsx
+			checkout_conflict/
+			session_expired/
+			success_modal/
+		nabar/
+			navbar.css
+			Navbar.jsx
+		pagination/
+			PaginationBar.css
+			PaginationBar.jsx
+		products_grid/
+			ProdGrid.css
+			ProdGrid.jsx
+			prod_card/
+	hooks/
+		useAccordionData.jsx
+		useFetchAutocomplete.js
+		useFetchBrowseProducts.js
+		useFetchCategoriesWithImages.js
+		useFetchCategoryNames.js
+		useFetchMe.js
+		useFetchMyOrders.js
+		useFetchMyShippingDetails.js
+		useFetchNewProducts.js
+		useFetchProductDetails.js
+		useFetchProductReviews.js
+		usePostProductReview.js
+		useUpdateOrderShipping.js
+		admin_dashboard/
+			useFetchTopCategories.js
+			categories/
+			inventory/
+			products/
+		for_cart/
+			CartContext.jsx
+			useAddCartItem.js
+			useCreateOrder.js
+			useDeleteCartItem.js
+			useFetchCart.js
+			useLatestOrder.js
+			usePatchPendingOrder.js
+			useRevertCheckout.js
+			useUpdateCartItemQuantity.js
+		home_features/
+			useHomeFeatures.js
+		payment/
+			useConfirmPaymentIntent.js
+			useCreatePaymentIntent.js
+			useSavedPaymentCards.js
+			useShippingReuseOptions.js
+		profile/
+			...
+		support/
+			...
+		use_auth/
+			...
+	pages/
+		about_us/
+			...
+		account/
+		account_dashboard/
+		admin/
+		auth/
+		cart/
+		checkout/
+		home/
+		product_page/
+		shopping/
+		support/
+	utils/
+		apiFetch.js
+		notes.txt
+		slugUtils.js
+```
+
