@@ -10,4 +10,4 @@ Repository layout
 
 For development and deployment instructions, see the README files in the `ecommerce-frontend` and `ecommerce-backend` folders.
 
-Contact/maintainer: Ndaedzo Clement Phoshoko
+Contact/maintainer: Clement | clement.phoshoko@outlook.com
