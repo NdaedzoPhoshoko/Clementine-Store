@@ -23,6 +23,69 @@ A production‑ready Node.js/Express backend for an e‑commerce application. It
 - Documentation: `docs/swagger.js`
   - OpenAPI 3.0 with `bearerAuth` security scheme; routes are annotated inline.
 
+## Packages
+
+The backend relies on the following packages (install via `npm install`):
+
+- Production / runtime:
+  - `express`, `pg`, `dotenv`, `cors`, `swagger-ui-express`, `swagger-jsdoc`, `jsonwebtoken`, `bcryptjs`, `cloudinary`, `multer`, `stripe`
+- Development / tooling:
+  - `nodemon` (dev)
+
+See `backendsetup.txt` for the exact install commands used during development.
+
+## Project Structure
+
+Top-level layout for the `ecommerce-backend` folder:
+
+```
+ecommerce-backend/
+|-- package.json
+|-- README.md
+|-- server.js
+|-- todo.txt
+|-- config/
+|   |-- cloudinary.js
+|   `-- db.js
+|-- controllers/
+|   |-- authController.js
+|   |-- cartController.js
+|   |-- categoryController.js
+|   |-- inventoryController.js
+|   |-- orderController.js
+|   |-- paymentCardController.js
+|   |-- paymentController.js
+|   |-- productController.js
+|   |-- reviewController.js
+|   |-- shippingController.js
+|   |-- userController.js
+|   `-- home_features/
+|       `-- homeFeaturesController.js
+|-- docs/
+|   |-- indexes.sql
+|   `-- swagger.js
+|-- middleware/
+|   `-- auth.js
+|-- models/
+|   `-- userModel.js
+|-- routes/
+|   |-- authRoutes.js
+|   |-- cardRoutes.js
+|   |-- cartItemRoutes.js
+|   |-- cartRoutes.js
+|   |-- categoryRoutes.js
+|   |-- homeFeaturesRoutes.js
+|   |-- inventoryRoutes.js
+|   |-- orderRoutes.js
+|   |-- paymentRoutes.js
+|   |-- productRoutes.js
+|   |-- reviewRoutes.js
+|   |-- shippingRoutes.js
+|   `-- userRoutes.js
+`-- scripts/
+  `-- fullscript.sql
+```
+
 ## Key Features
 
 - Authentication & Session
@@ -94,16 +157,31 @@ Run the SQL script against your Postgres database before starting the server.
    cd ecommerce-backend
    npm install
    ```
-2. Configure environment: create `.env` as above.
-3. Provision database: run `fullscript.sql` on your Postgres instance.
-4. Start the server (development):
-   ```bash
-   npm run dev
-   ```
-5. Open API docs at:
-   ```
-   http://localhost:<PORT>/api/docs
-   ```
+2. Configure environment: create a `.env` in `ecommerce-backend/` following the Environment Configuration section above.
+3. Provision database: run `scripts/fullscript.sql` on your Postgres instance (or use your migration tooling).
+
+Development run
+ - Start server with auto-reload (recommended for development):
+```bash
+npm run dev
+```
+
+Production run
+ - Ensure `NODE_ENV=production` and set secure, distinct secrets: `JWT_SECRET` and `JWT_REFRESH_SECRET`.
+ - Recommended process manager: `pm2` (install globally `npm i -g pm2`) or use your container/orchestration platform.
+ - Start production server:
+```bash
+# from ecommerce-backend/
+NODE_ENV=production PORT=5000 pm2 start server.js --name clementine-backend --env production
+```
+ - When running in production behind a reverse proxy (Nginx, AWS ALB, etc.) terminate TLS at the edge and forward requests to the app. Ensure the `CORS_ORIGIN` env var matches your frontend origin.
+
+Security & operational notes
+ - Use a managed Postgres (or ensure SSL and connection pooling for hosted DBs). Set `DATABASE_URL` to your DB connection string.
+ - Rotate `JWT_SECRET`/`JWT_REFRESH_SECRET` with a migration plan and invalidate old tokens if necessary.
+ - Use HTTPS for cookies and set `NODE_ENV=production` so secure cookies are enforced.
+ - For high availability, run multiple instances behind a load balancer and configure connection pooling for Postgres.
+ - Monitor logs (stdout/stderr) and use centralized logging/alerts for production incidents.
 
 ## Authentication Flow
 
