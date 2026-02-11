@@ -25,13 +25,27 @@ const app = express();
 app.set("trust proxy", 1);
 
 const allowedOrigins = [
-  process.env.CORS_ORIGIN || "http://localhost:5173",
+  "https://clementine-store.vercel.app",
   "http://localhost:5173",
   "http://127.0.0.1:5173",
-  "http://localhost:3000",
 ];
 
-app.use(cors({ origin: allowedOrigins, credentials: true }));
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log("Blocked by CORS:", origin);
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+}));
+
+app.options("*", cors());
+
 // Use raw body for Stripe webhook before JSON parser
 app.use("/api/payments/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
