@@ -2,6 +2,39 @@
 
 This directory contains the client application for Clementine Store: a production-ready React application built with Vite. The frontend implements product browsing, search and filters, cart management, checkout flows, user sessions, and administrative product management views.
 
+Live demo: https://clementine-store.vercel.app/
+
+Quickstart
+
+Prerequisites: Node.js (LTS) and npm or yarn
+
+Install project dependencies and run the dev server:
+
+```bash
+npm install
+npm run dev
+```
+
+Build and preview production bundle:
+
+```bash
+npm run build
+npm run preview
+```
+
+Additional frontend packages
+
+Install the additional packages used by the frontend:
+
+```bash
+npm install @emailjs/browser react-inner-image-zoom lucide-react framer-motion react-colorful
+```
+
+ Notes
+ - The file `frontendsetup.txt` lists the frontend package install commands used during project setup. Running `npm install` installs dependencies declared in `package.json`; to install the additional packages listed in `frontendsetup.txt`, run the combined command above or run the individual commands contained in that file.
+- Environment variables for Vite must use the `VITE_` prefix (for example `VITE_API_URL`).
+- For API contract details see the repository-level README and the backend README.
+
 Project structure
 ```
 ecommerce-frontend/
@@ -74,7 +107,7 @@ ecommerce-frontend/
 |   |   |-- useFetchCategoriesWithImages.js
 |   |   |-- useFetchCategoryNames.js
 |   |   |-- useFetchMe.js
-	|   |-- useFetchMyOrders.js
+|   |   |-- useFetchMyOrders.js
 |   |   |-- useFetchMyShippingDetails.js
 |   |   |-- useFetchNewProducts.js
 |   |   |-- useFetchProductDetails.js
@@ -126,23 +159,5 @@ ecommerce-frontend/
 |       |-- apiFetch.js
 |       |-- notes.txt
 |       `-- slugUtils.js
-```
-	pages/
-		about_us/
-			...
-		account/
-		account_dashboard/
-		admin/
-		auth/
-		cart/
-		checkout/
-		home/
-		product_page/
-		shopping/
-		support/
-	utils/
-		apiFetch.js
-		notes.txt
-		slugUtils.js
 ```
 
