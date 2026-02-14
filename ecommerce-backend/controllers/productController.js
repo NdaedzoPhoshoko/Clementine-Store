@@ -1,5 +1,50 @@
 import pool from "../config/db.js";
 import cloudinary from "../config/cloudinary.js";
+import sharp from "sharp";
+
+/**
+ * Compress an image buffer using configurable quality (env: IMAGE_COMPRESSION_QUALITY, 1-100).
+ * - JPEG -> re-encode to JPEG (mozjpeg) at configured quality
+ * - PNG with alpha -> convert to WebP to preserve transparency
+ * - PNG without alpha -> encode to JPEG
+ * - WebP/AVIF -> re-encode at configured quality
+ */
+const compressImageBuffer = async (buffer) => {
+  const DEFAULT_QUALITY = 60;
+  const envQ = parseInt(process.env.IMAGE_COMPRESSION_QUALITY, 10);
+  const QUALITY = Number.isInteger(envQ) && envQ >= 1 && envQ <= 100 ? envQ : DEFAULT_QUALITY;
+
+  const meta = await sharp(buffer).metadata().catch(() => ({}));
+  const fmt = meta && meta.format ? String(meta.format).toLowerCase() : "jpeg";
+
+  try {
+    if (fmt === "png") {
+      if (meta.hasAlpha) {
+        return sharp(buffer).webp({ quality: QUALITY }).toBuffer();
+      }
+      return sharp(buffer).jpeg({ quality: QUALITY, mozjpeg: true }).toBuffer();
+    }
+
+    if (fmt === "jpeg" || fmt === "jpg") {
+      return sharp(buffer).jpeg({ quality: QUALITY, mozjpeg: true }).toBuffer();
+    }
+
+    if (fmt === "webp") {
+      return sharp(buffer).webp({ quality: QUALITY }).toBuffer();
+    }
+
+    if (fmt === "avif") {
+      return sharp(buffer).avif({ quality: QUALITY }).toBuffer();
+    }
+
+    // fallback: encode to jpeg
+    return sharp(buffer).jpeg({ quality: QUALITY, mozjpeg: true }).toBuffer();
+  } catch (err) {
+    // best-effort fallback: return original buffer so upload can still proceed
+    console.warn("compressImageBuffer fallback — returning original buffer:", err?.message || err);
+    return buffer;
+  }
+};
 
 export const listProducts = async (req, res) => {
   try {
@@ -378,16 +423,24 @@ export const createProduct = async (req, res) => {
       }
     }
 
-    // Require an image file and upload it to Cloudinary
+    // Require an image file and upload it to Cloudinary (compress first)
     let primaryImageUrl = null;
     let publicId = null;
     if (req.file && req.file.buffer) {
+      let compressedBuffer;
+      try {
+        compressedBuffer = await compressImageBuffer(req.file.buffer);
+      } catch (sharpErr) {
+        console.error("Image compression failed:", sharpErr);
+        return res.status(500).json({ message: "Image compression failed" });
+      }
+
       const result = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
           { folder: "products", resource_type: "image" },
           (err, res) => (err ? reject(err) : resolve(res))
         );
-        stream.end(req.file.buffer);
+        stream.end(compressedBuffer);
       });
       primaryImageUrl = result?.secure_url || null;
       publicId = result?.public_id || null;
@@ -711,12 +764,20 @@ export const uploadProductImage = async (req, res) => {
 
     const uploaded = [];
     for (const f of files) {
+      let compressedBuffer;
+      try {
+        compressedBuffer = await compressImageBuffer(f.buffer);
+      } catch (sharpErr) {
+        console.error("Image compression failed:", sharpErr);
+        return res.status(500).json({ message: "Image compression failed" });
+      }
+
       const result = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
           { folder: "products", resource_type: "image" },
           (err, res) => (err ? reject(err) : resolve(res))
         );
-        stream.end(f.buffer);
+        stream.end(compressedBuffer);
       });
 
       const secureUrl = result?.secure_url;

@@ -4,6 +4,7 @@ npm install --save-dev nodemon
 npm install jwt jsonwebtoken bcryptjs 
 npm install cloudinary multer dotenv
 npm install stripe
+npm run dev
 
 run backend command:
 npm run dev

@@ -118,6 +118,8 @@ Create an `.env` file in `ecommerce-backend/` with the following variables:
 PORT=5000
 NODE_ENV=development
 CORS_ORIGIN=http://localhost:5173
+# Images
+IMAGE_COMPRESSION_QUALITY=60    # optional integer 1-100; controls sharp compression quality (default 60)
 
 # Database (Postgres)
 DATABASE_URL=postgres://<USER>:<PASSWORD>@<HOST>:<PORT>/<DB>
